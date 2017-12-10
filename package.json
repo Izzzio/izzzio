@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Izzzio blockchain core",
   "main": "main.js",
+  "homepage": "https://izzz.io",
   "scripts": {
     "depency": "npm install && cd shell && npm install",
     "build": "build.sh",
@@ -24,6 +25,10 @@
   "engines": {
     "node": ">=8.2.0"
   },
-  "author": "",
-  "license": "GPL"
+  "bugs": {
+    "url": "https://github.com/Izzzio/BitCoenWallet/issues",
+    "email": "info@izzz.io"
+  },
+  "author": "Andrey Nedobyslky <admin@twister-vl.ru> (https://github.com/lailune)",
+  "license": "Apache 2.0"
 }
