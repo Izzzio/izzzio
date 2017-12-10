@@ -30,7 +30,7 @@ const config = {
     httpServer: 'localhost',            //Адрес биндинга RPC и интерфейса
     initialPeers: [                     //Стартовые узлы, для синхронизации с сетью
         'ws://node1.bitcoen.io:6013',
-        'wss://node1.bitcoen.io/blockchain',
+        'wss://bitcoen.io/blockchain',
         'ws://node2.bitcoen.io:6013',
         'ws://node3.bitcoen.io:6013',
         'ws://node4.bitcoen.io:6013',
