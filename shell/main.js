@@ -106,11 +106,11 @@ app.on('activate', function () {
 
 function createWalletWindow(address) {
 
-    let height = path = process.platform === 'darwin'?840:1024;
-    let width = path = process.platform === 'darwin'?650:768;
+    let width = process.platform === 'darwin' ? 840 : 970;
+    let height = process.platform === 'darwin' ? 650 : 703;
     walletWindow = new BrowserWindow({
-        width: heigth,
-        height: width,
+        width: width,
+        height: height,
         show: false,
         icon: __dirname + '/Bitcoen.png',
         webPreferences: {
@@ -149,7 +149,7 @@ function startCore() {
     const fs = require('fs');
     let path = '../';
     if(!fs.existsSync('../main.js')) {
-        path = process.platform === 'darwin'?'../../../../core/': '../core/';
+        path = process.platform === 'darwin' ? '../../../../core/' : '../core/';
     }
     core = spawn('node', ['main.js'], {cwd: path});
 
