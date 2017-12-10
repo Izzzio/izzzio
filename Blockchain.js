@@ -196,7 +196,6 @@ function Blockchain(config) {
             console.log('Error: Whoops! Check the clock');
             process.exit();
         }
-        //console.log(genesisBlock);
         return genesisBlock
     }
 
@@ -380,9 +379,7 @@ function Blockchain(config) {
         write(ws, queryChainLengthMsg());
         write(ws, queryChainLengthMsg());
         sendAllBlockchain(ws, maxBlock - 1);
-        // write(ws, createMessage({}, '', '', '', lastMsgIndex, config.TTL));
 
-        //console.log('');
         write(ws, createMessage({
             address: config.recieverAddress,
             version: '1.0'
@@ -440,7 +437,6 @@ function Blockchain(config) {
                         message.TTL++;
                         broadcast(message, ws._socket.remoteAddress);
                         message.data = '';
-                        //console.log(message);
                     } else {
 
                         if(message.id === 'VITAMIN_META' && message.reciver !== config.recieverAddress && typeof message.yourIp === 'undefined') {
@@ -450,7 +446,6 @@ function Blockchain(config) {
                             broadcast(message);
                         } else if(message.reciver === config.recieverAddress && message.id === 'VITAMIN_META' && typeof message.yourIp !== 'undefined') {
                             if(peersBlackList.indexOf(message.yourIp) === -1) {
-                                //console.log(message);
                                 console.log('Info: Add ip to blacklist ' + message.yourIp);
                                 peersBlackList.push(message.yourIp);
                             }
@@ -487,14 +482,12 @@ function Blockchain(config) {
          * для корректной обработки блока с выпуском ключей
          * @type {number}
          */
-        //console.log(fromBlock);
         fromBlock = (typeof fromBlock === 'undefined' ? 0 : Number(fromBlock));
         if(fromBlock < 5) {
             limit = 3;
         }
-        //console.log(limit);
+
         getAllChain(fromBlock, limit, function (blockchain) {
-            //console.log(blockchain);
             write(ws, responseChainMsg(blockchain));
         });
     }
@@ -507,17 +500,14 @@ function Blockchain(config) {
      */
     function getAllChain(fromBlock, limit, cb) {
         limit = typeof limit === 'undefined' ? maxBlock : fromBlock + limit;
-        //console.log();
         let blockchain = [];
         Sync(function () {
             let limiter = 0;
             for (let i = fromBlock; i < limit + 1; i++) {
-                // console.log(i);
                 let result;
                 try {
                     result = exBlockhainGet.sync(null, i);
                 } catch (e) {
-                    // console.log(e);
                     continue;
                 }
                 blockchain.push(JSON.parse(result));
@@ -638,12 +628,9 @@ function Blockchain(config) {
 
             let ws = new WebSocket(peer, {perMessageDeflate: false});
             ws.on('open', function () {
-
                 initConnection(ws);
             });
             ws.on('error', (error) => {
-                //console.log(error);
-                //console.log('connection failed')
                 ws.close();
             });
         });
@@ -690,10 +677,7 @@ function Blockchain(config) {
 
                 } else {
                     if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
-                        //setTimeout(function () {
                         replaceChain(receivedBlocks);
-                        //}, 1000);
-
                     }
                 }
             } else {
@@ -893,8 +877,6 @@ function Blockchain(config) {
      */
     function peerExchange() {
         broadcastConnectedPeers();
-        //console.log('ctp');
-        //console.log(peers);
         let peersToConnect = getCurrentPeers();
         if(peersToConnect.length === 0) {
             peersToConnect = peers;
@@ -987,7 +969,6 @@ function Blockchain(config) {
          * Выбор консенсуса для генерации блока, должен идти в порядке убывания приоритета
          */
         validatorReversed.reverse();
-        //console.log(validatorReversed);
         for (let a in validatorReversed) {
             if(validatorReversed.hasOwnProperty(a)) {
                 if(validatorReversed[a].isReady()) {
@@ -1085,7 +1066,6 @@ function Blockchain(config) {
 
         console.log('');
         startNode();
-        // setInterval(generateEmptyBlock, config.emptyBlockInterval);
         setInterval(peerExchange, config.peerExchangeInterval);
         setInterval(broadcastLastBlock, config.hearbeatInterval);
 
@@ -1117,7 +1097,6 @@ function Blockchain(config) {
         config: config,
         start: start,
         getid: getid,
-        // generateEmptyBlock: generateEmptyBlock,
         write: write,
         getGenesisBlock: getGenesisBlock,
         addBlockToChainIndex: addBlockToChainIndex,
