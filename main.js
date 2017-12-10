@@ -42,7 +42,7 @@ const config = {
     //Blockchain
     blockAcceptCount: 10,               //Количеств блоков подтверждения транзакции
     hearbeatInterval: 5000,             //Внутренний таймер ноды
-    peerExchangeInterval: 10000,        //Частота обновления пиров
+    peerExchangeInterval: 5000,        //Частота обновления пиров
     maxBlockSend: 200,                  //Должно быть больше blockQualityCheck
     blockQualityCheck: 100,             //Количество блоков "сверх", которое мы запрашиваем для проверки валидности цепочки
     limitedConfidenceBlockZone: 288,    //Зона "доверия". Цепочку ранее этой зоны менять нельзя. Должно быть больше blockQualityCheck
@@ -70,7 +70,8 @@ const config = {
     enableMessaging: true,              //Разрешить использование шины сообщений (необходима для некоторых консенсусов)
     recieverAddress: getid() + getid(), //Адрес ноды в сети
     messagingMaxTTL: 3,                 //Максимальный предел скачков сообщения
-    maximumInputSize: 15 * 1024 * 1024, //Максимальный объем сообщения (здесь 15 мегабайт)
+    //maximumInputSize: 15 * 1024 * 1024, //Максимальный объем сообщения (здесь 15 мегабайт)
+    maximumInputSize: 2 * 1024 * 1024,
 
     //Wallet
     walletFile: './wallet.json',         //Адрес файла кошелька
