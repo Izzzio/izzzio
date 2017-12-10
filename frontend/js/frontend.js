@@ -1,5 +1,5 @@
 let blockchainStart = (1512670045 * 1000);
-let blockToAccept = 1;
+let blockToAccept = 20;
 
 let balance = 0;
 let realBalance = 0;

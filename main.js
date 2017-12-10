@@ -40,7 +40,7 @@ const config = {
     maxPeers: 80,                       //Рекомендуемое число 15-20
 
     //Blockchain
-    blockAcceptCount: 10,               //Количеств блоков подтверждения транзакции
+    blockAcceptCount: 20,               //Количеств блоков подтверждения транзакции
     hearbeatInterval: 5000,             //Внутренний таймер ноды
     peerExchangeInterval: 5000,        //Частота обновления пиров
     maxBlockSend: 200,                  //Должно быть больше blockQualityCheck
