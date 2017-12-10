@@ -63,6 +63,7 @@ const config = {
         'thrusted'
     ],
     emptyBlockInterval: 10000,          //Интервал проверки необходимости выпуска пустого блока
+    blacklisting: false,
 
 
     //Tokens

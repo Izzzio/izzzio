@@ -445,7 +445,7 @@ function Blockchain(config) {
                             message.TTL++;
                             broadcast(message);
                         } else if(message.reciver === config.recieverAddress && message.id === 'VITAMIN_META' && typeof message.yourIp !== 'undefined') {
-                            if(peersBlackList.indexOf(message.yourIp) === -1) {
+                            if(peersBlackList.indexOf(message.yourIp) === -1 && config.blacklisting) {
                                 console.log('Info: Add ip to blacklist ' + message.yourIp);
                                 peersBlackList.push(message.yourIp);
                             }
