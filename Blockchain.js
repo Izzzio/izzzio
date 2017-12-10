@@ -1002,7 +1002,7 @@ function Blockchain(config) {
             console.log('Info: Starting keyring emission');
 
             let keyring = new (require('./modules/blocks/keyring'))([], wallet.id);
-            keyring.generateKeys(config.workDir + '/keyring.json', 5, wallet);
+            keyring.generateKeys(config.workDir + '/keyring.json', 100, wallet);
             transactor.transact(keyring, function (blockData, cb) {
                 config.validators[0].generateNextBlock(blockData, function (generatedBlock) {
                     addBlock(generatedBlock);

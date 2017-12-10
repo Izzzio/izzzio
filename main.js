@@ -34,7 +34,7 @@ const config = {
         'ws://node2.bitcoen.io:6013',
         'ws://node3.bitcoen.io:6013',
         'ws://node4.bitcoen.io:6013',
-        'ws://localhost:6013',
+        //'ws://localhost:6013',
     ],
     allowMultipleConnectionsFromIp: true,//False - если в сети много зацикливаний, True - если используется прокси для коннекта
     maxPeers: 80,                       //Рекомендуемое число 15-20
@@ -49,6 +49,9 @@ const config = {
     generateEmptyBlockDelay: 300 * 1000,//5 минут - С какой частотой необхдимо выпускать пустые блоки в сеть при простое сети
     blockHashFilter: {                  //Фильтр корректных блоков для LCPoA
         blockEndls: [                   //4 символа в коце блока. Сюда должен попасть Genesis
+            'f3c8',
+            'a000',
+            '0000',
             '7027'
         ]
     },
