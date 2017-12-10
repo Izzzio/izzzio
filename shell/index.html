@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bitcoen Wallet</title>
+    <link rel="stylesheet" href="loading.css">
+    <style>
+        body {
+            background: #172126;
+            color: white;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
+        }
+
+        .logos {
+            text-align: center;
+            /*padding-top: 10vh;*/
+        }
+
+        .log {
+            font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+            width: 100%;
+            text-align: left;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            height: 200px;
+            margin-top: -50px;
+            color: #324854;
+        }
+
+        .log:before {
+            content: "";
+            display: block;
+            height: 50px;
+            position: relative;
+            top: 150px;
+            background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0), #172126 95%)
+        }
+
+        ::-webkit-scrollbar {
+            width: 0; /* remove scrollbar space */
+            background: transparent; /* optional: just make scrollbar invisible */
+        }
+
+        /* optional: show position indicator in red */
+        ::-webkit-scrollbar-thumb {
+            background: #FF0000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="logos" style="">
+
+    <img src="Bitcoen.svg" class="ld ld-heartbeat" style="animation-duration:1.4s; max-height: 170px; padding-top: 50px"><br>
+    <img src="logo2.png"><br>
+    <br>
+    <h3>Starting core...</h3>
+</div>
+
+<div class="log" id="log">
+
+</div>
+
+
+</body>
+<script src="jquery-3.2.1.min.js"></script>
+<script>
+    require('./renderer.js')
+</script>
+</html>

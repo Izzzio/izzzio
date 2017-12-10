@@ -1,0 +1,13 @@
+{
+  "name": "BitcoenShell",
+  "version": "1.0.0",
+  "description": "Bitcoen wallet shell",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "~1.6.2"
+  }
+}
