@@ -654,6 +654,10 @@ function Blockchain(config) {
         const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
 
         getLatestBlock(function (latestBlockHeld) {
+            if(!latestBlockHeld) {
+                console.log('Error: Can\'t receive last block. Maybe database busy?');
+                return;
+            }
             if(latestBlockReceived.timestamp > moment().utc().valueOf() + 60000) {
                 console.log('Error: Incorrect received block timestamp or local time');
                 return;

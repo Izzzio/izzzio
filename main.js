@@ -157,8 +157,7 @@ if(program.generateWallets) {
 const blockchain = new Blockchain(config);
 blockchain.start();
 
-/*
+
 process.on('uncaughtException', function (err) {
     console.log('Uncaught exception: ' + err);
 });
-*/
