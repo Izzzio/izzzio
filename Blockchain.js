@@ -642,6 +642,11 @@ function Blockchain(config) {
      */
     function handleBlockchainResponse(message) {
 
+        //We can't handle new blockchain while sync in progress
+        if(blockHandler.syncInProgress) {
+            return;
+        }
+
         const receivedBlocks = JSON.parse(message.data).sort((b1, b2) => (b1.index - b2.index));
         /**
          * @type {Block}
