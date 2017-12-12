@@ -658,39 +658,44 @@ function Blockchain(config) {
                 console.log('Error: Can\'t receive last block. Maybe database busy?');
                 return;
             }
-            if(latestBlockReceived.timestamp > moment().utc().valueOf() + 60000) {
-                console.log('Error: Incorrect received block timestamp or local time');
-                return;
-            }
-            if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
-                lastKnownBlock = latestBlockReceived.index;
-                console.log('Info: Synchronize: ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
-                if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) {
 
-                    if(isValidChain(receivedBlocks) && receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1) {
-                        addBlockToChain(latestBlockReceived);
-                        responseLatestMsg(function (msg) {
-                            broadcast(msg);
-                        });
-                    }
-
-                } else if(receivedBlocks.length === 1) {
-
-                    let getBlockFrom = latestBlockHeld.index - config.blockQualityCheck;
-                    if(getBlockFrom < 0) {
-                        getBlockFrom = maxBlock;
-                    }
-                    if(!blockHandler.syncInProgress) {
-                        broadcast(queryAllMsg(getBlockFrom));
-                    }
-
-                } else {
-                    if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
-                        replaceChain(receivedBlocks);
-                    }
+            try {
+                if(latestBlockReceived.timestamp > moment().utc().valueOf() + 60000) {
+                    console.log('Error: Incorrect received block timestamp or local time');
+                    return;
                 }
-            } else {
-                //console.log('received blockchain is not longer than received blockchain. Do nothing');
+                if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
+                    lastKnownBlock = latestBlockReceived.index;
+                    console.log('Info: Synchronize: ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
+                    if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) {
+
+                        if(isValidChain(receivedBlocks) && receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1) {
+                            addBlockToChain(latestBlockReceived);
+                            responseLatestMsg(function (msg) {
+                                broadcast(msg);
+                            });
+                        }
+
+                    } else if(receivedBlocks.length === 1) {
+
+                        let getBlockFrom = latestBlockHeld.index - config.blockQualityCheck;
+                        if(getBlockFrom < 0) {
+                            getBlockFrom = maxBlock;
+                        }
+                        if(!blockHandler.syncInProgress) {
+                            broadcast(queryAllMsg(getBlockFrom));
+                        }
+
+                    } else {
+                        if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
+                            replaceChain(receivedBlocks);
+                        }
+                    }
+                } else {
+                    //console.log('received blockchain is not longer than received blockchain. Do nothing');
+                }
+            } catch (e) {
+                console.log('Info: Received chain corrupted');
             }
         });
 

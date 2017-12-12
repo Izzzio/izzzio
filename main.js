@@ -161,3 +161,4 @@ blockchain.start();
 process.on('uncaughtException', function (err) {
     console.log('Uncaught exception: ' + err);
 });
+
