@@ -149,7 +149,7 @@ function startCore() {
     const fs = require('fs');
     let path = '../';
     if(!fs.existsSync('../main.js')) {
-        path = process.platform === 'darwin' ? '../../../../core/' : '../core/';
+        path = process.platform === 'darwin' ? __dirname + '/core/' : '../core/';
     }
     core = spawn('node', ['main.js'], {cwd: path});
 

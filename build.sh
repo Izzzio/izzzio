@@ -15,16 +15,30 @@ cd shell
 rm -Rf build
 mkdir -p build
 
-electron-packager . BitcoenShell --platform=all --icon=logo.ico --out=build --overwrite
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    electron-packager . BitcoenShell --platform=linux --icon=logo.ico --out=build --overwrite
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    electron-packager . BitcoenShell --platform=darwin --icon=logo.ico --out=build --overwrite
+elif [[ "$OSTYPE" == "msys" ]]; then
+     electron-packager . BitcoenShell --platform=win32-x64 --icon=logo.ico --out=build --overwrite
+else
+     electron-packager . BitcoenShell --platform=all --icon=logo.ico --out=build --overwrite
+fi
 
 cp -Rf build/* ../build/
 
 cd ../build/core
 
-
 npm install
 
-cp -f ../../buildBinary/node.exe ./node.exe
+if [[ "$OSTYPE" == "msys" ]]; then
+    cp -f ../../buildBinary/node.exe ./node.exe
+fi
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    cd ..
+    cp -R core BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/
+fi
 
 rm ../dumb
 
