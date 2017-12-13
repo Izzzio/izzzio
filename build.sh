@@ -38,8 +38,8 @@ fi
 if [[ "$OSTYPE" == "darwin"* ]]; then
     cd ..
     cp -R core BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/
-    cp -f ../buildBinary/node_darwin BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/node
-    chmod 777 BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/node
+    cp -f ../buildBinary/node_darwin BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/core/node
+    chmod 777 BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/core/node
 fi
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
