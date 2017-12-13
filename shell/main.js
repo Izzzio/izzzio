@@ -76,7 +76,7 @@ app.on('ready', function () {
             }
         }
     ]);
-    trayIcon = new Tray(__dirname + (process.platform === 'linux' || process.platform === 'darwin' ? '/logo.png' : '/logo.ico'));
+    trayIcon = new Tray(__dirname + (process.platform === 'linux' || process.platform === 'darwin' ? '/tray.png' : '/logo.ico'));
     trayIcon.setToolTip('Bitcoen Wallet');
     trayIcon.setContextMenu(contextMenu);
     trayIcon.on('click', function () {
