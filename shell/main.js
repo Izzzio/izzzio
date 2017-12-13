@@ -151,7 +151,7 @@ function startCore() {
     if(!fs.existsSync('../main.js')) {
         path = process.platform === 'darwin' ? __dirname + '/core/' : '../core/';
     }
-    core = spawn('node', ['main.js'], {cwd: path});
+    core = spawn('./node', ['main.js'], {cwd: path});
 
     core.stdout.on('data', (data) => {
         try {

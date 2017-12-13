@@ -20,7 +20,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     electron-packager . BitcoenShell --platform=darwin --icon=logo.ico --out=build --overwrite
 elif [[ "$OSTYPE" == "msys" ]]; then
-     electron-packager . BitcoenShell --platform=win32-x64 --icon=logo.ico --out=build --overwrite
+     electron-packager . BitcoenShell --platform=win32 --icon=logo.ico --out=build --overwrite
 else
      electron-packager . BitcoenShell --platform=all --icon=logo.ico --out=build --overwrite
 fi
