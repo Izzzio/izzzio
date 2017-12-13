@@ -72,7 +72,10 @@ app.on('ready', function () {
             label: 'Quit',
             click() {
                 app.isQuiting = true;
-                process.exit();
+                core.kill('SIGINT');
+                setTimeout(function () {
+                    process.exit(0);
+                }, 5000);
             }
         }
     ]);
