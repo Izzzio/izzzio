@@ -174,7 +174,10 @@ function startCore() {
         if(!app.isQuiting) {
             console.log(`Core exit code ${code}`);
             createLoaderWindow();
-            walletWindow.close();
+            try {
+                walletWindow.close();
+            } catch (e) {
+            }
         }
     });
 
