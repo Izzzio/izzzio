@@ -72,11 +72,14 @@ app.on('ready', function () {
             label: 'Quit',
             click() {
                 app.isQuiting = true;
-                process.exit();
+                core.kill('SIGINT');
+                setTimeout(function () {
+                    process.exit(0);
+                }, 5000);
             }
         }
     ]);
-    trayIcon = new Tray(__dirname + (process.platform === 'linux' || process.platform === 'darwin' ? '/logo.png' : '/logo.ico'));
+    trayIcon = new Tray(__dirname + (process.platform === 'linux' || process.platform === 'darwin' ? '/tray.png' : '/logo.ico'));
     trayIcon.setToolTip('Bitcoen Wallet');
     trayIcon.setContextMenu(contextMenu);
     trayIcon.on('click', function () {
@@ -96,11 +99,11 @@ app.on('window-all-closed', function () {
 });
 
 app.on('activate', function () {
-    if(loaderWindow === null) {
+    if(loaderWindow === null && walletWindow === null) {
         createLoaderWindow()
+    } else {
+        walletWindow.show();
     }
-
-
 });
 
 
@@ -149,9 +152,9 @@ function startCore() {
     const fs = require('fs');
     let path = '../';
     if(!fs.existsSync('../main.js')) {
-        path = process.platform === 'darwin' ? '../../../../core/' : '../core/';
+        path = process.platform === 'darwin' ? __dirname + '/core/' : '../core/';
     }
-    core = spawn('node', ['main.js'], {cwd: path});
+    core = spawn('./node', ['main.js'], {cwd: path});
 
     core.stdout.on('data', (data) => {
         try {
