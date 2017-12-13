@@ -99,11 +99,11 @@ app.on('window-all-closed', function () {
 });
 
 app.on('activate', function () {
-    if(loaderWindow === null) {
+    if(loaderWindow === null && walletWindow === null) {
         createLoaderWindow()
+    } else {
+        walletWindow.show();
     }
-
-
 });
 
 
