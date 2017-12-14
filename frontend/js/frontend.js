@@ -214,9 +214,9 @@ function updateWalletBlockInfo() {
         lastTransactionList += ' <div class="w-transact-row ' + (i.index > ( maxBlock - blockToAccept) ? 'w-transact-accepted' : 'w-transact-accepted') + '  row">';
         let data = JSON.parse(i.data);
         if(walletBlocks.income.indexOf(i) !== -1) {
-            lastTransactionList += ' <div class="w-transact-ammount w-transact-ammount-income">' + formatToken(data.amount) + ' BEN</div> <div class="w-transact-from"> ' + collapsedAddress(data.from) + '</div>' + (i.index > ( maxBlock - blockToAccept) ? '<div  class="w-transact-answer">Unaccepted</div>' : '<div  class="w-transact-answer">Accepted</div>') + '<div class="w-transact-from-full context">' + data.from + '</div>';
+            lastTransactionList += ' <div class="w-transact-ammount w-transact-ammount-income">' + formatToken(data.amount) + ' BEN</div> <div class="w-transact-from"> ' + collapsedAddress(data.from) + '</div>' + (i.index > ( maxBlock - blockToAccept) ? '<div  class="w-transact-answer" style="color: red">Unaccepted</div>' : '<div  class="w-transact-answer">Accepted</div>') + '<div class="w-transact-from-full context">' + data.from + '</div>';
         } else {
-            lastTransactionList += ' <div class="w-transact-ammount w-transact-ammount-outcome">' + formatToken(data.amount) + ' BEN</div> <div class="w-transact-from"> ' + collapsedAddress(data.to) + '</div>' + (i.index > ( maxBlock - blockToAccept) ? '<div  class="w-transact-answer">Unaccepted</div>' : '<div  class="w-transact-answer">Accepted</div>') + '<div class="w-transact-from-full context">' + data.to + '</div>';
+            lastTransactionList += ' <div class="w-transact-ammount w-transact-ammount-outcome">' + formatToken(data.amount) + ' BEN</div> <div class="w-transact-from"> ' + collapsedAddress(data.to) + '</div>' + (i.index > ( maxBlock - blockToAccept) ? '<div  class="w-transact-answer" style="color: red">Unaccepted</div>' : '<div  class="w-transact-answer">Accepted</div>') + '<div class="w-transact-from-full context">' + data.to + '</div>';
         }
 
         lastTransactionList += '</div>';
@@ -280,7 +280,7 @@ function transanctionsPage() {
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-block">' + i.index + '</div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-oper ' + (income ? 'w-oper-plus' : 'w-oper-minus') + ' "></div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-amount">' + formatToken(data.amount) + '</div>';
-        htmlTransList += '<div class="w-tr-table-cell w-tr-table-status">' + (accepted ? '<img src="img/lk/done-tick.svg" alt="">' : '<img src="img/lk/denied.svg" class="ld ld-heartbeat" alt="">') + '</div>';
+        htmlTransList += '<div class="w-tr-table-cell w-tr-table-status">' + (accepted ? '<img src="img/lk/done-tick.svg" title="Transaction accepted" alt="">' : '<img src="img/lk/pending.png" title="Pending transaction accepted" class="ld ld-heartbeat " style="animation-duration: 1s" alt="">') + '</div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-from"> <span>' + collapsedAddress(income ? data.from : data.to) + '</span></div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-hash"><span>' + collapsedAddress(i.hash) + '</span></div>';
         htmlTransList += '<div class="w-tr-full w-tr-table-from-full context"><span>' + (income ? data.from : data.to) + '</span></div>';

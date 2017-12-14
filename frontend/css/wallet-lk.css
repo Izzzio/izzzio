@@ -1098,7 +1098,7 @@ img {
 
 .one {
     padding-top: 55px;
-    padding-bottom: 60px;
+    /*padding-bottom: 60px;*/
 }
 
 .w-header {
@@ -1390,6 +1390,12 @@ img {
 
 .w-content-bar {
     align-items: center;
+}
+
+.footer-bar{
+    position: fixed;
+    bottom: 0;
+    width: 90%;
 }
 
 .w-bar {
@@ -2038,6 +2044,13 @@ img {
         align-items: center;
         justify-content: center;
         z-index: 3;
+    }
+
+    .footer-bar{
+        position: relative;
+        bottom: 0;
+        padding-bottom: 25px;
+        width: 100%;
     }
 
     .w-header-menu:before {
