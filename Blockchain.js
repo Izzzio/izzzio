@@ -622,17 +622,21 @@ function Blockchain(config) {
                 return;
             }
 
-            if(peersBlackList.indexOf(url.parse(peer).hostname) !== -1) {
-                return;
-            }
+            try {
+                if(peersBlackList.indexOf(url.parse(peer).hostname) !== -1) {
+                    return;
+                }
 
-            let ws = new WebSocket(peer, {perMessageDeflate: false});
-            ws.on('open', function () {
-                initConnection(ws);
-            });
-            ws.on('error', (error) => {
-                ws.close();
-            });
+
+                let ws = new WebSocket(peer, {perMessageDeflate: false});
+                ws.on('open', function () {
+                    initConnection(ws);
+                });
+                ws.on('error', (error) => {
+                    ws.close();
+                });
+            } catch (e) {
+            }
         });
     }
 
