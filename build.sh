@@ -50,4 +50,4 @@ fi
 
 rm ../dumb
 
-sleep 100
+sleep 10
