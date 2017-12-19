@@ -44,6 +44,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     rm -R ../installers/BitcoenShell.app
     cp -R BitcoenShell-darwin-x64/BitcoenShell.app ../installers/
     cd ../installers/
+    rm -R BitcoenShell-darwin-x64.dmg
     appdmg dmg.json BitcoenShell-darwin-x64.dmg
 fi
 
