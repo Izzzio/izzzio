@@ -12,6 +12,20 @@ Wallet interface depends on Electron version >= 1.6.2
 
 ## Building
 
+Before building:
+
+- Install electron packager
+
+```
+sudo npm -g install electron-packager
+```
+
+And appdmg for OS X (requires XCode command line tools)
+
+```
+npm -g install appdmg
+```
+
 Preparing for work is done by running the command 
 ```
 npm install
