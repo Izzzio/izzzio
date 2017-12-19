@@ -72,6 +72,7 @@ app.on('ready', function () {
             label: 'Quit',
             click() {
                 app.isQuiting = true;
+                walletWindow.hide();
                 core.kill('SIGINT');
                 setTimeout(function () {
                     process.exit(0);
@@ -123,8 +124,11 @@ function createWalletWindow(address) {
 
     walletWindow.webContents.on('did-finish-load', function () {
         setTimeout(function () {
-            walletWindow.show();
-            loaderWindow.close();
+            try {
+                walletWindow.show();
+                loaderWindow.close();
+            } catch (e) {
+            }
         }, 2000);
     });
 
@@ -154,7 +158,7 @@ function startCore() {
     if(!fs.existsSync('../main.js')) {
         path = process.platform === 'darwin' ? __dirname + '/core/' : '../core/';
     }
-    core = spawn('./node', ['main.js'], {cwd: path});
+    core = spawn('./node', ['main.js', '--autofix', '--work-dir', app.getPath('userData')], {cwd: path});
 
     core.stdout.on('data', (data) => {
         try {
@@ -211,6 +215,7 @@ const template = [
                 label: 'Quit',
                 click() {
                     app.isQuiting = true;
+                    walletWindow.hide();
                     core.kill('SIGINT');
                     setTimeout(function () {
                         process.exit(0);
@@ -255,6 +260,12 @@ const template = [
     {
         role: 'help',
         submenu: [
+            {
+                label: 'DevTools',
+                click() {
+                    walletWindow.webContents.openDevTools();
+                }
+            },
             {
                 label: 'BitCoen website',
                 click() {

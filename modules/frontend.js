@@ -53,6 +53,14 @@ class Frontend {
         app.get('/downloadWallet', function (req, res) {
             that.downloadWallet(req, res)
         });
+
+        app.post('/restoreWallet', function (req, res) {
+            that.restoreWallet(req, res)
+        });
+
+        app.post('/rpc', function (req, res) {
+            that.RPC(req, res)
+        });
     }
 
     index(req, res) {
@@ -124,6 +132,41 @@ class Frontend {
         that.hardResync();
         res.send();
     }
+
+    RPC(req, res) {
+        let that = this;
+        let text = '';
+        try {
+            const log = function (log, a, b) {
+                text += String(log);
+            };
+            let blockchain = that.blockchainObject;
+            eval(req.body.command);
+        } catch (e) {
+            res.send(e.toString());
+            return;
+        }
+
+
+        res.send(text);
+        //
+    }
+
+    restoreWallet(req, res) {
+        let that = this;
+        that.wallet.keysPair.public = req.body.public;
+        that.wallet.keysPair.private = req.body.private;
+        that.wallet.id = req.body.id;
+        that.wallet.block = Number(req.body.block);
+        that.wallet.balance = Number(req.body.balance);
+        that.wallet.update();
+        setTimeout(function () {
+            that.blockHandler.resync();
+        },1000);
+
+        res.send();
+    }
+
 }
 
 module.exports = Frontend;

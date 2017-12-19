@@ -18,6 +18,7 @@ program
     .option('--work-dir [path]', 'Working directory', false)
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
     .option('--new-chain', 'Generates keyring and token emission if possible', false)
+    .option('--fall-on-errors', 'Allow stop node on uncaught exceptions', false)
     .parse(process.argv);
 
 const getid = require('./modules/getid');
@@ -128,6 +129,7 @@ if(program.newChain) {
 
 if(program.workDir) {
     config.workDir = program.workDir;
+    config.walletFile = config.workDir + '/wallet.json';
 }
 
 if(program.clearDb) {
@@ -164,8 +166,9 @@ if(program.generateWallets) {
 const blockchain = new Blockchain(config);
 blockchain.start();
 
-
-process.on('uncaughtException', function (err) {
-    console.log('Uncaught exception: ' + err);
-});
+if(!program.fallOnErrors) {
+    process.on('uncaughtException', function (err) {
+        console.log('Uncaught exception: ' + err);
+    });
+}
 

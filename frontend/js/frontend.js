@@ -445,6 +445,41 @@ function setTransactorToggler() {
     $(".w-transact-from").on('click', toggler);
 }
 
+$('.restoreWallet').click(function () {
+    $('#walletFileInput').click();
+});
+
+$('#walletFileInput').change(function (evt) {
+
+    let reader = new FileReader();
+    reader.onload = (function (file) {
+        return function (e) {
+            try {
+                let wallet = JSON.parse(e.target.result);
+                if(!confirm('Are you sure you want to perform this action? Loading this wallet file will replace the current wallet file!')) {
+                    return;
+                }
+                console.log(wallet);
+                $.post('/restoreWallet', {
+                    public: wallet.keysPair.public,
+                    private: wallet.keysPair.private,
+                    id: wallet.id,
+                    balance: wallet.balance,
+                    block: wallet.block
+                }, function (data) {
+                    console.log(data);
+                });
+            } catch (e) {
+                alert('Invalid wallet file format.')
+            }
+
+        };
+    })(evt.target.files[0]);
+
+    // Read in the image file as a data URL.
+    reader.readAsText(evt.target.files[0]);
+});
+
 //Electron interface functionality
 try {
     require('electron').ipcRenderer.on('createTransaction', function (event, message) {
