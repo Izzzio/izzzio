@@ -13,6 +13,7 @@ program
     .description(' iZ3 blockchain core.')
     .option('-a, --autofix', 'Fix saved chain if possible. WARNING: You can lose important data')
     .option('--clear', 'Clear all saved chain and deletes wallet. WARNING: You can lose important data')
+    .option('--clear-db', 'Clear all saved chain and calculated wallets.')
     .option('-c, --config [path]', 'Core config path', 'config.json')
     .option('--work-dir [path]', 'Working directory', false)
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
@@ -129,6 +130,12 @@ if(program.workDir) {
     config.workDir = program.workDir;
 }
 
+if(program.clearDb) {
+    fs.removeSync(config.workDir + '/wallets');
+    fs.removeSync(config.workDir + '/blocks');
+    console.log('Info: DB cleared');
+}
+
 
 if(program.generateWallets) {
     const Wallet = require('./modules/wallet');
@@ -157,8 +164,8 @@ if(program.generateWallets) {
 const blockchain = new Blockchain(config);
 blockchain.start();
 
-/*
+
 process.on('uncaughtException', function (err) {
     console.log('Uncaught exception: ' + err);
-});*/
+});
 

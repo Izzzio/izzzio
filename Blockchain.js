@@ -24,7 +24,7 @@ function Blockchain(config) {
     const express = require("express");
     const bodyParser = require('body-parser');
     const WebSocket = require("ws");
-    const levelup = require('levelup');
+    const levelup = require('level');
     const Sync = require('sync');
     const moment = require('moment');
     const url = require('url');
@@ -627,7 +627,6 @@ function Blockchain(config) {
                     return;
                 }
 
-
                 let ws = new WebSocket(peer, {perMessageDeflate: false});
                 ws.on('open', function () {
                     initConnection(ws);
@@ -671,9 +670,9 @@ function Blockchain(config) {
                 if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
                     lastKnownBlock = latestBlockReceived.index;
                     console.log('Info: Synchronize: ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
-                    if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) {
+                    if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) { //когда получен один блок от того который у нас есть
 
-                        if(isValidChain(receivedBlocks) && receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1) {
+                        if(isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
                             addBlockToChain(latestBlockReceived);
                             responseLatestMsg(function (msg) {
                                 broadcast(msg);
