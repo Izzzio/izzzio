@@ -24,7 +24,7 @@ function Blockchain(config) {
     const express = require("express");
     const bodyParser = require('body-parser');
     const WebSocket = require("ws");
-    const levelup = require('levelup');
+    const levelup = require('level');
     const Sync = require('sync');
     const moment = require('moment');
     const url = require('url');
@@ -203,9 +203,10 @@ function Blockchain(config) {
      * Добавляет блок в определенное место цепочки
      * @param index
      * @param block
+     * @param {Boolean} noHandle
      * @param cb
      */
-    function addBlockToChainIndex(index, block, cb) {
+    function addBlockToChainIndex(index, block, noHandle, cb) {
         if(block.index > maxBlock) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
@@ -213,20 +214,32 @@ function Blockchain(config) {
         blockHandler.changeMaxBlock(maxBlock);
         transactor.changeMaxBlock(maxBlock);
         blockchain.put(Number(index), JSON.stringify(block));
-        blockHandler.handleBlock(block, cb);
+        if(!noHandle) {
+            blockHandler.handleBlock(block, cb);
+        } else {
+            if(cb) {
+                cb();
+            }
+        }
     }
 
 
     /**
      * Добавляет блок в конец цепочки
      * @param block
+     * @param {Boolean} noHandle
      */
-    function addBlockToChain(block) {
+    function addBlockToChain(block, noHandle) {
         if(block.index > maxBlock) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
         }
-        addBlockToChainIndex(maxBlock, block);
+
+        if(!noHandle) {
+            noHandle = false;
+        }
+
+        addBlockToChainIndex(maxBlock, block, noHandle);
     }
 
 //Врапперы для модуля Sync, а то он любит портить this объекта
@@ -622,17 +635,20 @@ function Blockchain(config) {
                 return;
             }
 
-            if(peersBlackList.indexOf(url.parse(peer).hostname) !== -1) {
-                return;
-            }
+            try {
+                if(peersBlackList.indexOf(url.parse(peer).hostname) !== -1) {
+                    return;
+                }
 
-            let ws = new WebSocket(peer, {perMessageDeflate: false});
-            ws.on('open', function () {
-                initConnection(ws);
-            });
-            ws.on('error', (error) => {
-                ws.close();
-            });
+                let ws = new WebSocket(peer, {perMessageDeflate: false});
+                ws.on('open', function () {
+                    initConnection(ws);
+                });
+                ws.on('error', (error) => {
+                    ws.close();
+                });
+            } catch (e) {
+            }
         });
     }
 
@@ -667,9 +683,9 @@ function Blockchain(config) {
                 if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
                     lastKnownBlock = latestBlockReceived.index;
                     console.log('Info: Synchronize: ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
-                    if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) {
+                    if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) { //когда получен один блок от того который у нас есть
 
-                        if(isValidChain(receivedBlocks) && receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1) {
+                        if(isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
                             addBlockToChain(latestBlockReceived);
                             responseLatestMsg(function (msg) {
                                 broadcast(msg);
@@ -681,6 +697,7 @@ function Blockchain(config) {
                         let getBlockFrom = latestBlockHeld.index - config.blockQualityCheck;
                         if(getBlockFrom < 0) {
                             getBlockFrom = maxBlock;
+                            lastKnownBlock = maxBlock;
                         }
                         if(!blockHandler.syncInProgress) {
                             broadcast(queryAllMsg(getBlockFrom));
@@ -721,7 +738,7 @@ function Blockchain(config) {
             console.log('Info: Received blockchain is valid.');
             Sync(function () {
                 for (let i of newBlocks) {
-                    addBlockToChainIndex.sync(null, i.index, i);
+                    addBlockToChainIndex.sync(null, i.index, i, true);
                 }
                 responseLatestMsg(function (msg) {
                     broadcast(msg);
@@ -829,7 +846,18 @@ function Blockchain(config) {
         }
     }
 
-    const write = (ws, message) => ws.send(JSON.stringify(message));
+    /**
+     * Write to socket
+     * @param ws
+     * @param message
+     */
+    const write = function (ws, message) {
+        try {
+            ws.send(JSON.stringify(message))
+        } catch (e) { //ошибка записи, возможно сокет уже не активен
+
+        }
+    };
 
     /**
      * Broadcast message
@@ -1172,6 +1200,7 @@ function Blockchain(config) {
         }
 
     };
+    frontend.blockchainObject = blockchainObject;
     return blockchainObject;
 }
 

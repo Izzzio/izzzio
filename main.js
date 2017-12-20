@@ -13,10 +13,12 @@ program
     .description(' iZ3 blockchain core.')
     .option('-a, --autofix', 'Fix saved chain if possible. WARNING: You can lose important data')
     .option('--clear', 'Clear all saved chain and deletes wallet. WARNING: You can lose important data')
+    .option('--clear-db', 'Clear all saved chain and calculated wallets.')
     .option('-c, --config [path]', 'Core config path', 'config.json')
     .option('--work-dir [path]', 'Working directory', false)
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
     .option('--new-chain', 'Generates keyring and token emission if possible', false)
+    .option('--fall-on-errors', 'Allow stop node on uncaught exceptions', false)
     .parse(process.argv);
 
 const getid = require('./modules/getid');
@@ -127,6 +129,13 @@ if(program.newChain) {
 
 if(program.workDir) {
     config.workDir = program.workDir;
+    config.walletFile = config.workDir + '/wallet.json';
+}
+
+if(program.clearDb) {
+    fs.removeSync(config.workDir + '/wallets');
+    fs.removeSync(config.workDir + '/blocks');
+    console.log('Info: DB cleared');
 }
 
 
@@ -157,8 +166,9 @@ if(program.generateWallets) {
 const blockchain = new Blockchain(config);
 blockchain.start();
 
-
-process.on('uncaughtException', function (err) {
-    console.log('Uncaught exception: ' + err);
-});
+if(!program.fallOnErrors) {
+    process.on('uncaughtException', function (err) {
+        console.log('Uncaught exception: ' + err);
+    });
+}
 

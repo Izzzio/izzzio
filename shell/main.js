@@ -72,6 +72,7 @@ app.on('ready', function () {
             label: 'Quit',
             click() {
                 app.isQuiting = true;
+                walletWindow.hide();
                 core.kill('SIGINT');
                 setTimeout(function () {
                     process.exit(0);
@@ -121,10 +122,17 @@ function createWalletWindow(address) {
         }
     });
 
+
+    const menu = Menu.buildFromTemplate(menuTemplate);
+    Menu.setApplicationMenu(menu);
+
     walletWindow.webContents.on('did-finish-load', function () {
         setTimeout(function () {
-            walletWindow.show();
-            loaderWindow.close();
+            try {
+                walletWindow.show();
+                loaderWindow.close();
+            } catch (e) {
+            }
         }, 2000);
     });
 
@@ -154,7 +162,7 @@ function startCore() {
     if(!fs.existsSync('../main.js')) {
         path = process.platform === 'darwin' ? __dirname + '/core/' : '../core/';
     }
-    core = spawn('./node', ['main.js'], {cwd: path});
+    core = spawn('./node', ['main.js', '--autofix', '--work-dir', app.getPath('userData')], {cwd: path});
 
     core.stdout.on('data', (data) => {
         try {
@@ -174,7 +182,10 @@ function startCore() {
         if(!app.isQuiting) {
             console.log(`Core exit code ${code}`);
             createLoaderWindow();
-            walletWindow.close();
+            try {
+                walletWindow.close();
+            } catch (e) {
+            }
         }
     });
 
@@ -193,7 +204,7 @@ function startCore() {
 }
 
 
-const template = [
+const menuTemplate = [
     {
         label: 'Wallet',
         submenu: [
@@ -208,6 +219,7 @@ const template = [
                 label: 'Quit',
                 click() {
                     app.isQuiting = true;
+                    walletWindow.hide();
                     core.kill('SIGINT');
                     setTimeout(function () {
                         process.exit(0);
@@ -253,6 +265,12 @@ const template = [
         role: 'help',
         submenu: [
             {
+                label: 'DevTools',
+                click() {
+                    walletWindow.webContents.openDevTools();
+                }
+            },
+            {
                 label: 'BitCoen website',
                 click() {
                     require('electron').shell.openExternal('http://bitcoen.io/')
@@ -292,44 +310,6 @@ const template = [
     }
 ];
 
-if(process.platform === 'darwin') {
-    template.unshift({
-        label: app.getName(),
-        submenu: [
-            {role: 'about'},
-            {type: 'separator'},
-            {role: 'services', submenu: []},
-            {type: 'separator'},
-            {role: 'hide'},
-            {role: 'hideothers'},
-            {role: 'unhide'},
-            {type: 'separator'},
-            {role: 'quit'}
-        ]
-    });
 
-    // Edit menu
-    template[2].submenu.push(
-        {type: 'separator'},
-        {
-            label: 'Speech',
-            submenu: [
-                {role: 'startspeaking'},
-                {role: 'stopspeaking'}
-            ]
-        }
-    );
 
-    // Window menu
-    template[4].submenu = [
-        {role: 'close'},
-        {role: 'minimize'},
-        {role: 'zoom'},
-        {type: 'separator'},
-        {role: 'front'}
-    ]
-}
-
-const menu = Menu.buildFromTemplate(template);
-Menu.setApplicationMenu(menu);
 

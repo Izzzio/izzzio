@@ -14,7 +14,7 @@ const fs = require('fs-extra');
 const formatToken = require('./formatToken');
 const moment = require('moment');
 
-const levelup = require('levelup');
+const levelup = require('level');
 
 /**
  * Предел до которого сеть может принять блок ключей
@@ -143,7 +143,7 @@ class BlockHandler {
                                     that.blockchain.del.sync(that.blockchain, a);
                                 }
 
-                                console.log('Info: Autofix: Set new blockchain heigth ' + i);
+                                console.log('Info: Autofix: Set new blockchain height ' + i);
                                 that.blockchain.put.sync(that.blockchain, 'maxBlock', i - 1);
                                 that.syncInProgress = false;
                                 that.enableLogging = true;
@@ -151,6 +151,8 @@ class BlockHandler {
                                 cb();
                                 break;
                             } else {
+                                console.log(JSON.parse(prevBlock));
+                                console.log(JSON.parse(result));
                                 console.log('Fatal error: Saved chain corrupted in block ' + i + '. Remove wallets and blocks dirs for resync. Also you can use --autofix');
                                 process.exit(1);
                             }

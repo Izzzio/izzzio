@@ -40,6 +40,12 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     cp -R core BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/
     cp -f ../buildBinary/node_darwin BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/core/node
     chmod 777 BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/core/node
+
+    rm -R ../installers/BitcoenShell.app
+    cp -R BitcoenShell-darwin-x64/BitcoenShell.app ../installers/
+    cd ../installers/
+    rm -R BitcoenShell-darwin-x64.dmg
+    appdmg dmg.json BitcoenShell-darwin-x64.dmg
 fi
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
@@ -50,4 +56,4 @@ fi
 
 rm ../dumb
 
-sleep 100
+sleep 10
