@@ -58,6 +58,7 @@ let testWallet = new Wallet();
 
 
 let lastTimestampRequest = 0;
+let lastRecepient = '';
 
 const Block = require('../block');
 const Signable = require('../blocks/signable');
@@ -70,7 +71,7 @@ const moment = require('moment');
  */
 function isValidNewBlock(newBlock, previousBlock) {
 
-    if(typeof newBlock === 'undefined' || typeof previousBlock==='undefined'){
+    if(typeof newBlock === 'undefined' || typeof previousBlock === 'undefined') {
         return false;
     }
 
@@ -320,9 +321,10 @@ function handleMessage(message) {
      */
     if(message.reciver === 'thrusted_node' && blockchain.blockHandler.isKeyFromKeyring(blockchain.wallet.keysPair.public)) {
 
-        if(moment().utc().valueOf() - message.timestamp < MessageTimeout && lastTimestampRequest < message.timestamp) {
+        if(moment().utc().valueOf() - message.timestamp < MessageTimeout && lastTimestampRequest < message.timestamp && message.recepient !== lastRecepient) {
 
             lastTimestampRequest = message.timestamp;
+            lastRecepient = message.recepient;
 
             /**
              * Блок-кандидат на добавление в сеть
