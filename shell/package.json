@@ -1,7 +1,9 @@
 {
   "name": "BitcoenShell",
-  "version": "1.0.0",
-  "description": "Bitcoen wallet shell",
+  "productName": "BitCoen Wallet",
+  "version": "0.9.0",
+  "appVersion ": "0.9.0",
+  "description": "BitCoen wallet shell",
   "main": "main.js",
   "scripts": {
     "start": "electron ."

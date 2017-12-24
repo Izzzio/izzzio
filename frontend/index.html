@@ -26,13 +26,13 @@
     <div class="w-header">
         <div class="container">
             <div class="w-header-row row">
-                    <picture>
-                        <source
-                                srcset="img/w-logo.png,
+                <picture>
+                    <source
+                            srcset="img/w-logo.png,
 										img/w-logo2x.png 2x">
-                        <img src="img/w-logo.png"
-                             alt="logo">
-                    </picture>
+                    <img src="img/w-logo.png"
+                         alt="logo">
+                </picture>
                 <div class="w-header-name">Wallet</div>
                 <div class="w-header-menu row">
                     <div class="w-menu-item active first-menu-item">Wallet</div>
@@ -46,16 +46,16 @@
         <div class="container">
             <div class="w-address-link">
                 <div class="w-address-row row">
-                   <div class="w-address-title">Address  <!--<span class="w-address-copy-mob">Copy</span>--></div>
+                    <div class="w-address-title">Address  <!--<span class="w-address-copy-mob">Copy</span>--></div>
                     <div class="w-address-hash  context" id="address">Recieving...</div>
-                   <!-- <div class="w-address-copy">
-                        <svg class="svg-copy-dims">
-                            <use xlink:href='#copy'/>
-                        </svg>
-                        <svg class="svg-done-tick-dims">
-                            <use xlink:href='#done-tick'/>
-                        </svg>
-                    </div> -->
+                    <!-- <div class="w-address-copy">
+                         <svg class="svg-copy-dims">
+                             <use xlink:href='#copy'/>
+                         </svg>
+                         <svg class="svg-done-tick-dims">
+                             <use xlink:href='#done-tick'/>
+                         </svg>
+                     </div> -->
                 </div>
                 <div class="w-address-row w-tiny-address row">
                     <div class="w-address-title">Tiny address:</div>
@@ -107,7 +107,7 @@
                                                  xlink:href="#download_arrow"></use>
                                         </svg>
                                     </a>
-                                    <input id="walletFileInput" type="file" name="name" style="display: none;" />
+                                    <input id="walletFileInput" type="file" name="name" style="display: none;"/>
                                     <a href="#" class="balance-btn btn btn-dark-tr walletButton restoreWallet">
                                         <span>Restore wallet</span>
                                         <svg class="svg-restore-dims">
@@ -155,23 +155,28 @@
                             </div>
 
 
-
                         </div>
                     </div>
 
 
                 </div>
                 <div class="w-content-item w-content-item-1">
-                    <div class="w-set-col">BitCoen Wallet - 0.9 beta</div><br>
-                    <div class="w-set-col" style="width: 100%">Is a beta Wallet build. This assembly may contain errors that could cause the loss of important data. Do not forget to keep a backup of your wallet.</div><br>
+                    <div class="w-set-col">BitCoen Wallet - 0.9 RC1</div>
+                    <br>
+                    <div class="w-set-col" style="width: 100%">Is a non-release Wallet build. This assembly may contain errors
+                        that could cause the loss of important data. Do not forget to keep a backup of your wallet.
+                    </div>
+                    <br>
                     <div class="w-set-row row">
                         <div class="w-set-col w-recalc">
-                            <a href="#" class="w-set-btn btn btn-dark-tr walletButton" id="replayNetwork">Recalculate blockchain</a>
+                            <a href="#" class="w-set-btn btn btn-dark-tr walletButton" id="replayNetwork">Recalculate
+                                blockchain</a>
                             <div class="w-set-text"><p>If you have problems with balance calculation use "Recalculate
                                 blockchain" button.</p></div>
                         </div>
                         <div class="w-set-col w-delete">
-                            <a href="#" class="w-set-btn btn btn-dark-tr walletButton" id="hardReset">Delete all blockchain data</a>
+                            <a href="#" class="w-set-btn btn btn-dark-tr walletButton" id="hardReset">Delete all
+                                blockchain data</a>
                             <div class="w-set-text"><p>If blockchain synchronization hangs up use "Delete all blockchain
                                 data" and restart wallet.</p>
                                 <p>It will delete all loaded blockchain data and automatically starts synchronization
@@ -184,7 +189,7 @@
                     </div>
                 </div>
             </div>
-            <div class="w-content-bar row footer-bar">
+            <div class="w-content-bar row footer-bar" style="background: white;">
                 <div class="w-bar">
                     <div class="w-bar-progress" id="syncProgress"></div>
                 </div>
@@ -197,7 +202,7 @@
                     <img id="badSignal" src="img/lk/done-tick.svg" alt="">
                     <img id="mediumSignal" src="img/lk/done-tick.svg" alt="">
                     <img id="goodSignal" src="img/lk/done-tick.svg" alt="">
-                    <span class="w-peers-nmbr" id="peers">3</span>
+                    <span class="w-peers-nmbr" id="peers">0</span>
                 </div>
             </div>
         </div>

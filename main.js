@@ -19,6 +19,7 @@ program
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
     .option('--new-chain', 'Generates keyring and token emission if possible', false)
     .option('--fall-on-errors', 'Allow stop node on uncaught exceptions', false)
+    .option('--http-port [port]', 'Interface and RPC binding port', 3001)
     .parse(process.argv);
 
 const getid = require('./modules/getid');
@@ -126,6 +127,11 @@ if(program.clear) {
 if(program.newChain) {
     config.newNetwork = true;
 }
+
+if(program.httpPort) {
+    config.httpPort = program.httpPort;
+}
+
 
 if(program.workDir) {
     config.workDir = program.workDir;

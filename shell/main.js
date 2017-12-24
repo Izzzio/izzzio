@@ -6,7 +6,7 @@
 
 
 const electron = require('electron');
-const {app, Menu, BrowserWindow, Tray} = electron;
+const {app, Menu, BrowserWindow, Tray, dialog} = electron;
 //const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
@@ -14,9 +14,23 @@ const url = require('url');
 
 let loaderWindow, walletWindow, trayIcon, core;
 
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 let rpcAddress = null;
 if(process.argv.length > 1) {
     rpcAddress = process.argv[1];
+}
+
+let shouldQuit = app.makeSingleInstance(function (commandLine, workingDirectory) {
+    if(walletWindow) {
+        walletWindow.show();
+    }
+});
+if(shouldQuit) {
+    app.quit();
+    return;
 }
 
 function createLoaderWindow() {
@@ -64,19 +78,29 @@ app.on('ready', function () {
         {
             label: 'Show Wallet',
             click: function () {
-                walletWindow.show();
+                if(walletWindow) {
+                    walletWindow.show();
+                } else {
+                    if(loaderWindow) {
+                        loaderWindow.show()
+                    }
+                }
             }
         },
         {type: 'separator'},
         {
             label: 'Quit',
             click() {
-                app.isQuiting = true;
-                walletWindow.hide();
-                core.kill('SIGINT');
-                setTimeout(function () {
+                try {
+                    app.isQuiting = true;
+                    walletWindow.hide();
+                    core.kill('SIGINT');
+                    setTimeout(function () {
+                        process.exit(0);
+                    }, 5000);
+                } catch (e) {
                     process.exit(0);
-                }, 5000);
+                }
             }
         }
     ]);
@@ -84,10 +108,16 @@ app.on('ready', function () {
     trayIcon.setToolTip('Bitcoen Wallet');
     trayIcon.setContextMenu(contextMenu);
     trayIcon.on('click', function () {
-        if(walletWindow.isVisible()) {
+        if(walletWindow && walletWindow.isVisible()) {
             return walletWindow.hide();
         }
-        walletWindow.show();
+        if(walletWindow) {
+            walletWindow.show();
+        } else if(loaderWindow) {
+            loaderWindow.show()
+        }
+
+
     });
     createLoaderWindow();
 
@@ -110,8 +140,8 @@ app.on('activate', function () {
 
 function createWalletWindow(address) {
 
-    let width = process.platform === 'darwin' ? 840 : 970;
-    let height = process.platform === 'darwin' ? 650 : 703;
+    let width = process.platform === 'darwin' ? 840 : 860;
+    let height = process.platform === 'darwin' ? 650 : 620;
     walletWindow = new BrowserWindow({
         width: width,
         height: height,
@@ -162,26 +192,65 @@ function startCore() {
     if(!fs.existsSync('../main.js')) {
         path = process.platform === 'darwin' ? __dirname + '/core/' : '../core/';
     }
-    core = spawn('./node', ['main.js', '--autofix', '--work-dir', app.getPath('userData')], {cwd: path});
+
+
+    core = spawn('./node', ['main.js', '--autofix', '--work-dir', app.getPath('userData'), '--http-port', getRandomInt(3000, 6000)], {cwd: path});
+
+    core.on('error', (code) => {
+        dialog.showErrorBox('Core starting error',
+            code + (process.platform === 'darwin' ? "\nIf you are using a Mac, try restarting the wallet." : '')
+        );
+        process.exit(1);
+    });
 
     core.stdout.on('data', (data) => {
         try {
-            loaderWindow.webContents.send('log', String(data));
+            if(loaderWindow) {
+                loaderWindow.webContents.send('log', String(data));
+            }
+        } catch (e) {
+
+        }
+
+        try {
+            if(walletWindow) {
+                walletWindow.webContents.send('log', String(data));
+            }
         } catch (e) {
 
         }
         console.log(String(data));
         detectCoreStarted(data);
+
+        if(String(data).indexOf('>>> Incoming transaction from') !== -1 && trayIcon) {
+            try {
+                trayIcon.displayBalloon({
+                    title: 'Income transaction',
+                    content: 'Income transaction ' + (String(data).split('amount')[1].split("\n")[0].replace('(unaccepted)', '').trim()) + ' BEN'
+                });
+            } catch (e) {
+            }
+        }
+
     });
 
     core.stderr.on('data', (data) => {
         console.log(String(data));
+        try {
+            if(walletWindow) {
+                walletWindow.webContents.send('log', String(data));
+            }
+        } catch (e) {
+
+        }
     });
 
     core.on('close', (code) => {
         if(!app.isQuiting) {
             console.log(`Core exit code ${code}`);
-            createLoaderWindow();
+            if(!loaderWindow) {
+                createLoaderWindow();
+            }
             try {
                 walletWindow.close();
             } catch (e) {
@@ -199,6 +268,21 @@ function startCore() {
             } catch (e) {
                 createWalletWindow('http://localhost:3001');
             }
+        }
+
+        if(data.indexOf("EADDRINUSE 127.0.0.1") !== -1) {
+            app.isQuiting = true;
+            try {
+                core.kill('SIGINT');
+            } catch (e) {
+
+            }
+            dialog.showErrorBox('Core starting error',
+                'The core can not be started. Interface binding address is already in use.'
+            );
+            setTimeout(function () {
+                process.exit(1);
+            }, 2000);
         }
     }
 }
