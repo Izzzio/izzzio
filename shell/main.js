@@ -78,6 +78,9 @@ app.on('ready', function () {
         {
             label: 'Show Wallet',
             click: function () {
+                if(app.isQuiting) {
+                    return;
+                }
                 if(walletWindow) {
                     walletWindow.show();
                 } else {
@@ -108,6 +111,9 @@ app.on('ready', function () {
     trayIcon.setToolTip('Bitcoen Wallet');
     trayIcon.setContextMenu(contextMenu);
     trayIcon.on('click', function () {
+        if(app.isQuiting) {
+            return;
+        }
         if(walletWindow && walletWindow.isVisible()) {
             return walletWindow.hide();
         }
@@ -133,7 +139,7 @@ app.on('activate', function () {
     if(loaderWindow === null && walletWindow === null) {
         createLoaderWindow()
     } else {
-        if(walletWindow) {
+        if(walletWindow && !app.isQuiting) {
             walletWindow.show();
         }
     }
