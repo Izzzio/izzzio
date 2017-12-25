@@ -133,7 +133,9 @@ app.on('activate', function () {
     if(loaderWindow === null && walletWindow === null) {
         createLoaderWindow()
     } else {
-        walletWindow.show();
+        if(walletWindow) {
+            walletWindow.show();
+        }
     }
 });
 
