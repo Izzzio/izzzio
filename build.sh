@@ -18,7 +18,7 @@ mkdir -p build
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     electron-packager . BitcoenShell --platform=linux --icon=logo.ico --out=build --overwrite
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    electron-packager . BitcoenShell --platform=darwin --icon=logo.ico --out=build --overwrite
+    electron-packager . BitcoenShell --platform=darwin --icon=logo.ico --out=build --overwrite --version=0.35.6 --app-bundle-id="com.bitcoen.bitcoenwallet" --app-version="1.0.0" --build-version="1.0.000" --osx-sign
 elif [[ "$OSTYPE" == "msys" ]]; then
      electron-packager . BitcoenShell --platform=win32 --icon=logo.ico --out=build --overwrite
 else
