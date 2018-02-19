@@ -1390,12 +1390,13 @@ img {
 
 .w-content-bar {
     align-items: center;
+    width: 100%;
 }
 
 .footer-bar{
     position: fixed;
     bottom: 0;
-    width: 90%;
+    /*width: 90%;*/
 }
 
 .w-bar {
@@ -1423,9 +1424,10 @@ img {
 }
 
 .w-peers {
-    margin-left: auto;
+
     display: flex;
     align-items: center;
+    margin-left: 25px;
 }
 
 .w-peers img {

@@ -19,6 +19,7 @@ program
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
     .option('--new-chain', 'Generates keyring and token emission if possible', false)
     .option('--fall-on-errors', 'Allow stop node on uncaught exceptions', false)
+    .option('--http-port [port]', 'Interface and RPC binding port', 3001)
     .parse(process.argv);
 
 const getid = require('./modules/getid');
@@ -41,11 +42,12 @@ const config = {
     allowMultipleConnectionsFromIp: true,//False - если в сети много зацикливаний, True - если используется прокси для коннекта
     maxPeers: 80,                       //Рекомендуемое число 15-20
 
+
     //Blockchain
     blockAcceptCount: 20,               //Количеств блоков подтверждения транзакции
     hearbeatInterval: 5000,             //Внутренний таймер ноды
     peerExchangeInterval: 5000,        //Частота обновления пиров
-    maxBlockSend: 300,                  //Должно быть больше blockQualityCheck
+    maxBlockSend: 600,                  //Должно быть больше blockQualityCheck
     blockQualityCheck: 100,             //Количество блоков "сверх", которое мы запрашиваем для проверки валидности цепочки
     limitedConfidenceBlockZone: 288,    //Зона "доверия". Цепочку ранее этой зоны менять нельзя. Должно быть больше blockQualityCheck
     generateEmptyBlockDelay: 300 * 1000,//5 минут - С какой частотой необхдимо выпускать пустые блоки в сеть при простое сети
@@ -74,7 +76,7 @@ const config = {
 
     //Messaging Bus
     enableMessaging: true,              //Разрешить использование шины сообщений (необходима для некоторых консенсусов)
-    recieverAddress: getid() + getid(), //Адрес ноды в сети
+    recieverAddress: getid() + getid() + getid(), //Адрес ноды в сети
     messagingMaxTTL: 3,                 //Максимальный предел скачков сообщения
     //maximumInputSize: 15 * 1024 * 1024, //Максимальный объем сообщения (здесь 15 мегабайт)
     maximumInputSize: 2 * 1024 * 1024,
@@ -126,6 +128,11 @@ if(program.clear) {
 if(program.newChain) {
     config.newNetwork = true;
 }
+
+if(program.httpPort) {
+    config.httpPort = program.httpPort;
+}
+
 
 if(program.workDir) {
     config.workDir = program.workDir;

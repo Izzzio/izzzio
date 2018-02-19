@@ -2,17 +2,23 @@
 
 * The description will be supplemented
 
-#### Dependencies
+## Releases
 
-iZ³ depends on Node.JS version >= 8.2.0
+You can found releases here [https://github.com/Izzzio/BitCoenWallet/releases](https://github.com/Izzzio/BitCoenWallet/releases)
 
-NPM version >= 5.3.0
-
-Wallet interface depends on Electron version >= 1.6.2
 
 ## Building
 
-Before building:
+
+#### Dependencies
+
+**iZ³ platform** depends on Node.JS version >= 8.2.0
+
+NPM version >= 5.3.0
+
+**BitCoen Wallet shell** depends on Electron version >= 1.6.2
+
+#### Before building:
 
 - Install electron packager
 
@@ -32,6 +38,8 @@ npm install
 ```
 
 in shell and root directory.
+
+#### Building
 
 For building Wallet for Windows, Linux and MacOs (Darwin) use build.sh shell script.
 You can use any bash-like interpreter to run. We recommend using git bash from Git console utils.

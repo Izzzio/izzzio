@@ -207,7 +207,7 @@ function updateWalletBlockInfo() {
     $('.frozenBalance').text(formatToken(frozenIncome));
 
 
-    let transanctionsList = walletBlocks.income.slice(-20).concat(walletBlocks.outcome.slice(-20));
+    let transanctionsList = walletBlocks.income.slice(-5).concat(walletBlocks.outcome.slice(-5));
     transanctionsList = transanctionsList.sort((a, b) => b.index - a.index);
     let lastTransactionList = '';
     for (let i of transanctionsList) {
@@ -480,11 +480,25 @@ $('#walletFileInput').change(function (evt) {
     reader.readAsText(evt.target.files[0]);
 });
 
+
+function rpcCall(command) {
+    $.post('/rpc', {command: command}, function (data) {
+        if(data) {
+            console.log(data);
+        }
+    });
+}
+
 //Electron interface functionality
 try {
     require('electron').ipcRenderer.on('createTransaction', function (event, message) {
         $('#createTransactionBtn').click();
     });
+
+    require('electron').ipcRenderer.on('log', function (event, message) {
+        console.log(message);
+    });
+
 
     const electron = require('electron');
     const remote = electron.remote;
@@ -534,5 +548,7 @@ try {
     setTimeout(function () {
         updateInfo();
     }, 10000);
+
+
 } catch (e) {
 }

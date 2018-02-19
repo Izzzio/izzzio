@@ -5,6 +5,7 @@
  */
 
 const express = require("express");
+const Wallet = require("./wallet");
 
 /**
  * Wallet and RPC interface
@@ -42,6 +43,10 @@ class Frontend {
             that.createTransaction(req, res)
         });
 
+        app.post('/createWallet', function (req, res) {
+            that.createWallet(req, res)
+        });
+
         app.post('/resyncBlockchain', function (req, res) {
             that.resyncBlockchain(req, res)
         });
@@ -55,6 +60,10 @@ class Frontend {
         });
 
         app.post('/restoreWallet', function (req, res) {
+            that.restoreWallet(req, res)
+        });
+
+        app.post('/changeWallet', function (req, res) {
             that.restoreWallet(req, res)
         });
 
@@ -103,18 +112,31 @@ class Frontend {
         that.blockHandler.getWallet(req.params.id, function (wallet) {
             res.send(JSON.parse(wallet));
         });
+    }
+
+    createWallet(req, res) {
+        let that = this;
+        that.blockchainObject.createNewWallet(function (wallet) {
+            wallet.status = 'ok';
+            res.send(wallet);
+        });
 
     }
 
     createTransaction(req, res) {
         let that = this;
-        res.send(that.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp)));
+        if(!that.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp), function (block) {
+                res.send(block);
+            })) {
+            res.send('false');
+        }
     }
+
 
     resyncBlockchain(req, res) {
         let that = this;
         that.blockHandler.resync();
-        res.send();
+        res.send({status: 'ok'});
     }
 
     downloadWallet(req, res) {
@@ -161,10 +183,11 @@ class Frontend {
         that.wallet.balance = Number(req.body.balance);
         that.wallet.update();
         setTimeout(function () {
-            that.blockHandler.resync();
-        },1000);
+            that.blockHandler.resync(function () {
+                res.send({status: 'ok'});
+            });
+        }, 1000);
 
-        res.send();
     }
 
 }
