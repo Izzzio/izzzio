@@ -133,9 +133,10 @@ function Blockchain(config) {
          * Запускает выполнение транзакции перевода
          * @param {string} reciever
          * @param {float} amount
+         * @param {function} transactCallback
          * @return {boolean}
          */
-        function transact(reciever, amount, fromTimestamp) {
+        function transact(reciever, amount, fromTimestamp, transactCallback) {
             wallet.transanctions = [];
             if(!wallet.transact(reciever, amount, fromTimestamp)) {
                 return false;
@@ -147,6 +148,7 @@ function Blockchain(config) {
                     addBlock(generatedBlock);
                     broadcastLastBlock();
                     cb(generatedBlock);
+                    transactCallback(generatedBlock);
                 });
             }, function () {
                 console.log('Info: Transaction accepted');
@@ -997,6 +999,36 @@ function Blockchain(config) {
         });
     }
 
+    /**
+     * Creates new Wallet in blockchain
+     * @param cb
+     */
+    function createNewWallet(cb) {
+        let wallet = new Wallet();
+        wallet.generate();
+        getLatestBlock(function (block) {
+            if((!block || moment().utc().valueOf() - block.timestamp > config.generateEmptyBlockDelay) && !config.newNetwork) { //если сеть не синхронизирована то повторяем позже
+                setTimeout(function () {
+                    createNewWallet(cb);
+                }, config.emptyBlockInterval);
+                return;
+            }
+
+            let blockData = wallet.transanctions.pop();
+            transactor.transact(blockData, function (blockData, blockCb) {
+                generateNextBlockAuto(blockData, function (generatedBlock) {
+                    addBlock(generatedBlock);
+                    broadcastLastBlock();
+                    blockCb(generatedBlock);
+                    cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
+                });
+            }, function () {
+                wallet.accepted = true;
+                //cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
+            });
+        });
+    }
+
 
     /**
      * Создаёт новый блок с помощью подходящего консенсуса
@@ -1176,6 +1208,7 @@ function Blockchain(config) {
         createMessage: createMessage,
         broadcastMessage: broadcastMessage,
         createWalletIfNotExsists: createWalletIfNotExsists,
+        createNewWallet: createNewWallet,
         keyringEmission: keyringEmission,
         coinEmission: coinEmission,
         genesisTiemstamp: genesisTiemstamp,

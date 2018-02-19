@@ -42,6 +42,7 @@ const config = {
     allowMultipleConnectionsFromIp: true,//False - если в сети много зацикливаний, True - если используется прокси для коннекта
     maxPeers: 80,                       //Рекомендуемое число 15-20
 
+
     //Blockchain
     blockAcceptCount: 20,               //Количеств блоков подтверждения транзакции
     hearbeatInterval: 5000,             //Внутренний таймер ноды

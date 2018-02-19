@@ -204,6 +204,9 @@ class BlockHandler {
                     return cb(false);
                 }
                 let id = block.data.id;
+                if(typeof id === 'undefined') {
+                    return cb(false);
+                }
                 that.wallets.get(id, function (err, val) {
                     if(!err) {
                         return cb(val);
@@ -216,6 +219,7 @@ class BlockHandler {
         if(id.indexOf('_') !== -1) {
             id = id.split('_')[0];
         }
+
         that.wallets.get(id, function (err, val) {
             if(!err) {
                 cb(val);
