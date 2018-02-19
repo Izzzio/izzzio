@@ -47,7 +47,7 @@ const config = {
     blockAcceptCount: 20,               //Количеств блоков подтверждения транзакции
     hearbeatInterval: 5000,             //Внутренний таймер ноды
     peerExchangeInterval: 5000,        //Частота обновления пиров
-    maxBlockSend: 300,                  //Должно быть больше blockQualityCheck
+    maxBlockSend: 600,                  //Должно быть больше blockQualityCheck
     blockQualityCheck: 100,             //Количество блоков "сверх", которое мы запрашиваем для проверки валидности цепочки
     limitedConfidenceBlockZone: 288,    //Зона "доверия". Цепочку ранее этой зоны менять нельзя. Должно быть больше blockQualityCheck
     generateEmptyBlockDelay: 300 * 1000,//5 минут - С какой частотой необхдимо выпускать пустые блоки в сеть при простое сети
@@ -76,7 +76,7 @@ const config = {
 
     //Messaging Bus
     enableMessaging: true,              //Разрешить использование шины сообщений (необходима для некоторых консенсусов)
-    recieverAddress: getid() + getid(), //Адрес ноды в сети
+    recieverAddress: getid() + getid() + getid(), //Адрес ноды в сети
     messagingMaxTTL: 3,                 //Максимальный предел скачков сообщения
     //maximumInputSize: 15 * 1024 * 1024, //Максимальный объем сообщения (здесь 15 мегабайт)
     maximumInputSize: 2 * 1024 * 1024,

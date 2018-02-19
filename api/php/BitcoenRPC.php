@@ -17,7 +17,17 @@ class BitcoenRPC
         'getWalletInfo'     => ['httpMethod' => 'get'],
     ];
 
+    const TINY_ADDRESS_PREFIX = 'BL_';
 
+    const MIL_TO_BEN = 10000000000;
+
+    /**
+     * cURL request
+     * @param string $method
+     * @param string $url
+     * @param array $params
+     * @return mixed|string
+     */
     private static function curlRequest($method = 'get', $url, $params = [])
     {
         $ch = curl_init();
@@ -39,16 +49,16 @@ class BitcoenRPC
         return $response;
     }
 
-    private static function get($url)
-    {
-        return self::curlRequest('get', $url);
-    }
-
-    private static function post($url, $params = [])
-    {
-        return self::curlRequest('post', $url, $params);
-    }
-
+    /**
+     * Make RPC request
+     * @param string $method
+     * @param array $params
+     * @param string $paramStr
+     * @return array|mixed
+     * @throws InvalidMethodException
+     * @throws ReturnException
+     * @throws RpcCallException
+     */
     private function request($method, $params = [], $paramStr = '')
     {
         if (empty(self::METHODS[$method])) {
@@ -71,7 +81,10 @@ class BitcoenRPC
         return $response;
     }
 
-
+    /**
+     * BitcoenRPC constructor.
+     * @param string $RPCUrl
+     */
     public function __construct($RPCUrl = 'http://localhost:3001/')
     {
         $this->_baseUrl = $RPCUrl;
@@ -113,7 +126,7 @@ class BitcoenRPC
      * @throws ReturnException
      * @throws RpcCallException
      */
-    public function changeWallet($id, $private, $public)
+    public function changeWalletByData($id, $private, $public)
     {
         if ($this->getWallet() === $id) {
             return ['status' => 'ok'];
@@ -125,6 +138,19 @@ class BitcoenRPC
             'private' => $private,
             'balance' => 0,
         ]);
+    }
+
+    /**
+     * Change current wallet for node. The transactions list was recalculated Which can take a long time
+     * @param array $wallet Array returned from create wallet method
+     * @return array
+     * @throws InvalidMethodException
+     * @throws ReturnException
+     * @throws RpcCallException
+     */
+    public function changeWallet($wallet)
+    {
+        return $this->changeWalletByData($wallet['id'], $wallet['keysPair']['private'], $wallet['keysPair']['public']);
     }
 
     /**
@@ -196,6 +222,36 @@ class BitcoenRPC
     public function getWalletInfo($id)
     {
         return $this->request('getWalletInfo', [], '/' . urldecode($id));
+    }
+
+    /**
+     * Gets tiny address for wallet array
+     * @param array $wallet
+     * @return string
+     */
+    public static function getTinyAddress($wallet)
+    {
+        return self::TINY_ADDRESS_PREFIX . $wallet['block'];
+    }
+
+    /**
+     * Converts Mil to Ben amount
+     * @param int $amount
+     * @return float|int
+     */
+    public static function mil2Ben($amount)
+    {
+        return $amount / self::MIL_TO_BEN;
+    }
+
+    /**
+     * Converts Ben to mil amount
+     * @param float|int $amount
+     * @return int
+     */
+    public static function ben2Mil($amount)
+    {
+        return round($amount * self::MIL_TO_BEN);
     }
 
 }
