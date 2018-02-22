@@ -720,6 +720,8 @@ function Blockchain(config) {
 
     }
 
+    let replaceChainTimer = null;
+
     /**
      * Производим замену цепочки на обновлённую
      * @param {Block[]} newBlocks
@@ -745,7 +747,12 @@ function Blockchain(config) {
                 responseLatestMsg(function (msg) {
                     broadcast(msg);
                 });
-                blockHandler.resync();
+
+                clearInterval(replaceChainTimer);
+                replaceChainTimer = setTimeout(function () {
+                    blockHandler.resync();
+                }, config.peerExchangeInterval + 1000);
+
             });
 
         } else {

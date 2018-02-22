@@ -45,7 +45,7 @@ const config = {
 
     //Blockchain
     blockAcceptCount: 20,               //Количеств блоков подтверждения транзакции
-    hearbeatInterval: 5000,             //Внутренний таймер ноды
+    hearbeatInterval: 2000,             //Внутренний таймер ноды
     peerExchangeInterval: 5000,        //Частота обновления пиров
     maxBlockSend: 600,                  //Должно быть больше blockQualityCheck
     blockQualityCheck: 100,             //Количество блоков "сверх", которое мы запрашиваем для проверки валидности цепочки

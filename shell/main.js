@@ -371,7 +371,18 @@ const menuTemplate = [
             {
                 label: 'Block Explorer',
                 click() {
-                    require('electron').shell.openExternal('http://explorer.bitcoen.io/')
+                    let about = new BrowserWindow({
+                        width: 1024,
+                        height: 768,
+                        show: true,
+                        icon: __dirname + '/Bitcoen.png',
+                        webPreferences: {
+                            zoomFactor: 0.8,
+                        }
+                    });
+                    about.loadURL('http://explorer.bitcoen.io/');
+                    //about.webContents.openDevTools();
+                    about.setMenu(null);
                 }
             },
             {type: 'separator'},

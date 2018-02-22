@@ -11,6 +11,9 @@ let precision = 1000;
 let maxBlock = 0;
 let walletBlocks = {income: [], outcome: []};
 
+let syncFlag = false;
+let syncPercent = 0;
+
 moment.locale('ru');
 
 
@@ -33,6 +36,7 @@ function formatToken(number) {
     return (result.length <= nulls ? '0' : result.slice(0, -nulls)) + '.' + right;
 }
 
+
 /**
  * Updates wallet info
  */
@@ -54,12 +58,14 @@ function updateInfo() {
         controlSignalInfo(data.peers);
         formatMinerInfo(data.miners, data.minerForce);
 
-        if(data.syncInProgress) {
+        if(data.syncInProgress || syncPercent < 95) {
             $('#syncInProgress').show();
             $('.walletButton').attr('disabled', true);
+            syncFlag = true;
         } else {
             $('#syncInProgress').hide();
             $('.walletButton').attr('disabled', false);
+            syncFlag = false;
         }
 
         blocksToAccept = data.options.blocksToAccept;
@@ -105,6 +111,12 @@ function formatBlockProgress(block, maxBlockLocal) {
     let percent = Math.round((first / second) * 100) + 1;*/
     let percent = Math.round((block.index / maxBlock) * 100) + 1;
     $('#syncProgress').css('width', percent + '%');
+    syncPercent = percent;
+    if(percent < 95){
+        $('#syncInProgress').hide();
+        $('.walletButton').attr('disabled', false);
+        syncFlag = true;
+    }
 
 }
 
@@ -224,7 +236,7 @@ function updateWalletBlockInfo() {
     lastTransactionList += '';
 
 
-    if(transanctionsList.length > 0) {
+    if(transanctionsList.length > 0 && !syncFlag) {
         $('#lastTransactions').html(lastTransactionList);
     }
 
@@ -318,7 +330,9 @@ $('#recipient, #amount, #fromDate, #fromTime').change(function () {
         if(data) {
             $('#recipientAddress').text(collapsedAddress(data.id));
             $('#recipientAddressFull').text(data.id);
-            $('#recipientTinyAddress').text('BL_' + data.block);
+            if(!syncFlag) {
+                $('#recipientTinyAddress').text('BL_' + data.block);
+            }
             $('#recipientAmount').text(formatToken($('#amount').val() * precision));
             let amount = Number($('#amount').val() * precision);
             let newBalance = realBalance - amount;
