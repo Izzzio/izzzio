@@ -31,6 +31,7 @@ const config = {
     p2pPort: 6013,                      //Порт p2p (лучше везде оставить одинаковым)
     sslMode: false,                     //Включить режим SSL
     httpServer: 'localhost',            //Адрес биндинга RPC и интерфейса
+    rpcPassword: getid()+getid(),
     initialPeers: [                     //Стартовые узлы, для синхронизации с сетью
         'ws://node1.bitcoen.io:6013',
         'wss://bitcoen.io/blockchain',

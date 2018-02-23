@@ -272,6 +272,14 @@ function startCore() {
         if(data.indexOf(detectionStr) !== -1) {
             try {
                 let server = data.split(detectionStr)[1].split("\n")[0].replace(':', '').trim();
+                let password = server.split('@')[1];
+                server = server.split('@')[0];
+
+                app.on('login', function (event, webContents, request, authInfo, callback) {
+                    event.preventDefault();
+                    callback(password, password);
+                });
+
                 createWalletWindow('http://' + server);
             } catch (e) {
                 createWalletWindow('http://localhost:3001');
