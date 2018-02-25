@@ -86,7 +86,7 @@ class Transactor {
                     return;// cb();
                 }
 
-                if((block.index + that.options.acceptCount) <= that.maxBlock) {
+                if((Number(block.index) + Number(that.options.acceptCount)) <= Number(that.maxBlock)) {
                     console.log('Transactor: Block ' + i.block.index + ' was accepted to network.');
                     if(typeof that.transactions[i.index].accepted !== 'undefined') {
                         that.transactions[i.index].accepted(block);

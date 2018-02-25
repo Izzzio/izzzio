@@ -272,6 +272,14 @@ function startCore() {
         if(data.indexOf(detectionStr) !== -1) {
             try {
                 let server = data.split(detectionStr)[1].split("\n")[0].replace(':', '').trim();
+                let password = server.split('@')[1];
+                server = server.split('@')[0];
+
+                app.on('login', function (event, webContents, request, authInfo, callback) {
+                    event.preventDefault();
+                    callback(password, password);
+                });
+
                 createWalletWindow('http://' + server);
             } catch (e) {
                 createWalletWindow('http://localhost:3001');
@@ -371,7 +379,18 @@ const menuTemplate = [
             {
                 label: 'Block Explorer',
                 click() {
-                    require('electron').shell.openExternal('http://explorer.bitcoen.io/')
+                    let about = new BrowserWindow({
+                        width: 1024,
+                        height: 768,
+                        show: true,
+                        icon: __dirname + '/Bitcoen.png',
+                        webPreferences: {
+                            zoomFactor: 0.8,
+                        }
+                    });
+                    about.loadURL('http://explorer.bitcoen.io/');
+                    //about.webContents.openDevTools();
+                    about.setMenu(null);
                 }
             },
             {type: 'separator'},

@@ -22,6 +22,7 @@ function Blockchain(config) {
 
     const CryptoJS = require("crypto-js");
     const express = require("express");
+    const auth = require('http-auth');
     const bodyParser = require('body-parser');
     const WebSocket = require("ws");
     const levelup = require('level');
@@ -37,6 +38,23 @@ function Blockchain(config) {
     const Transactor = require('./modules/transactor');
     const Frontend = require('./modules/frontend');
     const app = express();
+
+
+    const basic = auth.basic({
+            realm: "RPC Auth"
+        }, (username, password, callback) => {
+            if(config.rpcPassword.length === 0) {
+                callback(true);
+                return;
+            }
+            callback(password === config.rpcPassword);
+        }
+    );
+
+    if(config.rpcPassword.length !== 0) {
+        app.use(auth.connect(basic));
+    }
+
     app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
         extended: false
     }));
@@ -336,7 +354,8 @@ function Blockchain(config) {
             res.send('');
         });
 
-        app.listen(config.httpPort, config.httpServer, () => console.log('Init: Listening http on: ' + config.httpServer + ':' + config.httpPort));
+        let server = app.listen(config.httpPort, config.httpServer, () => console.log('Init: Listening http on: ' + config.httpServer + ':' + config.httpPort + '@' + config.rpcPassword));
+        server.timeout = 0;
     }
 
 
@@ -720,6 +739,8 @@ function Blockchain(config) {
 
     }
 
+    let replaceChainTimer = null;
+
     /**
      * Производим замену цепочки на обновлённую
      * @param {Block[]} newBlocks
@@ -745,7 +766,12 @@ function Blockchain(config) {
                 responseLatestMsg(function (msg) {
                     broadcast(msg);
                 });
-                blockHandler.resync();
+
+                clearInterval(replaceChainTimer);
+                replaceChainTimer = setTimeout(function () {
+                    blockHandler.resync();
+                }, config.peerExchangeInterval + 1000);
+
             });
 
         } else {
@@ -1020,11 +1046,12 @@ function Blockchain(config) {
                     addBlock(generatedBlock);
                     broadcastLastBlock();
                     blockCb(generatedBlock);
-                    cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
+                    config.recieverAddress = getid() + getid() + getid();
+                    //cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
                 });
-            }, function () {
+            }, function (generatedBlock) {
                 wallet.accepted = true;
-                //cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
+                cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
             });
         });
     }

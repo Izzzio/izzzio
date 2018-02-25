@@ -11,7 +11,8 @@ require 'BitcoenRPC.php';
 $bitcoen = new BitcoenRPC();
 
 $wallet = $bitcoen->createWallet();
-
+var_dump($wallet);
+/*
 $bitcoen->changeWallet($wallet);
 
 echo "New wallet address: " . $wallet['id'] . "\n";
@@ -33,3 +34,4 @@ try {
 } catch (ReturnException $e) {
     echo "Can't create transaction\n";
 }
+*/
