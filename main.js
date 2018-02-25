@@ -19,7 +19,10 @@ program
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
     .option('--new-chain', 'Generates keyring and token emission if possible', false)
     .option('--fall-on-errors', 'Allow stop node on uncaught exceptions', false)
+    .option('--block-accept-count [count]', 'Number of blocks to confirm transaction', 20)
     .option('--http-port [port]', 'Interface and RPC binding port', 3001)
+    .option('--disable-rpc-password', 'Disable RPC password', false)
+    .option('--disable-mining', 'Completely disables mining', false)
     .parse(process.argv);
 
 const getid = require('./modules/getid');
@@ -31,7 +34,7 @@ const config = {
     p2pPort: 6013,                      //Порт p2p (лучше везде оставить одинаковым)
     sslMode: false,                     //Включить режим SSL
     httpServer: 'localhost',            //Адрес биндинга RPC и интерфейса
-    rpcPassword: getid()+getid(),
+    rpcPassword: getid() + getid(),
     initialPeers: [                     //Стартовые узлы, для синхронизации с сетью
         'ws://node1.bitcoen.io:6013',
         'wss://bitcoen.io/blockchain',
@@ -134,6 +137,13 @@ if(program.httpPort) {
     config.httpPort = program.httpPort;
 }
 
+if(program.disableRpcPassword) {
+    config.rpcPassword = '';
+}
+
+if(program.blockAcceptCount) {
+    config.blockAcceptCount = program.blockAcceptCount;
+}
 
 if(program.workDir) {
     config.workDir = program.workDir;

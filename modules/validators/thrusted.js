@@ -284,6 +284,12 @@ function isReady() {
         /*console.log(previousBlock.sign.length);
         console.log(moment().utc().valueOf() - previousBlock.timestamp);*/
 
+        if(typeof previousBlock.sign === 'undefined'){
+            console.log(previousBlock);
+            isReadyNow = false;
+            return isReadyNow;
+        }
+
         if(previousBlock.sign.length !== 0 && moment().utc().valueOf() - previousBlock.timestamp > ThrustedNodesTimeout) {
             isReadyNow = false;
         } else {

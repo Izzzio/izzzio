@@ -39,13 +39,21 @@ function Blockchain(config) {
     const Frontend = require('./modules/frontend');
     const app = express();
 
+
     const basic = auth.basic({
             realm: "RPC Auth"
         }, (username, password, callback) => {
+            if(config.rpcPassword.length === 0) {
+                callback(true);
+                return;
+            }
             callback(password === config.rpcPassword);
         }
     );
-    app.use(auth.connect(basic));
+
+    if(config.rpcPassword.length !== 0) {
+        app.use(auth.connect(basic));
+    }
 
     app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
         extended: false
@@ -346,7 +354,8 @@ function Blockchain(config) {
             res.send('');
         });
 
-        app.listen(config.httpPort, config.httpServer, () => console.log('Init: Listening http on: ' + config.httpServer + ':' + config.httpPort+'@'+config.rpcPassword));
+        let server = app.listen(config.httpPort, config.httpServer, () => console.log('Init: Listening http on: ' + config.httpServer + ':' + config.httpPort + '@' + config.rpcPassword));
+        server.timeout = 0;
     }
 
 
@@ -1037,11 +1046,12 @@ function Blockchain(config) {
                     addBlock(generatedBlock);
                     broadcastLastBlock();
                     blockCb(generatedBlock);
-                    cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
+                    config.recieverAddress = getid() + getid() + getid();
+                    //cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
                 });
-            }, function () {
+            }, function (generatedBlock) {
                 wallet.accepted = true;
-                //cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
+                cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
             });
         });
     }

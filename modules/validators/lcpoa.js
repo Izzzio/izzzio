@@ -193,6 +193,9 @@ function generateEmptyBlockCheck() {
  * @return {boolean}
  */
 function isReady() {
+    if(blockchain.config.program.disableMining){
+        return false;
+    }
     return true;
 }
 
