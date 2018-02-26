@@ -9,12 +9,13 @@ class BitcoenRPC
 {
     private $_baseUrl = 'http://localhost:3001/';
     const METHODS = [
-        'getInfo'           => ['httpMethod' => 'get'],
-        'createWallet'      => ['httpMethod' => 'post'],
-        'changeWallet'      => ['httpMethod' => 'post'],
-        'getTransactions'   => ['httpMethod' => 'get'],
-        'createTransaction' => ['httpMethod' => 'post'],
-        'getWalletInfo'     => ['httpMethod' => 'get'],
+        'getInfo'            => ['httpMethod' => 'get'],
+        'createWallet'       => ['httpMethod' => 'post'],
+        'changeWallet'       => ['httpMethod' => 'post'],
+        'getTransactions'    => ['httpMethod' => 'get'],
+        'createTransaction'  => ['httpMethod' => 'post'],
+        'instantTransaction' => ['httpMethod' => 'post'],
+        'getWalletInfo'      => ['httpMethod' => 'get'],
     ];
 
     const TINY_ADDRESS_PREFIX = 'BL_';
@@ -189,6 +190,53 @@ class BitcoenRPC
             'fromTimestamp' => $activationTimestamp,
         ]);
     }
+
+
+    /**
+     * Creates transaction from specefied wallet. Throws ReturnException if creation error
+     * @param string $to Transaction recipient full address
+     * @param int $amount Transaction amount in Mil
+     * @param string $from Sender full address
+     * @param string $public Public key
+     * @param string $private Private key
+     * @param int|string $activationTimestamp Transaction activation timestamp, or "now" for instant activation
+     * @return array
+     * @throws InvalidMethodException
+     * @throws ReturnException
+     * @throws RpcCallException
+     */
+    public function instantTransactionData($to, $amount, $from, $public, $private, $activationTimestamp = 'now')
+    {
+        if (strtolower($activationTimestamp) === 'now') {
+            $activationTimestamp = time() * 1000;
+        }
+
+        return $this->request('instantTransaction', [
+            'id'            => $to,
+            'from'          => $from,
+            'amount'        => $amount,
+            'fromTimestamp' => $activationTimestamp,
+            'public'        => $public,
+            'private'       => $private,
+        ]);
+    }
+
+    /**
+     * Creates transaction from specefied wallet. Throws ReturnException if creation error
+     * @param string $to Transaction recipient full address
+     * @param int $amount Transaction amount in Mil
+     * @param array $wallet Wallet array from createWallet method
+     * @param int|string $activationTimestamp Transaction activation timestamp, or "now" for instant activation
+     * @return array
+     * @throws InvalidMethodException
+     * @throws ReturnException
+     * @throws RpcCallException
+     */
+    public function instantTransaction($to, $amount, $wallet, $activationTimestamp = 'now')
+    {
+        return $this->instantTransactionData($to, $amount, $wallet['id'], $wallet['keysPair']['public'], $wallet['keysPair']['private'], $activationTimestamp);
+    }
+
 
     /**
      * Get income and outcome transactions lists for current wallet
