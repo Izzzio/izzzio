@@ -1046,7 +1046,7 @@ function Blockchain(config) {
                     addBlock(generatedBlock);
                     broadcastLastBlock();
                     blockCb(generatedBlock);
-                    config.recieverAddress = getid() + getid() + getid();
+
                     //cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
                 });
             }, function (generatedBlock) {
@@ -1054,6 +1054,13 @@ function Blockchain(config) {
                 cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
             });
         });
+    }
+
+    /**
+     * Generates new sender address
+     */
+    function rotateAddress(){
+        config.recieverAddress = getid() + getid() + getid();
     }
 
 
@@ -1064,6 +1071,9 @@ function Blockchain(config) {
      * @param cancelCondition
      */
     function generateNextBlockAuto(blockData, cb, cancelCondition) {
+        if(config.program.enableAddressRotation){
+            rotateAddress();
+        }
         let validatorReversed = config.validators;
         /**
          * Модули консенсусов изначально расположены в порядке повышения приоритета.

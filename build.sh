@@ -16,13 +16,13 @@ rm -Rf build
 mkdir -p build
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    electron-packager . BitcoenShell --platform=linux --icon=logo.ico --out=build --overwrite
+    electron-packager . BitcoenWallet --platform=linux --icon=logo.ico --out=build --overwrite
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    electron-packager . BitcoenShell --platform=darwin --icon=logo.ico --out=build --overwrite --version=0.35.6 --app-bundle-id="com.bitcoen.bitcoenwallet" --app-version="1.0.0" --build-version="1.0.000" --osx-sign
+    electron-packager . BitcoenWallet --platform=darwin --icon=logo.ico --out=build --overwrite --version=0.35.6 --app-bundle-id="com.bitcoen.bitcoenwallet" --app-version="1.0.0" --build-version="1.0.000" --osx-sign
 elif [[ "$OSTYPE" == "msys" ]]; then
-     electron-packager . BitcoenShell --platform=win32 --icon=logo.ico --out=build --overwrite
+     electron-packager . BitcoenWallet --platform=win32 --icon=logo.ico --out=build --overwrite
 else
-     electron-packager . BitcoenShell --platform=all --icon=logo.ico --out=build --overwrite
+     electron-packager . BitcoenWallet --platform=all --icon=logo.ico --out=build --overwrite
 fi
 
 cp -Rf build/* ../build/
@@ -37,15 +37,15 @@ fi
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     cd ..
-    cp -R core BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/
-    cp -f ../buildBinary/node_darwin BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/core/node
-    chmod 777 BitcoenShell-darwin-x64/BitcoenShell.app/Contents/Resources/app/core/node
+    cp -R core BitcoenWallet-darwin-x64/BitcoenWallet.app/Contents/Resources/app/
+    cp -f ../buildBinary/node_darwin BitcoenWallet-darwin-x64/BitcoenWallet.app/Contents/Resources/app/core/node
+    chmod 777 BitcoenWallet-darwin-x64/BitcoenWallet.app/Contents/Resources/app/core/node
 
-    rm -R ../installers/BitcoenShell.app
-    cp -R BitcoenShell-darwin-x64/BitcoenShell.app ../installers/
+    rm -R ../installers/BitcoenWallet.app
+    cp -R BitcoenWallet-darwin-x64/BitcoenWallet.app ../installers/
     cd ../installers/
-    rm -R BitcoenShell-darwin-x64.dmg
-    appdmg dmg.json BitcoenShell-darwin-x64.dmg
+    rm -R BitcoenWallet-darwin-x64.dmg
+    appdmg dmg.json BitcoenWallet-darwin-x64.dmg
 fi
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
