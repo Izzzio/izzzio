@@ -61,10 +61,12 @@ function updateInfo() {
         if(data.syncInProgress || syncPercent < 95) {
             $('#syncInProgress').show();
             $('.walletButton').attr('disabled', true);
+            $('#tiny').hide();
             syncFlag = true;
         } else {
             $('#syncInProgress').hide();
             $('.walletButton').attr('disabled', false);
+            $('#tiny').show();
             syncFlag = false;
         }
 

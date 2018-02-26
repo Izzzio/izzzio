@@ -23,6 +23,7 @@ program
     .option('--http-port [port]', 'Interface and RPC binding port', 3001)
     .option('--disable-rpc-password', 'Disable RPC password', false)
     .option('--disable-mining', 'Completely disables mining', false)
+    .option('--enable-address-rotation', 'Activates the rotation of the addresses', false)
     .parse(process.argv);
 
 const getid = require('./modules/getid');
