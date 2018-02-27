@@ -13,6 +13,7 @@ let walletBlocks = {income: [], outcome: []};
 
 let syncFlag = false;
 let syncPercent = 0;
+let peersCount = 0;
 
 moment.locale('ru');
 
@@ -58,10 +59,12 @@ function updateInfo() {
         controlSignalInfo(data.peers);
         formatMinerInfo(data.miners, data.minerForce);
 
-        if(data.syncInProgress || syncPercent < 95) {
+        if(data.syncInProgress || syncPercent < 95 || peersCount === 0) {
             $('#syncInProgress').show();
             $('.walletButton').attr('disabled', true);
-            $('#tiny').hide();
+            if(data.syncInProgress || syncPercent < 95) {
+                $('#tiny').hide();
+            }
             syncFlag = true;
         } else {
             $('#syncInProgress').hide();
@@ -114,7 +117,7 @@ function formatBlockProgress(block, maxBlockLocal) {
     let percent = Math.round((block.index / maxBlock) * 100) + 1;
     $('#syncProgress').css('width', percent + '%');
     syncPercent = percent;
-    if(percent < 95){
+    if(percent < 95) {
         $('#syncInProgress').hide();
         $('.walletButton').attr('disabled', false);
         syncFlag = true;
@@ -127,6 +130,24 @@ function formatBlockProgress(block, maxBlockLocal) {
  * @param peers
  */
 function controlSignalInfo(peers) {
+    let peersList = '';
+    peersCount = 0;
+    for (let a in peers) {
+        if(peers.hasOwnProperty(a)) {
+            if(peers[a].indexOf('127.0.0.1') === -1) {
+                peersList += "\n" + peers[a];
+                peersCount++;
+            }
+        }
+    }
+
+    if(peersCount === 0) {
+        $('#peers').attr('title', 'No peers');
+    } else {
+        $('#peers').attr('title', 'Current peers: ' + (peersList.trim().replace("\n", ', ')));
+    }
+
+    peers = peersCount;
     if(peers < 4) {
         $('#noSignal').show();
         $('#badSignal').hide();
@@ -225,12 +246,12 @@ function updateWalletBlockInfo() {
     transanctionsList = transanctionsList.sort((a, b) => b.index - a.index);
     let lastTransactionList = '';
     for (let i of transanctionsList) {
-        lastTransactionList += ' <div class="w-transact-row ' + (i.index > ( maxBlock - blockToAccept) ? 'w-transact-accepted' : 'w-transact-accepted') + '  row">';
+        lastTransactionList += ' <div class="w-transact-row ' + (i.index > (maxBlock - blockToAccept) ? 'w-transact-accepted' : 'w-transact-accepted') + '  row">';
         let data = JSON.parse(i.data);
         if(walletBlocks.income.indexOf(i) !== -1) {
-            lastTransactionList += ' <div class="w-transact-ammount w-transact-ammount-income">' + formatToken(data.amount) + ' BEN</div> <div class="w-transact-from"> ' + collapsedAddress(data.from) + '</div>' + (i.index > ( maxBlock - blockToAccept) ? '<div  class="w-transact-answer" style="color: red">Unaccepted</div>' : '<div  class="w-transact-answer">Accepted</div>') + '<div class="w-transact-from-full context">' + data.from + '</div>';
+            lastTransactionList += ' <div class="w-transact-ammount w-transact-ammount-income">' + formatToken(data.amount) + ' BEN</div> <div class="w-transact-from"> ' + collapsedAddress(data.from) + '</div>' + (i.index > (maxBlock - blockToAccept) ? '<div  class="w-transact-answer" style="color: red">Unaccepted</div>' : '<div  class="w-transact-answer">Accepted</div>') + '<div class="w-transact-from-full context">' + data.from + '</div>';
         } else {
-            lastTransactionList += ' <div class="w-transact-ammount w-transact-ammount-outcome">' + formatToken(data.amount) + ' BEN</div> <div class="w-transact-from"> ' + collapsedAddress(data.to) + '</div>' + (i.index > ( maxBlock - blockToAccept) ? '<div  class="w-transact-answer" style="color: red">Unaccepted</div>' : '<div  class="w-transact-answer">Accepted</div>') + '<div class="w-transact-from-full context">' + data.to + '</div>';
+            lastTransactionList += ' <div class="w-transact-ammount w-transact-ammount-outcome">' + formatToken(data.amount) + ' BEN</div> <div class="w-transact-from"> ' + collapsedAddress(data.to) + '</div>' + (i.index > (maxBlock - blockToAccept) ? '<div  class="w-transact-answer" style="color: red">Unaccepted</div>' : '<div  class="w-transact-answer">Accepted</div>') + '<div class="w-transact-from-full context">' + data.to + '</div>';
         }
 
         lastTransactionList += '</div>';
@@ -281,7 +302,7 @@ function transanctionsPage() {
     for (let i of transanctionsList) {
         let income = walletBlocks.income.indexOf(i) !== -1;//active
         let data = JSON.parse(i.data);
-        let accepted = !(i.index > ( maxBlock - blockToAccept));
+        let accepted = !(i.index > (maxBlock - blockToAccept));
 
         data.amount = Math.round(data.amount);
         if(income) {
@@ -290,7 +311,7 @@ function transanctionsPage() {
             totalOutcome += data.amount;
         }
 
-        htmlTransList += '<div class="w-tr-table-row row ' + ( accepted ? '' : 'info') + '">';
+        htmlTransList += '<div class="w-tr-table-row row ' + (accepted ? '' : 'info') + '">';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-block">' + i.index + '</div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-oper ' + (income ? 'w-oper-plus' : 'w-oper-minus') + ' "></div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-amount">' + formatToken(data.amount) + '</div>';

@@ -144,7 +144,7 @@ function Blockchain(config) {
          * @param {Function} cb
          */
         function getSomeInfo(cb) {
-            cb(miningNow, miningForce, getCurrentPeers().length);
+            cb(miningNow, miningForce, getCurrentPeers());
         },
 
         /**
