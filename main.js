@@ -42,6 +42,12 @@ const config = {
         'ws://node2.bitcoen.io:6013',
         'ws://node3.bitcoen.io:6013',
         'ws://node4.bitcoen.io:6013',
+        'ws://node5.bitcoen.io:6013',
+        'ws://node6.bitcoen.io:6013',
+        'ws://node7.bitcoen.io:6013',
+        'ws://node8.bitcoen.io:6013',
+        'ws://node9.bitcoen.io:6013',
+        'ws://node10.bitcoen.io:6013',
         //'ws://localhost:6013',
     ],
     allowMultipleConnectionsFromIp: true,//False - если в сети много зацикливаний, True - если используется прокси для коннекта

@@ -43,6 +43,10 @@ class Frontend {
             that.createTransaction(req, res)
         });
 
+        app.post('/instantTransaction', function (req, res) {
+            that.instantTransaction(req, res)
+        });
+
         app.post('/createWallet', function (req, res) {
             that.createWallet(req, res)
         });
@@ -187,6 +191,43 @@ class Frontend {
                 res.send({status: 'ok'});
             });
         }, 1000);
+
+    }
+
+    instantTransaction(req, res) {
+        let that = this;
+        /**
+         *
+         * @type {Wallet}
+         */
+        let wallet = new Wallet();
+
+        wallet.enableLogging=false;
+        wallet.block = 0;
+        wallet.balance = 1000000000000000;
+        wallet.id = req.body.from;
+
+        wallet.keysPair.public = req.body.public;
+        wallet.keysPair.private = req.body.private;
+
+        wallet.transanctions = [];
+
+        if(!wallet.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp))) {
+            //return false;
+        }
+
+        let blockData = wallet.transanctions.pop();
+
+        that.blockchainObject.transactor.transact(blockData, function (blockData, cb) {
+            that.blockchainObject.generateNextBlockAuto(blockData, function (generatedBlock) {
+                that.blockchainObject.addBlock(generatedBlock);
+                that.blockchainObject.broadcastLastBlock();
+                cb(generatedBlock);
+            });
+        }, function (generatedBlock) {
+            res.send(generatedBlock);
+        });
+
 
     }
 
