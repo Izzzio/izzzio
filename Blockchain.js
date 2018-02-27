@@ -948,7 +948,7 @@ function Blockchain(config) {
     function peerExchange() {
         broadcastConnectedPeers();
         let peersToConnect = getCurrentPeers();
-        if(peersToConnect.length === 0) {
+        if(peersToConnect.length < 2) {
             peersToConnect = peers;
         }
         connectToPeers(peersToConnect);
@@ -1059,7 +1059,7 @@ function Blockchain(config) {
     /**
      * Generates new sender address
      */
-    function rotateAddress(){
+    function rotateAddress() {
         config.recieverAddress = getid() + getid() + getid();
     }
 
@@ -1071,7 +1071,7 @@ function Blockchain(config) {
      * @param cancelCondition
      */
     function generateNextBlockAuto(blockData, cb, cancelCondition) {
-        if(config.program.enableAddressRotation){
+        if(config.program.enableAddressRotation) {
             rotateAddress();
         }
         let validatorReversed = config.validators;
