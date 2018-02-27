@@ -49,7 +49,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     appdmg dmg.json BitcoenWallet-darwin-x64.dmg
 
 
-    cd ../build/core
+    cd ../build/
     cp -R core BitcoenWalletUnsigned-darwin-x64/BitcoenWalletUnsigned.app/Contents/Resources/app/
     cp -f ../buildBinary/node_darwin BitcoenWalletUnsigned-darwin-x64/BitcoenWalletUnsigned.app/Contents/Resources/app/core/node
     chmod 777 BitcoenWalletUnsigned-darwin-x64/BitcoenWalletUnsigned.app/Contents/Resources/app/core/node
