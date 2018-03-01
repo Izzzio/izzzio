@@ -172,7 +172,7 @@ let Wallet = function (walletFile, config) {
             return 'BL_' + wallet.block;
         }
 
-        return wallet.id + (wallet.block === -1 ? '' : ('_' + wallet.block))
+        return wallet.id;// + (wallet.block === -1 ? '' : ('_' + wallet.block))
     };
 
     /**
