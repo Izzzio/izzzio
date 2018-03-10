@@ -1025,7 +1025,7 @@ function Blockchain(config) {
                     setTimeout(keyringEmission, 1000);
                 });
             }, function () {
-                wallet.accepted = true;
+               // wallet.accepted = true;
                 console.log('Info: Wallet creation accepted');
             });
         });

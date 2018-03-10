@@ -49,10 +49,10 @@ function updateInfo() {
             updateWalletBlocks();
         }
 
-        if($('#address').text() !== data.address) {
-            $('#address').text(data.address);
+        if($('#address').text() !== data.address || data.tiny !== $('#tiny').text()) {
             if(data.tiny.indexOf('BL_') !== -1) {
                 $('#tiny').text(data.tiny);
+                $('#address').text(data.address);
             }
             address = data.address;
         }
