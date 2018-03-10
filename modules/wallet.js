@@ -111,8 +111,11 @@ let Wallet = function (walletFile, config) {
         wallet.create();
     };
 
+    /**
+     * Generate wallet ID
+     */
     wallet.createId = function () {
-        wallet.id = CryptoJS.SHA256(wallet.keysPair.public).toString();
+        wallet.id = CryptoJS.SHA256(wallet.keysPair.public + Math.random()).toString();
     };
 
 

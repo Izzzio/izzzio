@@ -24,7 +24,7 @@ const Signable = require('../blocks/signable');
  * Хотим ли мы генерировать блоки поддержки сети:
  * @type {boolean}
  */
-let generateEmptyBlocks = true;
+let generateEmptyBlocks = false;
 
 const moment = require('moment');
 
@@ -88,6 +88,10 @@ function generateNextBlock(blockData, cb, cancelCondition) {
     if(typeof blockData === 'object') {
         blockData = JSON.stringify(blockData);
     }
+
+    /*if(blockchain.config.program.disableMining){
+        throw('Error: Mining disabled');
+    }*/
 
     let nextHash = '';
     let nextTimestamp;

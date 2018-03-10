@@ -315,7 +315,7 @@ class BlockHandler {
                 if(err) {
                     that.wallets.del(blockData.id, {sync: true}, function (err) {
                         that.wallets.put(blockData.id, JSON.stringify(testWallet), {sync: true}, function (err) {
-                            if(blockData.id === that.wallet.id) {
+                            if(testWallet.id === that.wallet.id) {
                                 that.wallet.block = block.index;
                                 that.wallet.balance = testWallet.balance;
                                 that.wallet.accepted = true;
