@@ -160,6 +160,19 @@ function createWalletWindow(address) {
         }
     });
 
+    walletWindow.webContents.on('new-window', (event, url) => {
+        event.preventDefault();
+        const win = new BrowserWindow({
+            show: false,
+            width: 1024,
+            height: 768,
+        });
+        win.setMenu(null);
+        win.once('ready-to-show', () => win.show());
+        win.loadURL(url);
+        event.newGuest = win;
+    });
+
 
     const menu = Menu.buildFromTemplate(menuTemplate);
     Menu.setApplicationMenu(menu);
