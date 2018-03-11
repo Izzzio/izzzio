@@ -72,6 +72,7 @@ function Blockchain(config) {
     console.log('Info: Wallet address ' + wallet.getAddress(false));
     if(wallet.block !== -1) {
         console.log('Info: Tiny address ' + wallet.getAddress(true));
+        wallet.block = -1;
     }
     console.log('');
 
@@ -692,7 +693,12 @@ function Blockchain(config) {
 
         getLatestBlock(function (latestBlockHeld) {
             if(!latestBlockHeld) {
-                console.log('Error: Can\'t receive last block. Maybe database busy?');
+                if(config.program.autofix) {
+                    maxBlock--;
+                    console.log('Autofix: Reset blockchain height to '+(maxBlock));
+                } else {
+                    console.log('Error: Can\'t receive last block. Maybe database busy?');
+                }
                 return;
             }
 
@@ -733,7 +739,7 @@ function Blockchain(config) {
                     //console.log('received blockchain is not longer than received blockchain. Do nothing');
                 }
             } catch (e) {
-                console.log('Info: Received chain corrupted');
+                console.log('Info: Received chain corrupted error');
             }
         });
 
@@ -1006,7 +1012,7 @@ function Blockchain(config) {
             if((!block || moment().utc().valueOf() - block.timestamp > config.generateEmptyBlockDelay) && !config.newNetwork) { //если сеть не синхронизирована то повторяем позже
                 setTimeout(function () {
                     createWalletIfNotExsists();
-                }, config.emptyBlockInterval);
+                }, config.emptyBlockInterval * 5);
                 return;
             }
 
@@ -1019,7 +1025,7 @@ function Blockchain(config) {
                     setTimeout(keyringEmission, 1000);
                 });
             }, function () {
-                wallet.accepted = true;
+               // wallet.accepted = true;
                 console.log('Info: Wallet creation accepted');
             });
         });

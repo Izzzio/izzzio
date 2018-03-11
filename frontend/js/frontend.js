@@ -49,9 +49,11 @@ function updateInfo() {
             updateWalletBlocks();
         }
 
-        if($('#address').text() !== data.address) {
-            $('#address').text(data.address);
-            $('#tiny').text(data.tiny);
+        if($('#address').text() !== data.address || data.tiny !== $('#tiny').text()) {
+            if(data.tiny.indexOf('BL_') !== -1) {
+                $('#tiny').text(data.tiny);
+                $('#address').text(data.address);
+            }
             address = data.address;
         }
 
@@ -64,12 +66,16 @@ function updateInfo() {
             $('.walletButton').attr('disabled', true);
             if(data.syncInProgress || syncPercent < 95) {
                 $('#tiny').hide();
+                $('#address').hide();
+                $('#unaccepted').hide();
             }
             syncFlag = true;
         } else {
             $('#syncInProgress').hide();
             $('.walletButton').attr('disabled', false);
             $('#tiny').show();
+            $('#address').show();
+            $('#unaccepted').show();
             syncFlag = false;
         }
 
