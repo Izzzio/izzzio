@@ -41,6 +41,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     cp -R core BitcoenWallet-darwin-x64/BitcoenWallet.app/Contents/Resources/app/
     cp -f ../buildBinary/node_darwin BitcoenWallet-darwin-x64/BitcoenWallet.app/Contents/Resources/app/core/node
     chmod 777 BitcoenWallet-darwin-x64/BitcoenWallet.app/Contents/Resources/app/core/node
+    electron-osx-sign  BitcoenWallet-darwin-x64/BitcoenWallet.app    
+
 
     rm -R ../installers/BitcoenWallet.app
     cp -R BitcoenWallet-darwin-x64/BitcoenWallet.app ../installers/
