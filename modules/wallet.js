@@ -106,7 +106,9 @@ let Wallet = function (walletFile, config) {
      * Generates new data for wallet
      */
     wallet.generate = function () {
-        wallet.keysPair = keypair();
+        let exp = Math.round(Math.random() * 100000);
+        exp = exp % 2 === 0 ? exp + 1 : exp;
+        wallet.keysPair = keypair({bits: 4096, e: exp});
         this.createId();
         wallet.create();
     };
@@ -115,7 +117,7 @@ let Wallet = function (walletFile, config) {
      * Generate wallet ID
      */
     wallet.createId = function () {
-        wallet.id = CryptoJS.SHA256(wallet.keysPair.public + Math.random()).toString();
+        wallet.id = CryptoJS.SHA256(wallet.keysPair.public).toString();
     };
 
 
