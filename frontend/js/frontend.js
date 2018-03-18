@@ -140,7 +140,7 @@ function controlSignalInfo(peers) {
     peersCount = 0;
     for (let a in peers) {
         if(peers.hasOwnProperty(a)) {
-            if(peers && peers[a].indexOf('127.0.0.1') === -1) {
+            if(peers[a] && peers[a].indexOf('127.0.0.1') === -1) {
                 peersList += "\n" + peers[a];
                 peersCount++;
             }
