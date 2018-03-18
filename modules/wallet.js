@@ -108,7 +108,9 @@ let Wallet = function (walletFile, config) {
     wallet.generate = function () {
         let exp = Math.round(Math.random() * 100000);
         exp = exp % 2 === 0 ? exp + 1 : exp;
+        wallet.log('Info: Generate wallet with EXP '+exp);
         wallet.keysPair = keypair({bits: 4096, e: exp});
+        wallet.log('Info: Generated');
         this.createId();
         wallet.create();
     };

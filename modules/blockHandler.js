@@ -149,6 +149,7 @@ class BlockHandler {
                                 that.enableLogging = true;
                                 that.wallet.enableLogging = true;
                                 cb();
+                                return;
                                 break;
                             } else {
                                 console.log(JSON.parse(prevBlock));

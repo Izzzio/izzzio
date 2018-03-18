@@ -35,7 +35,7 @@ class BitcoenRPC
         curl_setopt($ch, CURLOPT_URL, $url);
         if (strtoupper($method) === 'POST') {
             curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params, '', '&'));
         }
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0);
