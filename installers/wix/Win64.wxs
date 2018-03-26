@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+    <Product
+        Name="BitCoen Wallet"
+        Manufacturer="BitCoen"
+        Version="1.0.0"
+        Id="0aaa88b8-7d37-4a7f-ab62-74cb7343cc35"
+        UpgradeCode="5d4be0a5-a670-4354-ac05-345ceb71093c"
+        Language="1033"
+        Codepage="1251"
+        >
+
+        <Package
+            Id="*"
+            Keywords="Installer"
+            Description="BitCoen Wallet Installer"
+            Manufacturer="BitCoen"
+            InstallerVersion="200"
+            Languages="1033"
+            Compressed="yes"
+            SummaryCodepage="1251"
+            />
+
+        <Media
+            Id="1"
+            Cabinet="Data.cab"
+            EmbedCab="yes"
+            />
+
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="INSTALLDIR" Name="BitCoenWallet">
+                    <Directory Id="ELECTRONDIR" Name="BitcoenWallet-win32-x64" />
+                    <Directory Id="COREDIR" Name="core" />
+                </Directory>
+            </Directory>
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ProgramMenuDir" Name="BitCoen Wallet" />
+            </Directory>
+            <Directory Id="DesktopFolder" Name="Desktop" />
+        </Directory>
+
+        <DirectoryRef Id="ProgramMenuDir">
+            <Component Id="ProgramMenuDir" Guid="18ca70c1-c5f5-4d09-a221-75a3092268cb">
+                <RemoveFolder Id="ProgramMenuDir" On="uninstall" />
+                <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]"
+                    Type="string" Value="" KeyPath="yes" />
+            </Component>
+        </DirectoryRef>
+
+        <?include files.wxi ?>
+
+        <DirectoryRef Id="ELECTRONDIR">
+            <Component Id="BitcoenWallet.exe" Guid="a4ff1140-3095-11e8-9e56-485b390a253f">
+                <File Id="BitcoenWallet.exe"
+                    Name="BitcoenWallet.exe"
+                    Source="..\..\build\BitcoenWallet-win32-x64\BitcoenWallet.exe"
+                    KeyPath="yes">
+                    <Shortcut
+                        Id="StartMenuBitCoen"
+                        Directory="ProgramMenuDir"
+                        Name="BitCoen Wallet"
+                        WorkingDirectory="ELECTRONDIR"
+                        Icon="icon.exe"
+                        IconIndex="0"
+                        Advertise="yes"
+                        />
+                    <Shortcut
+                        Id="DesktopBitCoen"
+                        Directory="DesktopFolder"
+                        Name="BitCoen Wallet"
+                        WorkingDirectory="ELECTRONDIR"
+                        Icon="icon.exe"
+                        IconIndex="0"
+                        Advertise="yes"
+                        />
+                </File>
+            </Component>
+        </DirectoryRef>
+
+        <Icon Id="icon.exe" SourceFile="..\..\build\BitcoenWallet-win32-x64\resources\app\logo.ico" />
+        <Property Id="ARPPRODUCTICON" Value="icon.exe" />
+
+    </Product>
+
+</Wix>
