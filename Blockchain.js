@@ -1035,9 +1035,15 @@ function Blockchain(config) {
      * Creates new Wallet in blockchain
      * @param cb
      */
-    function createNewWallet(cb) {
+    function createNewWallet(cb, instant) {
         let wallet = new Wallet();
         wallet.generate();
+
+        if(typeof instant !== 'undefined'){
+            transactor.options.acceptCount = 1;
+            rotateAddress();
+        }
+
         getLatestBlock(function (block) {
             if((!block || moment().utc().valueOf() - block.timestamp > config.generateEmptyBlockDelay) && !config.newNetwork) { //если сеть не синхронизирована то повторяем позже
                 setTimeout(function () {
@@ -1057,6 +1063,9 @@ function Blockchain(config) {
                 });
             }, function (generatedBlock) {
                 wallet.accepted = true;
+                if(typeof instant !== 'undefined'){
+                    rotateAddress();
+                }
                 cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
             });
         });

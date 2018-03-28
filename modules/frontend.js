@@ -51,6 +51,10 @@ class Frontend {
             that.createWallet(req, res)
         });
 
+        app.post('/instantCreateWallet', function (req, res) {
+            that.instantCreateWallet(req, res)
+        });
+
         app.post('/resyncBlockchain', function (req, res) {
             that.resyncBlockchain(req, res)
         });
@@ -124,6 +128,15 @@ class Frontend {
             wallet.status = 'ok';
             res.send(wallet);
         });
+
+    }
+
+    instantCreateWallet(req, res) {
+        let that = this;
+        that.blockchainObject.createNewWallet(function (wallet) {
+            wallet.status = 'ok';
+            res.send(wallet);
+        }, true);
 
     }
 
