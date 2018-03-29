@@ -7,6 +7,7 @@ if exist BitCoenWallet-x64.msi del BitCoenWallet-x64.msi
 if exist BitCoenWallet-x64.wixpdb del BitCoenWallet-x64.wixpdb
 if exist Win64.wixobj del Win64.wixobj
 
+setlocal
 set PATH=C:\Program Files (x86)\WiX Toolset v3.11\bin;C:\Python27amd64;%PATH%
 
 python genfiles.py
