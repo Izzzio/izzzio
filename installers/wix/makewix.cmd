@@ -15,7 +15,7 @@ python genfiles.py
 candle -nologo -arch x64 Win64.wxs
 if errorlevel 1 goto error
 
-light -nologo -o BitCoenWallet-x64.msi Win64.wixobj
+light -nologo -ext WixUIExtension -cultures:en-us -loc Win64.wxl -o BitCoenWallet-x64.msi Win64.wixobj
 if errorlevel 1 goto error
 
 :end
