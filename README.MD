@@ -4,7 +4,7 @@
 
 ## Releases
 
-You can found releases here [https://github.com/Izzzio/BitCoenWallet/releases](https://github.com/Izzzio/BitCoenWallet/releases)
+You can find releases here [https://github.com/Izzzio/BitCoenWallet/releases](https://github.com/Izzzio/BitCoenWallet/releases)
 
 
 ## Building

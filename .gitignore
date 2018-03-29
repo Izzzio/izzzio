@@ -70,3 +70,8 @@ typings/
 Будет удалено wallet.json
 Будет удалено wallet1.json
 Будет удалено wallets/
+
+/installers/wix/BitCoenWallet-x64.msi
+/installers/wix/BitCoenWallet-x64.wixpdb
+/installers/wix/Win64.wixobj
+/installers/wix/files.wxi
