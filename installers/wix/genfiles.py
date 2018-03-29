@@ -13,7 +13,7 @@ dirs = {
     }
 
 def print2(str):
-    # On Windows `print` sometimes cause "IOError [errno 0]".
+    # On Windows `print` sometimes causes "IOError [errno 0]".
     try:
         print(str)
     except:
