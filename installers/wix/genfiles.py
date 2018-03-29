@@ -12,6 +12,13 @@ dirs = {
         'COREDIR': 'core',
     }
 
+def print2(str):
+    # On Windows `print` sometimes cause "IOError [errno 0]".
+    try:
+        print(str)
+    except:
+        pass
+
 def toIdentifier(string):
     id = ''
     first = True
@@ -41,7 +48,7 @@ def guidForFile(name):
     return guid
 
 def addDir(dirId, path, indent = '        '):
-    print(path)
+    print2(path)
     for file in os.listdir(os.path.join(buildDir, path)):
         if file == 'BitcoenWallet.exe':
             continue
