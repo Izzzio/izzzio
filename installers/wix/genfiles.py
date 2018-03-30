@@ -12,6 +12,13 @@ dirs = {
         'COREDIR': 'core',
     }
 
+def print2(str):
+    # On Windows `print` sometimes causes "IOError [errno 0]".
+    try:
+        print(str)
+    except:
+        pass
+
 def toIdentifier(string):
     id = ''
     first = True
@@ -41,7 +48,7 @@ def guidForFile(name):
     return guid
 
 def addDir(dirId, path, indent = '        '):
-    print(path)
+    print2(path)
     for file in os.listdir(os.path.join(buildDir, path)):
         if file == 'BitcoenWallet.exe':
             continue
@@ -69,7 +76,15 @@ with open("files.wxi", "w") as f:
         f.write('    <DirectoryRef Id="%s">\n' % dirId)
         addDir(dirId, path)
         f.write('    </DirectoryRef>\n')
-    f.write('    <Feature Id="Complete" Level="1">\n')
+    f.write('    <Feature\n')
+    f.write('        Id="Complete"\n')
+    f.write('        Level="1"\n')
+    f.write('        Title="BitCoen Wallet"\n')
+    f.write('        Description="The complete package."\n')
+    f.write('        AllowAdvertise="no"\n')
+    f.write('        InstallDefault="local"\n')
+    f.write('        Absent="disallow"\n')
+    f.write('        ConfigurableDirectory="INSTALLDIR">\n')
     f.write('        <ComponentRef Id="BitcoenWallet.exe" />\n')
     for id in allIds:
         f.write('        <ComponentRef Id="%s" />\n' % id)
