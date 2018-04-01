@@ -75,3 +75,5 @@ typings/
 /installers/wix/BitCoenWallet-x64.wixpdb
 /installers/wix/Win64.wixobj
 /installers/wix/files.wxi
+/installers/BitcoenWallet.app
+/installers/BitcoenWalletUnsigned.app
