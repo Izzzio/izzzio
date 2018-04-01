@@ -71,9 +71,16 @@ typings/
 Будет удалено wallet1.json
 Будет удалено wallets/
 
+/build
+/shell/build
 /installers/wix/BitCoenWallet-x64.msi
 /installers/wix/BitCoenWallet-x64.wixpdb
 /installers/wix/Win64.wixobj
 /installers/wix/files.wxi
+/installers/.pkg
 /installers/BitcoenWallet.app
 /installers/BitcoenWalletUnsigned.app
+/installers/BitcoenWallet.pkg
+/installers/BitcoenWalletComponents.plist
+/installers/BitcoenWallet-Darwin-x64.dmg
+/installers/BitcoenWalletUnsigned-Darwin-x64.dmg
