@@ -135,6 +135,17 @@ app.on('window-all-closed', function () {
     }
 });
 
+if (process.platform === 'darwin') {
+    app.on('before-quit', function() {
+        app.isQuiting = true;
+        walletWindow.hide();
+        core.kill('SIGINT');
+        setTimeout(function () {
+            process.exit(0);
+        }, 5000);
+    });
+}
+
 app.on('activate', function () {
     if(loaderWindow === null && walletWindow === null) {
         createLoaderWindow()
