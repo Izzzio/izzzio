@@ -1,4 +1,6 @@
 
+set -e
+
 rm -Rf build
 
 mkdir -p build
@@ -11,6 +13,8 @@ cp -f Blockchain.js build/core/Blockchain.js
 cp -f package.json build/core/package.json
 
 cd shell
+
+npm install electron
 
 rm -Rf build
 mkdir -p build
@@ -44,22 +48,30 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     electron-osx-sign  BitcoenWallet-darwin-x64/BitcoenWallet.app    
 
 
-    rm -R ../installers/BitcoenWallet.app
+    rm -Rf ../installers/BitcoenWallet.app
     cp -R BitcoenWallet-darwin-x64/BitcoenWallet.app ../installers/
     cd ../installers/
-    rm -R BitcoenWallet-darwin-x64.dmg
+    rm -f BitcoenWallet-darwin-x64.dmg
     appdmg dmg.json BitcoenWallet-darwin-x64.dmg
+    codesign -s "Developer ID Application: Viacheslav Semenchuk" ./BitcoenWallet-darwin-x64.dmg
 
+    rm -rf .pkg
+    mkdir -p .pkg
+    cp -R BitcoenWallet.app .pkg
+    rm -f BitcoenWalletComponents.plist
+    pkgbuild --analyze --root .pkg BitcoenWalletComponents.plist
+    /usr/libexec/PlistBuddy -c 'set :0:BundleIsRelocatable false' BitcoenWalletComponents.plist
+    pkgbuild --root .pkg --install-location "/Applications" --sign "Developer ID Installer: Viacheslav Semenchuk" --component-plist BitcoenWalletComponents.plist BitcoenWallet.pkg
 
     cd ../build/
     cp -R core BitcoenWalletUnsigned-darwin-x64/BitcoenWalletUnsigned.app/Contents/Resources/app/
     cp -f ../buildBinary/node_darwin BitcoenWalletUnsigned-darwin-x64/BitcoenWalletUnsigned.app/Contents/Resources/app/core/node
     chmod 777 BitcoenWalletUnsigned-darwin-x64/BitcoenWalletUnsigned.app/Contents/Resources/app/core/node
 
-    rm -R ../installers/BitcoenWalletUnsigned.app
+    rm -Rf ../installers/BitcoenWalletUnsigned.app
     cp -R BitcoenWalletUnsigned-darwin-x64/BitcoenWalletUnsigned.app ../installers/
     cd ../installers/
-    rm -R BitcoenWalletUnsigned-darwin-x64.dmg
+    rm -f BitcoenWalletUnsigned-darwin-x64.dmg
     appdmg dmg.json BitcoenWalletUnsigned-darwin-x64.dmg
 fi
 
@@ -69,6 +81,6 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     chmod 777 core/node
 fi
 
-rm ../dumb
+rm -rf ../dumb
 
 sleep 10

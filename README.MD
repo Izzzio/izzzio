@@ -23,13 +23,13 @@ NPM version >= 5.3.0
 - Install electron packager
 
 ```
-sudo npm -g install electron-packager
+npm -g install electron-packager
 ```
 
 And appdmg for OS X (requires XCode command line tools)
 
 ```
-npm -g install appdmg
+npm -g install macos-alias electron-osx-sign appdmg
 ```
 
 Preparing for work is done by running the command 
