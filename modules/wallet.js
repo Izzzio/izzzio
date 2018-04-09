@@ -9,7 +9,7 @@ const crypto = require('crypto');
 
 const keypair = require('keypair');
 
-const NodeRsa = require('node-rsa');
+const NodeRSA = require('node-rsa');
 
 const fs = require('fs');
 const CryptoJS = require("crypto-js");
