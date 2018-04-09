@@ -6,7 +6,7 @@
 
 
 const electron = require('electron');
-const {app, Menu, BrowserWindow, Tray, dialog} = electron;
+const {app, Menu, BrowserWindow, Tray, dialog, shell} = electron;
 //const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
@@ -90,11 +90,18 @@ app.on('ready', function () {
                 }
             }
         },
+        {
+            label: 'Show data dir',
+            click: function () {
+                shell.showItemInFolder(app.getPath('userData'));
+            }
+        },
         {type: 'separator'},
         {
             label: 'Quit',
             click() {
                 try {
+
                     app.isQuiting = true;
                     walletWindow.hide();
                     core.kill('SIGINT');
@@ -135,8 +142,8 @@ app.on('window-all-closed', function () {
     }
 });
 
-if (process.platform === 'darwin') {
-    app.on('before-quit', function() {
+if(process.platform === 'darwin') {
+    app.on('before-quit', function () {
         app.isQuiting = true;
         walletWindow.hide();
         core.kill('SIGINT');
@@ -156,11 +163,14 @@ app.on('activate', function () {
     }
 });
 
-
+/**
+ * Creates wallet window
+ * @param {string} address
+ */
 function createWalletWindow(address) {
 
     let width = process.platform === 'darwin' ? 840 : 860;
-    let height = process.platform === 'darwin' ? 650 : 620;
+    let height = process.platform === 'darwin' ? 650 : 650;
     walletWindow = new BrowserWindow({
         width: width,
         height: height,
@@ -225,6 +235,15 @@ function startCore() {
         path = process.platform === 'darwin' ? __dirname + '/core/' : '../core/';
     }
 
+    if(process.platform === 'darwin') {
+        try {
+            if(loaderWindow) {
+                loaderWindow.webContents.send('log', '<b>If you are using a Mac and this message shows too long, try restarting the wallet.</b>');
+            }
+        } catch (e) {
+
+        }
+    }
 
     core = spawn('./node', ['main.js', '--autofix', '--work-dir', app.getPath('userData'), '--http-port', getRandomInt(3000, 6000)], {cwd: path});
 
