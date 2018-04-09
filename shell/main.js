@@ -320,7 +320,10 @@ function startCore() {
 
                 app.on('login', function (event, webContents, request, authInfo, callback) {
                     event.preventDefault();
-                    callback(password, password);
+                    try {
+                        callback(password, password);
+                    } catch (e) {
+                    }
                 });
 
                 createWalletWindow('http://' + server);
