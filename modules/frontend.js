@@ -75,9 +75,9 @@ class Frontend {
             that.restoreWallet(req, res)
         });
 
-        app.post('/rpc', function (req, res) {
-            that.RPC(req, res)
-        });
+        //app.post('/rpc', function (req, res) {
+        //    that.RPC(req, res)
+        //});
     }
 
     index(req, res) {
