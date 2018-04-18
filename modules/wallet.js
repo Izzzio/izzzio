@@ -118,7 +118,7 @@ let Wallet = function (walletFile, config) {
 
         wallet.keysPair.public = key.exportKey('public');
         wallet.keysPair.private = key.exportKey('private');*/
-        wallet.keysPair = keypair({bits: 2048});*/
+        wallet.keysPair = keypair({bits: 2048});
 
         wallet.log('Info: Generated');
         this.createId();
