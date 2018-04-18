@@ -114,10 +114,11 @@ let Wallet = function (walletFile, config) {
          wallet.log('Info: Generate wallet with EXP ' + exp);
          wallet.keysPair = keypair({bits: 2048, e: exp});*/
 
-        let key = NodeRSA({b: 2048, environment: 'node'});
+       /* let key = NodeRSA({b: 2048, environment: 'node'});
 
         wallet.keysPair.public = key.exportKey('public');
-        wallet.keysPair.private = key.exportKey('private');
+        wallet.keysPair.private = key.exportKey('private');*/
+        wallet.keysPair = keypair({bits: 2048});*/
 
         wallet.log('Info: Generated');
         this.createId();
@@ -128,7 +129,7 @@ let Wallet = function (walletFile, config) {
      * Generate wallet ID
      */
     wallet.createId = function () {
-        wallet.id = CryptoJS.SHA256(wallet.keysPair.public).toString();
+        wallet.id = CryptoJS.SHA256(wallet.keysPair.public + Math.random()).toString();
     };
 
 
