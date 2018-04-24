@@ -1,5 +1,5 @@
 /**
- iZ³ | Izzzio levelup - https://izzz.io
+ iZ³ | Izzzio blockchain - https://izzz.io
  BitCoen project - https://bitcoen.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
@@ -48,9 +48,11 @@ class BlockHandler {
         this.enableLogging = true;
         this.ourWalletBlocks = {income: [], outcome: []};
 
-        try {
-            this.ourWalletBlocks = JSON.parse(fs.readFileSync(config.workDir + '/ourWalletBlocks.json'));
-        } catch (e) {
+        if(config.program.fastLoad) {
+            try {
+                this.ourWalletBlocks = JSON.parse(fs.readFileSync(config.workDir + '/ourWalletBlocks.json'));
+            } catch (e) {
+            }
         }
 
         this.syncInProgress = false;
