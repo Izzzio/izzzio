@@ -212,9 +212,11 @@ let Wallet = function (walletFile, config) {
         const verify = crypto.createVerify(SIGN_TYPE);
         verify.update(data);
 
-        //1.0.4b bug workaround
         key = typeof key === 'undefined' ? wallet.keysPair.public : key;
-        key = repairKey(key);
+
+        //NO WORKAROUND HERE! OLD TRANSACTIONS MAY STAY BAD!
+        //1.0.4b bug workaround
+        //key = repairKey(key);
         //1.0.4b bug workaround
 
         return verify.verify(key, sign, 'hex');
@@ -304,6 +306,11 @@ let Wallet = function (walletFile, config) {
     wallet.transact = function (to, amount, fromTimestamp, keyringed) {
         to = String(to);
         amount = Number(amount);
+
+        //1.0.4b bug workaround
+        wallet.keysPair.private = repairKey(wallet.keysPair.private);
+        wallet.keysPair.public = repairKey(wallet.keysPair.public);
+        //1.0.4b bug workaround
 
         if(wallet.block === -1) {
             wallet.log('Error: Wallet not registered!');

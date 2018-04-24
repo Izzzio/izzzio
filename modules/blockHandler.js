@@ -17,6 +17,7 @@ const moment = require('moment');
 const levelup = require('level');
 
 const logger = new (require('./logger'))();
+const storj = require('./instanceStorage');
 
 /**
  * Предел до которого сеть может принять блок ключей
@@ -49,6 +50,7 @@ class BlockHandler {
         }
 
         this.syncInProgress = false;
+        storj.put('syncInProgress', false);
         this.keyring = [];
 
         try {
@@ -108,6 +110,7 @@ class BlockHandler {
             return;
         }
         that.syncInProgress = true;
+        storj.put('syncInProgress', true);
 
         logger.info('Blockchain resynchronization started');
         that.ourWalletBlocks = {income: [], outcome: []};
@@ -143,6 +146,7 @@ class BlockHandler {
     playBlockchain(fromBlock, cb) {
         let that = this;
         that.syncInProgress = true;
+        storj.put('syncInProgress', true);
         if(!that.config.program.verbose) {
             that.enableLogging = false;
             logger.disable = true;
@@ -166,6 +170,7 @@ class BlockHandler {
                                 logger.info('Info: Autofix: Set new blockchain height ' + i);
                                 that.blockchain.put.sync(that.blockchain, 'maxBlock', i - 1);
                                 that.syncInProgress = false;
+                                storj.put('syncInProgress', false);
                                 that.enableLogging = true;
                                 logger.disable = false;
                                 that.wallet.enableLogging = true;
@@ -196,6 +201,7 @@ class BlockHandler {
             }
 
             that.syncInProgress = false;
+            storj.put('syncInProgress', false);
             that.enableLogging = true;
             logger.disable = false;
             that.wallet.enableLogging = true;
