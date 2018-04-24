@@ -13,6 +13,8 @@
  */
 function Blockchain(config) {
 
+    const logger = new (require('./modules/logger'))();
+
     let blockchainObject = null;
 
     const fs = require('fs-extra');
@@ -69,9 +71,9 @@ function Blockchain(config) {
 
 
     let wallet = Wallet(config.walletFile, config).init();
-    console.log('Info: Wallet address ' + wallet.getAddress(false));
+    logger.info('Wallet address ' + wallet.getAddress(false));
     if(wallet.block !== -1) {
-        console.log('Info: Tiny address ' + wallet.getAddress(true));
+        logger.info('Tiny address ' + wallet.getAddress(true));
         wallet.block = -1;
     }
     console.log('');
@@ -170,7 +172,7 @@ function Blockchain(config) {
                     transactCallback(generatedBlock);
                 });
             }, function () {
-                console.log('Info: Transaction accepted');
+                logger.info('Transaction accepted');
             });
 
             return true;
@@ -181,7 +183,7 @@ function Blockchain(config) {
          */
         function hardResync() {
             //Hard resync
-            console.log('Warning: Hard synchronization started!');
+            logger.warning('Hard synchronization started!');
             blockchain.close(function () {
                 fs.removeSync(config.workDir + '/blocks');
                 blockchain = levelup(config.workDir + '/blocks');
@@ -214,7 +216,7 @@ function Blockchain(config) {
         let hash = calculateHash(0, 0, genesisTiemstamp, data);
         let genesisBlock = new Block(0, "0", genesisTiemstamp, data, hash, genesisTiemstamp, '');
         if(Math.round(new Date().getTime()) <= genesisTiemstamp) {
-            console.log('Error: Whoops! Check the clock');
+            logger.error('Whoops! Check the clock');
             process.exit();
         }
         return genesisBlock
@@ -275,40 +277,51 @@ function Blockchain(config) {
     /**
      * Запуск ноды
      */
-    function startNode() {
+    function startNode(cb) {
         //Запуск новой цепочки
         blockchain.get(0, function (err, value) {
             if(err) {
                 let genesisBlock = getGenesisBlock();
                 if(!config.validators[0].isValidHash(genesisBlock.hash)) {
-                    console.log('Error: Invalid genesis hash: ' + genesisBlock.hash);
+                    logger.error('Invalid genesis hash: ' + genesisBlock.hash);
                     process.exit();
                 }
                 addBlockToChain(getGenesisBlock());
-                console.log('Info: New blockchain fork started');
+                logger.info('New blockchain fork started');
                 setTimeout(startBlockchainServers, 1000);
+                cb();
             } else {
-                console.log('Info: Loading saved chain...');
+                logger.info('Loading saved chain...');
                 blockchain.get('maxBlock', function (err, value) {
                     if(err) {
-                        console.log('Error: Database failure. Reapir or resync database!');
+                        logger.error('Database failure. Reapir or resync database!');
                         return;
                     }
                     maxBlock = Number(value);
                     lastKnownBlock = maxBlock;
-                    console.log('Info: Block count: ' + maxBlock);
+                    logger.info('Block count: ' + maxBlock);
                     blockHandler.changeMaxBlock(maxBlock);
                     transactor.changeMaxBlock(maxBlock);
                     blockHandler.enableLogging = false;
                     wallet.enableLogging = false;
 
-                    blockHandler.playBlockchain(0, function () {
-                        console.log('Info: Blocks loaded!\n');
+                    if(config.program.fastLoad) {
                         blockHandler.enableLogging = true;
                         wallet.enableLogging = true;
                         wallet.update();
                         setTimeout(startBlockchainServers, 1000);
-                    })
+                        cb();
+                    } else {
+
+                        blockHandler.playBlockchain(0, function () {
+                            logger.info('Blocks loaded!\n');
+                            blockHandler.enableLogging = true;
+                            wallet.enableLogging = true;
+                            wallet.update();
+                            setTimeout(startBlockchainServers, 1000);
+                            cb();
+                        });
+                    }
 
                 });
             }
@@ -355,7 +368,7 @@ function Blockchain(config) {
             res.send('');
         });
 
-        let server = app.listen(config.httpPort, config.httpServer, () => console.log('Init: Listening http on: ' + config.httpServer + ':' + config.httpPort + '@' + config.rpcPassword));
+        let server = app.listen(config.httpPort, config.httpServer, () => logger.init('Listening http on: ' + config.httpServer + ':' + config.httpPort + '@' + config.rpcPassword));
         server.timeout = 0;
     }
 
@@ -378,7 +391,7 @@ function Blockchain(config) {
         wss.on('connection', function (ws) {
             initConnection(ws)
         });
-        console.log('Init: Listening p2p port on: ' + config.p2pPort);
+        logger.init('Listening p2p port on: ' + config.p2pPort);
 
     }
 
@@ -415,10 +428,10 @@ function Blockchain(config) {
         write(ws, queryChainLengthMsg());
         sendAllBlockchain(ws, maxBlock - 1);
 
-        write(ws, createMessage({
+        /*write(ws, createMessage({
             address: config.recieverAddress,
             version: '1.0'
-        }, config.recieverAddress, config.recieverAddress, 'VITAMIN_META', lastMsgIndex, config.TTL + 1));
+        }, config.recieverAddress, config.recieverAddress, 'VITAMIN_META', lastMsgIndex, config.TTL + 1));*/
     }
 
     /**
@@ -431,7 +444,16 @@ function Blockchain(config) {
                 data = null;
                 return;
             }
-            const message = JSON.parse(data);
+
+            let message;
+            try {
+                message = JSON.parse(data);
+            } catch (e) {
+                logger.error('' + e)
+            }
+
+            //console.log(message);
+
             switch (message.type) {
                 case MessageType.QUERY_LATEST:
                     responseLatestMsg(function (msg) {
@@ -481,7 +503,7 @@ function Blockchain(config) {
                             broadcast(message);
                         } else if(message.reciver === config.recieverAddress && message.id === 'VITAMIN_META' && typeof message.yourIp !== 'undefined') {
                             if(peersBlackList.indexOf(message.yourIp) === -1 && config.blacklisting) {
-                                console.log('Info: Add ip to blacklist ' + message.yourIp);
+                                logger.info('Add ip to blacklist ' + message.yourIp);
                                 peersBlackList.push(message.yourIp);
                             }
                         } else {
@@ -600,7 +622,9 @@ function Blockchain(config) {
     function addBlock(newBlock) {
         getLatestBlock(function (lastestBlock) {
             if(isValidNewBlock(newBlock, lastestBlock)) {
-                addBlockToChain(newBlock);
+                addBlockToChain(newBlock, function (err) {
+                    console.log(err);
+                });
             }
         });
 
@@ -695,21 +719,21 @@ function Blockchain(config) {
             if(!latestBlockHeld) {
                 if(config.program.autofix) {
                     maxBlock--;
-                    console.log('Autofix: Reset blockchain height to '+(maxBlock));
+                    logger.autofix('Reset blockchain height to ' + (maxBlock));
                 } else {
-                    console.log('Error: Can\'t receive last block. Maybe database busy?');
+                    logger.error('Can\'t receive last block. Maybe database busy?');
                 }
                 return;
             }
 
             try {
                 if(latestBlockReceived.timestamp > moment().utc().valueOf() + 60000) {
-                    console.log('Error: Incorrect received block timestamp or local time');
+                    logger.error('Incorrect received block timestamp or local time');
                     return;
                 }
                 if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
                     lastKnownBlock = latestBlockReceived.index;
-                    console.log('Info: Synchronize: ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
+                    logger.info('Synchronize: ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
                     if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) { //когда получен один блок от того который у нас есть
 
                         if(isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
@@ -739,7 +763,7 @@ function Blockchain(config) {
                     //console.log('received blockchain is not longer than received blockchain. Do nothing');
                 }
             } catch (e) {
-                console.log('Info: Received chain corrupted error');
+                logger.info('Received chain corrupted error');
             }
         });
 
@@ -764,7 +788,7 @@ function Blockchain(config) {
         /*&& newBlocks.length >= maxBlock*/
         ) {
             //console.log(newBlocks);
-            console.log('Info: Received blockchain is valid.');
+            logger.info('Received blockchain is valid.');
             Sync(function () {
                 for (let i of newBlocks) {
                     addBlockToChainIndex.sync(null, i.index, i, true);
@@ -781,7 +805,7 @@ function Blockchain(config) {
             });
 
         } else {
-            console.log('Error: Received blockchain corrupted');
+            logger.error('Received blockchain corrupted');
         }
     }
 
@@ -1025,8 +1049,8 @@ function Blockchain(config) {
                     setTimeout(keyringEmission, 1000);
                 });
             }, function () {
-               // wallet.accepted = true;
-                console.log('Info: Wallet creation accepted');
+                // wallet.accepted = true;
+                logger.info('Wallet creation accepted');
             });
         });
     }
@@ -1039,7 +1063,7 @@ function Blockchain(config) {
         let wallet = new Wallet();
         wallet.generate();
 
-        if(typeof instant !== 'undefined'){
+        if(typeof instant !== 'undefined') {
             transactor.options.acceptCount = 1;
             rotateAddress();
         }
@@ -1063,7 +1087,7 @@ function Blockchain(config) {
                 });
             }, function (generatedBlock) {
                 wallet.accepted = true;
-                if(typeof instant !== 'undefined'){
+                if(typeof instant !== 'undefined') {
                     rotateAddress();
                 }
                 cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
@@ -1125,7 +1149,7 @@ function Blockchain(config) {
             miningNow === 0 &&
             blockHandler.keyring.length === 0 && config.newNetwork
         ) {
-            console.log('Info: Starting keyring emission');
+            logger.info('Starting keyring emission');
 
             let keyring = new (require('./modules/blocks/keyring'))([], wallet.id);
             keyring.generateKeys(config.workDir + '/keyring.json', 100, wallet);
@@ -1152,7 +1176,7 @@ function Blockchain(config) {
             return;
         }
 
-        console.log('Info: Starting coin emission ' + (config.initialEmission));
+        logger.info('Starting coin emission ' + (config.initialEmission));
 
         wallet.transanctions = [];
         wallet.transact(wallet.id, config.initialEmission * config.precision, null, true);
@@ -1191,30 +1215,31 @@ function Blockchain(config) {
         }
 
         console.log('');
-        startNode();
-        setInterval(peerExchange, config.peerExchangeInterval);
-        setInterval(broadcastLastBlock, config.hearbeatInterval);
+        startNode(function initilized() {
+            setInterval(peerExchange, config.peerExchangeInterval);
+            setInterval(broadcastLastBlock, config.hearbeatInterval);
 
-        transactor.startWatch(5000);
+            transactor.startWatch(5000);
 
-
-        process.on('SIGINT', () => {
-            console.log('');
-            console.log('Info: Terminating...');
-            blockHandler.syncInProgress = true;
-            wallet.save();
-            config.emptyBlockInterval = 10000000000;
-            console.log('Info: Saving blockchain DB');
-            blockchain.close(function () {
-                console.log('Info: Saving wallets cache');
-                blockHandler.wallets.close(function () {
-                    setTimeout(function () {
-                        process.exit();
-                    }, 2000);
+            process.on('SIGINT', () => {
+                console.log('');
+                logger.info('Terminating...');
+                blockHandler.syncInProgress = true;
+                wallet.save();
+                config.emptyBlockInterval = 10000000000;
+                logger.info('Saving blockchain DB');
+                blockchain.close(function () {
+                    logger.info('Saving wallets cache');
+                    blockHandler.wallets.close(function () {
+                        setTimeout(function () {
+                            process.exit();
+                        }, 2000);
+                    });
                 });
-            });
 
+            });
         });
+
 
     }
 

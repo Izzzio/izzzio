@@ -1,0 +1,164 @@
+Index: modules/blockHandler.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- modules/blockHandler.js	(revision 1e0f8f27be459e3dbaf64b37f036f27451ddab32)
++++ modules/blockHandler.js	(date 1523297038014)
+@@ -369,83 +369,89 @@
+ 
+                     let tempTransaction = new Transaction(blockData.from, blockData.to, blockData.amount, blockData.timestamp, blockData.fromTimestamp);
+                     let testWallet = new Wallet();
+-                    if(testWallet.verifyData(tempTransaction.data, blockData.sign, blockData.pubkey)) { //Проверка подписи с ключом переданным в сообщении
+-                        that.wallets.get(blockData.from, function (err, val) {
+-                            if(!err) {
+-                                let fromWallet = JSON.parse(val);
+-                                if(testWallet.verifyData(tempTransaction.data, blockData.sign, fromWallet.keysPair.public)) { //Проверка подписи с исходным ключом кошелька
++                    try {
++                        if(testWallet.verifyData(tempTransaction.data, blockData.sign, blockData.pubkey)) { //Проверка подписи с ключом переданным в сообщении
++                            that.wallets.get(blockData.from, function (err, val) {
++                                if(!err) {
++                                    let fromWallet = JSON.parse(val);
++                                    if(testWallet.verifyData(tempTransaction.data, blockData.sign, fromWallet.keysPair.public)) { //Проверка подписи с исходным ключом кошелька
+ 
+-                                    if(
+-                                        (fromWallet.balance >= blockData.amount && blockData.amount > 0) || //Если баланс отправителя позволяет и это положительная сумма
+-                                        block.index < keyEmissionMaxBlock || that.isKeyFromKeyring(fromWallet.keysPair.public) //стартовая эмиссия и тестовая эмиссия
+-                                    ) {
+-                                        blockData.amount = Math.round(blockData.amount);
+-                                        if(block.index >= keyEmissionMaxBlock /*&& !that.isKeyFromKeyring(fromWallet.keysPair.public)*/) { //Вычитаем из отправителя, если это не эмиссия
+-                                            fromWallet.balance -= blockData.amount;
+-                                        }
++                                        if(
++                                            (fromWallet.balance >= blockData.amount && blockData.amount > 0) || //Если баланс отправителя позволяет и это положительная сумма
++                                            block.index < keyEmissionMaxBlock || that.isKeyFromKeyring(fromWallet.keysPair.public) //стартовая эмиссия и тестовая эмиссия
++                                        ) {
++                                            blockData.amount = Math.round(blockData.amount);
++                                            if(block.index >= keyEmissionMaxBlock /*&& !that.isKeyFromKeyring(fromWallet.keysPair.public)*/) { //Вычитаем из отправителя, если это не эмиссия
++                                                fromWallet.balance -= blockData.amount;
++                                            }
+ 
+-                                        that.wallets.get(blockData.to, function (err, val) {
+-                                            if(!err) {
+-                                                let toWallet = JSON.parse(val);
+-                                                let delayed = false;
++                                            that.wallets.get(blockData.to, function (err, val) {
++                                                if(!err) {
++                                                    let toWallet = JSON.parse(val);
++                                                    let delayed = false;
+ 
+-                                                if(blockData.fromTimestamp <= moment().utc().valueOf()) { //Если транзакция отложенная, и время еще не наступило, то баланс не увеличиваем
+-                                                    toWallet.balance += Math.round(blockData.amount);
+-                                                } else {
+-                                                    delayed = true;
+-                                                }
++                                                    if(blockData.fromTimestamp <= moment().utc().valueOf()) { //Если транзакция отложенная, и время еще не наступило, то баланс не увеличиваем
++                                                        toWallet.balance += Math.round(blockData.amount);
++                                                    } else {
++                                                        delayed = true;
++                                                    }
+ 
+-                                                that.wallets.put(fromWallet.id, JSON.stringify(fromWallet), function () {
+-                                                    that.wallets.put(toWallet.id, JSON.stringify(toWallet), function () {
++                                                    that.wallets.put(fromWallet.id, JSON.stringify(fromWallet), function () {
++                                                        that.wallets.put(toWallet.id, JSON.stringify(toWallet), function () {
+ 
+-                                                        if(that.wallet.id === fromWallet.id || that.wallet.id === toWallet.id) { //Если один из задействованных кошельков это наш
++                                                            if(that.wallet.id === fromWallet.id || that.wallet.id === toWallet.id) { //Если один из задействованных кошельков это наш
+ 
+-                                                            if(that.wallet.id === fromWallet.id && !(toWallet.id === fromWallet.id)) { //Если транзанкция была выполнена нами
+-                                                                that.log('Info: <<< Transaction to ' + toWallet.id + ' amount ' +
+-                                                                    formatToken(blockData.amount, that.config.precision) +
+-                                                                    ((block.index + that.options.acceptCount) > that.maxBlock ? ' (unaccepted)' : '') +
+-                                                                    (delayed ? ' delayed to ' + moment(blockData.fromTimestamp).format() : '')
+-                                                                );
+-                                                                that.wallet.balance = fromWallet.balance;
+-                                                                that.ourWalletBlocks.outcome.push(block);
+-                                                            } else {                                                        //Если транзакция пришла нам или выполнена процедура Selfie
+-                                                                that.log('Info: >>> Incoming transaction from ' + fromWallet.id + ' amount ' +
+-                                                                    formatToken(blockData.amount, that.config.precision) +
+-                                                                    ((block.index + that.options.acceptCount) > that.maxBlock ? ' (unaccepted)' : '') +
+-                                                                    (delayed ? ' delayed to ' + moment(blockData.fromTimestamp).format() : '')
+-                                                                );
+-                                                                that.wallet.balance = toWallet.balance;
+-                                                                that.ourWalletBlocks.income.push(block);
+-                                                            }
++                                                                if(that.wallet.id === fromWallet.id && !(toWallet.id === fromWallet.id)) { //Если транзанкция была выполнена нами
++                                                                    that.log('Info: <<< Transaction to ' + toWallet.id + ' amount ' +
++                                                                        formatToken(blockData.amount, that.config.precision) +
++                                                                        ((block.index + that.options.acceptCount) > that.maxBlock ? ' (unaccepted)' : '') +
++                                                                        (delayed ? ' delayed to ' + moment(blockData.fromTimestamp).format() : '')
++                                                                    );
++                                                                    that.wallet.balance = fromWallet.balance;
++                                                                    that.ourWalletBlocks.outcome.push(block);
++                                                                } else {                                                        //Если транзакция пришла нам или выполнена процедура Selfie
++                                                                    that.log('Info: >>> Incoming transaction from ' + fromWallet.id + ' amount ' +
++                                                                        formatToken(blockData.amount, that.config.precision) +
++                                                                        ((block.index + that.options.acceptCount) > that.maxBlock ? ' (unaccepted)' : '') +
++                                                                        (delayed ? ' delayed to ' + moment(blockData.fromTimestamp).format() : '')
++                                                                    );
++                                                                    that.wallet.balance = toWallet.balance;
++                                                                    that.ourWalletBlocks.income.push(block);
++                                                                }
+ 
+-                                                            that.wallet.update();
+-                                                        }
++                                                                that.wallet.update();
++                                                            }
+ 
+-                                                        return callback();
+-                                                    });
+-                                                });
++                                                            return callback();
++                                                        });
++                                                    });
+ 
+-                                            } else {
+-                                                that.log('Error: Recepient not found in block ' + block.index);
+-                                                return callback();
+-                                            }
+-                                        });
++                                                } else {
++                                                    that.log('Error: Recepient not found in block ' + block.index);
++                                                    return callback();
++                                                }
++                                            });
+ 
+-                                    } else {
+-                                        that.log('Error: Incorrect transanction in block ' + block.index);
+-                                        return callback();
+-                                    }
+-                                } else {
+-                                    that.log('Error: Fake level 2 transanction in block ' + block.index);
+-                                    return callback();
+-                                }
+-                            } else {
+-                                that.log(blockData);
+-                                that.log('Error: Something strange in block ' + block.index);
+-                                return callback();
+-                            }
+-                        });
+-                    } else {
++                                        } else {
++                                            that.log('Error: Incorrect transanction in block ' + block.index);
++                                            return callback();
++                                        }
++                                    } else {
++                                        that.log('Error: Fake level 2 transanction in block ' + block.index);
++                                        return callback();
++                                    }
++                                } else {
++                                    that.log(blockData);
++                                    that.log('Error: Something strange in block ' + block.index);
++                                    return callback();
++                                }
++                            });
++                        } else {
++                            that.log('Error: Fake transaction in block ' + block.index);
++                            return callback();
++                        }
++                    } catch (e) {
++                        that.log(e);
+                         that.log('Error: Fake transaction in block ' + block.index);
+                         return callback();
+                     }
