@@ -45,6 +45,8 @@ function Blockchain(config) {
     storj.put('app', app);
     storj.put('config', config);
 
+    const blockController = new(require('./modules/blockchain'))();
+
 
     const basic = auth.basic({
             realm: "RPC Auth"
@@ -86,7 +88,8 @@ function Blockchain(config) {
     /**
      * База данных блоков
      */
-    let blockchain = levelup(config.workDir + '/blocks');
+        // let blockchain = levelup(config.workDir + '/blocks');
+    let blockchain = blockController;
     storj.put('blocks', blockchain);
 
 

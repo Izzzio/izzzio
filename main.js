@@ -96,7 +96,11 @@ const config = {
 
     //Wallet
     walletFile: './wallet.json',         //Адрес файла кошелька
-    workDir: '.'
+    workDir: '.',
+
+    //Database
+    walletsDB: 'wallets',               // false - для хранения в ОЗУ, mem://wallets.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
+    blocksDB: 'blocks'                  // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
 };
 
 //*********************************************************************
@@ -115,11 +119,11 @@ try {
             config[i] = loadedConfig[i];
         }
     }
- /*   try {
-        fs.writeFileSync('config.json', JSON.stringify(config));
-    } catch (e) {
-        console.log('Info: Can\'t save config');
-    }*/
+    /*   try {
+           fs.writeFileSync('config.json', JSON.stringify(config));
+       } catch (e) {
+           console.log('Info: Can\'t save config');
+       }*/
 } catch (e) {
     console.log('Info: No configure found. Using standard configuration.');
 }

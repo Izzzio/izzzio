@@ -1,5 +1,5 @@
 /**
- iZ³ | Izzzio blockchain - https://izzz.io
+ iZ³ | Izzzio levelup - https://izzz.io
  BitCoen project - https://bitcoen.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
@@ -14,6 +14,7 @@ const fs = require('fs-extra');
 const formatToken = require('./formatToken');
 const moment = require('moment');
 
+const KeyValue = require('./keyvalue');
 const levelup = require('level');
 
 const logger = new (require('./logger'))();
@@ -36,9 +37,12 @@ class BlockHandler {
         this.blockchain = blockchain;
 
         if(!config.program.fastLoad) {
-            fs.removeSync(config.workDir + '/wallets');
+            try {
+                fs.removeSync(config.workDir + '/wallets');
+            } catch (e) {
+            }
         }
-        this.wallets = levelup(config.workDir + '/wallets');
+        this.wallets =  new KeyValue(config.walletsDB); // levelup(config.workDir + '/wallets');
         this.options = options;
         this.maxBlock = -1;
         this.enableLogging = true;
@@ -86,18 +90,16 @@ class BlockHandler {
      */
     clearDb(cb) {
         let that = this;
-        that.wallets.close(function () {
-            setTimeout(function () {
-                try {
-                    fs.removeSync(that.config.workDir + '/wallets');
-                    that.wallets = levelup(that.config.workDir + '/wallets');
-                } catch (e) {
-                    console.log(e);
-                }
-                cb();
-            }, 100);
+        setTimeout(function () {
+            //try {
+                that.wallets.clear(function () {
+                    cb();
+                });
+            /*} catch (e) {
+                console.log(e);
+            }*/
 
-        });
+        }, 100);
     }
 
     /**
@@ -167,7 +169,7 @@ class BlockHandler {
                                     that.blockchain.del.sync(that.blockchain, a);
                                 }
 
-                                logger.info('Info: Autofix: Set new blockchain height ' + i);
+                                logger.info('Info: Autofix: Set new levelup height ' + i);
                                 that.blockchain.put.sync(that.blockchain, 'maxBlock', i - 1);
                                 that.syncInProgress = false;
                                 storj.put('syncInProgress', false);
@@ -188,7 +190,7 @@ class BlockHandler {
                     prevBlock = result;
                 } catch (e) {
                     if(that.config.program.autofix) {
-                        console.log('Info: Autofix: Set new blockchain height ' + (i - 1));
+                        console.log('Info: Autofix: Set new levelup height ' + (i - 1));
                         that.blockchain.put.sync(that.blockchain, 'maxBlock', i - 1);
                     } else {
                         console.log(e);
@@ -301,7 +303,7 @@ class BlockHandler {
                     if(this.handleTransaction(blockData, block, callback)) {
                         fs.writeFileSync(that.config.workDir + '/ourWalletBlocks.json', JSON.stringify(this.ourWalletBlocks));
                     } else {
-                       // logger.error('Block ' + block + ' rejected');
+                        // logger.error('Block ' + block + ' rejected');
                     }
                     break;
                 case Keyring.prototype.constructor.name:
@@ -332,7 +334,7 @@ class BlockHandler {
 
     }
 
-    checkBlock(block, callback){
+    checkBlock(block, callback) {
 
     }
 
