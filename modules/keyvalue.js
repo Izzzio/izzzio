@@ -1,5 +1,5 @@
 /**
- iZ³ | Izzzio levelup - https://izzz.io
+ iZ³ | Izzzio blockchain - https://izzz.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
@@ -36,8 +36,9 @@ class KeyValue {
             this.name = name.split('mem://')[1];
 
             try {
-                this.memKeyValue = JSON.parse(fs.readFileSync(that.config.workDir + '/' + that.name));
+                this.memKeyValue = JSON.parse(fs.readFileSync(this.config.workDir + '/' + this.name));
             } catch (e) {
+                console.log(e);
             }
 
 

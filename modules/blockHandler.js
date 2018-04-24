@@ -171,7 +171,7 @@ class BlockHandler {
                                     that.blockchain.del.sync(that.blockchain, a);
                                 }
 
-                                logger.info('Info: Autofix: Set new levelup height ' + i);
+                                logger.info('Info: Autofix: Set new blockchain height ' + i);
                                 that.blockchain.put.sync(that.blockchain, 'maxBlock', i - 1);
                                 that.syncInProgress = false;
                                 storj.put('syncInProgress', false);
@@ -182,6 +182,7 @@ class BlockHandler {
                                 return;
                                 break;
                             } else {
+                                logger.disable = false;
                                 console.log(JSON.parse(prevBlock));
                                 console.log(JSON.parse(result));
                                 logger.fatal('Saved chain corrupted in block ' + i + '. Remove wallets and blocks dirs for resync. Also you can use --autofix');
@@ -192,7 +193,7 @@ class BlockHandler {
                     prevBlock = result;
                 } catch (e) {
                     if(that.config.program.autofix) {
-                        console.log('Info: Autofix: Set new levelup height ' + (i - 1));
+                        console.log('Info: Autofix: Set new blockchain height ' + (i - 1));
                         that.blockchain.put.sync(that.blockchain, 'maxBlock', i - 1);
                     } else {
                         console.log(e);
