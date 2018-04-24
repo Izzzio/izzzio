@@ -2,6 +2,7 @@ const Transaction = require("./blocks/transaction");
 const WalletRegister = require("./blocks/walletRegister");
 
 const levelup = require('levelup');
+const storj = require('./instanceStorage');
 
 
 /**
@@ -13,15 +14,19 @@ class Transactor {
      * @param {Wallet} wallet
      * @param blockchain
      * @param options
+     * @param blockchainObject
+     * @param options
      */
-    constructor(wallet, blockchain, options) {
+    constructor(wallet, blockchain, options, blockchainObject) {
 
         this.wallet = wallet;
         this.blockchain = blockchain;
+        this.blockchainObject = blockchainObject;
         this.options = options;
         this.maxBlock = -1;
         this.enableLogging = true;
         this.transactions = [];
+
     }
 
     /**
@@ -69,7 +74,8 @@ class Transactor {
         //console.log(that.transactions);
         for (let i of that.transactions) {
 
-            if(typeof i === 'undefined' || !i.block) {
+            //1.0 bug fix. Don't check transaction while sync!
+            if(typeof i === 'undefined' || !i.block || storj.get('blockHandler').syncInProgress) {
                 continue;
             }
             reactions++;

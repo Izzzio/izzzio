@@ -41,6 +41,10 @@ function Blockchain(config) {
     const Frontend = require('./modules/frontend');
     const app = express();
 
+    const storj = require('./modules/instanceStorage');
+    storj.put('app', app);
+    storj.put('config', config);
+
 
     const basic = auth.basic({
             realm: "RPC Auth"
@@ -71,6 +75,7 @@ function Blockchain(config) {
 
 
     let wallet = Wallet(config.walletFile, config).init();
+    storj.put('wallet', wallet);
     logger.info('Wallet address ' + wallet.getAddress(false));
     if(wallet.block !== -1) {
         logger.info('Tiny address ' + wallet.getAddress(true));
@@ -82,6 +87,7 @@ function Blockchain(config) {
      * База данных блоков
      */
     let blockchain = levelup(config.workDir + '/blocks');
+    storj.put('blocks', blockchain);
 
 
     /**
@@ -108,12 +114,17 @@ function Blockchain(config) {
      * @type {BlockHandler}
      */
     const blockHandler = new BlockHandler(wallet, blockchain, blockchainObject, config, {acceptCount: config.blockAcceptCount});
+    storj.put('blockHandler', blockHandler);
 
     /**
      * Модуль, следящий за прохождением транзакций
      * @type {Transactor}
      */
-    const transactor = new Transactor(wallet, blockchain, {acceptCount: config.blockAcceptCount});
+    const transactor = new Transactor(wallet, blockchain, {
+        acceptCount: config.blockAcceptCount,
+        blockHandler: blockHandler
+    }, blockchainObject);
+    storj.put('transactor', transactor);
 
     /**
      * Фронтенд с интерфейсом и RPC
@@ -198,9 +209,10 @@ function Blockchain(config) {
             });
         }
     );
-
     blockHandler.transactor = transactor;
     blockHandler.frontend = frontend;
+
+    storj.put('frontend', frontend);
 
     const sockets = [];
 
@@ -310,6 +322,7 @@ function Blockchain(config) {
                         wallet.enableLogging = true;
                         wallet.update();
                         setTimeout(startBlockchainServers, 1000);
+                        logger.info('Blocks database opened');
                         cb();
                     } else {
 

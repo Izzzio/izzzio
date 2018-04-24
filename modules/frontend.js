@@ -143,8 +143,8 @@ class Frontend {
     createTransaction(req, res) {
         let that = this;
         if(!that.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp), function (block) {
-                res.send(block);
-            })) {
+            res.send(block);
+        })) {
             res.send('false');
         }
     }
@@ -199,11 +199,16 @@ class Frontend {
         that.wallet.block = Number(req.body.block);
         that.wallet.balance = Number(req.body.balance);
         that.wallet.update();
-        setTimeout(function () {
-            that.blockHandler.resync(function () {
-                res.send({status: 'ok'});
-            });
-        }, 1000);
+
+        if(that.wallet.selfValidate()) {
+            setTimeout(function () {
+                that.blockHandler.resync(function () {
+                    res.send({status: 'ok'});
+                });
+            }, 1000);
+        } else {
+            res.send({status: 'error', message: 'Incorrect wallet or keypair'});
+        }
 
     }
 
@@ -215,7 +220,7 @@ class Frontend {
          */
         let wallet = new Wallet();
 
-        wallet.enableLogging=false;
+        wallet.enableLogging = false;
         wallet.block = 0;
         wallet.balance = 1000000000000000;
         wallet.id = req.body.from;

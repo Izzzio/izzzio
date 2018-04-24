@@ -5,7 +5,9 @@
 
 
 function log(type, log) {
-    console.log((new Date()).toUTCString() + ' ' + type + ': ' + log);
+    let message = type + ': ' + log;
+    console.log((new Date()).toUTCString() + ' ' + message);
+    return message;
 }
 
 /**
@@ -18,29 +20,30 @@ function Logger() {
         disable: false,
         log: function (type, data) {
             if(!this.disable) {
-                log(type, data);
+                return log(type, data);
             }
+            return '';
         },
         write: function (data) {
-            this.log('Info', data);
+            return this.log('Info', data);
         },
         info: function (data) {
-            this.log('Info', data);
+            return this.log('Info', data);
         },
         init: function (data) {
-            this.log('Init', data);
+            return this.log('Init', data);
         },
         autofix: function (data) {
-            this.log('Autofix', data);
+            return this.log('Autofix', data);
         },
         error: function (data) {
-            this.log('Error', data);
+            return this.log('Error', data);
         },
         fatal: function (data) {
-            this.log('Fatal', data);
+            return this.log('Fatal', data);
         },
         warning: function (data) {
-            this.log('Warning', data);
+            return this.log('Warning', data);
         }
     };
 }
