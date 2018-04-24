@@ -500,7 +500,7 @@ function Blockchain(config) {
                             message.yourIp = ws._socket.remoteAddress;
                             message.modifer = 'iZ3 node ' + config.recieverAddress;
                             message.TTL++;
-                            broadcast(message);
+                            //broadcast(message);
                         } else if(message.reciver === config.recieverAddress && message.id === 'VITAMIN_META' && typeof message.yourIp !== 'undefined') {
                             if(peersBlackList.indexOf(message.yourIp) === -1 && config.blacklisting) {
                                 logger.info('Add ip to blacklist ' + message.yourIp);
