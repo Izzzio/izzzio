@@ -109,7 +109,7 @@ class BlockHandler {
         }
         that.syncInProgress = true;
 
-        that.log('Info: Blockchain resynchronization started');
+        logger.info('Blockchain resynchronization started');
         that.ourWalletBlocks = {income: [], outcome: []};
         that.clearDb(function () {
             that.playBlockchain(0, cb);

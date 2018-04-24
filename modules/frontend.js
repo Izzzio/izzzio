@@ -75,9 +75,6 @@ class Frontend {
             that.restoreWallet(req, res)
         });
 
-        //app.post('/rpc', function (req, res) {
-        //    that.RPC(req, res)
-        //});
     }
 
     index(req, res) {
@@ -170,25 +167,6 @@ class Frontend {
         let that = this;
         that.hardResync();
         res.send();
-    }
-
-    RPC(req, res) {
-        let that = this;
-        let text = '';
-        try {
-            const log = function (log, a, b) {
-                text += String(log);
-            };
-            let blockchain = that.blockchainObject;
-            eval(req.body.command);
-        } catch (e) {
-            res.send(e.toString());
-            return;
-        }
-
-
-        res.send(text);
-        //
     }
 
     restoreWallet(req, res) {
