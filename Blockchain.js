@@ -765,7 +765,9 @@ function Blockchain(config) {
 
             try {
                 if(latestBlockReceived.timestamp > moment().utc().valueOf() + 60000) {
-                    logger.error('Incorrect received block timestamp or local time ' + latestBlockReceived.timestamp + ' current ' + moment().utc().valueOf());
+                    if(config.program.verbose) {
+                        logger.error('Incorrect received block timestamp or local time ' + latestBlockReceived.timestamp + ' current ' + moment().utc().valueOf());
+                    }
                     return;
                 }
                 if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
