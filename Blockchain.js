@@ -765,7 +765,7 @@ function Blockchain(config) {
 
             try {
                 if(latestBlockReceived.timestamp > moment().utc().valueOf() + 60000) {
-                    logger.error('Incorrect received block timestamp or local time');
+                    logger.error('Incorrect received block timestamp or local time ' + latestBlockReceived.timestamp + ' current ' + moment().utc().valueOf());
                     return;
                 }
                 if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
@@ -950,7 +950,9 @@ function Blockchain(config) {
         try {
             ws.send(JSON.stringify(message))
         } catch (e) { //ошибка записи, возможно сокет уже не активен
-            console.log('Send error ' + e + ' ' + ws._socket.remoteAddress)
+            if(config.program.verbose) {
+                logger.info('Send error ' + e + ' ' + ws._socket.remoteAddress)
+            }
         }
     };
 
