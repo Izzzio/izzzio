@@ -45,7 +45,7 @@ function Blockchain(config) {
     storj.put('app', app);
     storj.put('config', config);
 
-    const blockController = new(require('./modules/blockchain'))();
+    const blockController = new (require('./modules/blockchain'))();
 
 
     const basic = auth.basic({
@@ -405,6 +405,9 @@ function Blockchain(config) {
         }
 
         wss.on('connection', function (ws) {
+            if(config.program.verbose) {
+                logger.info('Input connection ' + ws._socket.remoteAddress);
+            }
             initConnection(ws)
         });
         logger.init('Listening p2p port on: ' + config.p2pPort);
@@ -420,19 +423,31 @@ function Blockchain(config) {
     function initConnection(ws) {
 
         if(peersBlackList.indexOf(ws._socket.remoteAddress) !== -1) {
+            if(config.program.verbose) {
+                logger.info('Blacklisted peer ' + ws._socket.remoteAddress);
+            }
             ws.close();
             return;
         }
 
+
         for (let i in sockets) {
             if(sockets.hasOwnProperty(i)) {
                 if(sockets[i]._socket.remoteAddress === ws._socket.remoteAddress && sockets[i].readyState === 1 && !sockets[i]._isServer) {
-                    ws.close();
-                    return;
+                    //TODO: Modify double connection handler
+                    /* if(config.program.verbose) {
+                         logger.info('Dublicated peer ' + ws._socket.remoteAddress);
+                     }
+                     ws.close();
+                     return;*/
                 }
 
                 if(sockets[i].readyState !== 1) {
+                    if(config.program.verbose) {
+                        logger.info('Connection Not ready. Peer ' + ws._socket.remoteAddress);
+                    }
                     ws.close();
+                    return;
                 }
             }
         }
@@ -725,7 +740,13 @@ function Blockchain(config) {
             return;
         }
 
-        const receivedBlocks = JSON.parse(message.data).sort((b1, b2) => (b1.index - b2.index));
+        let receivedBlocks = JSON.parse(message.data);
+
+        if(receivedBlocks.length == 0 || receivedBlocks[0] === false) {
+            return;
+        }
+
+        receivedBlocks = receivedBlocks.sort((b1, b2) => (b1.index - b2.index));
         /**
          * @type {Block}
          */
@@ -929,7 +950,7 @@ function Blockchain(config) {
         try {
             ws.send(JSON.stringify(message))
         } catch (e) { //ошибка записи, возможно сокет уже не активен
-
+            console.log('Send error ' + e + ' ' + ws._socket.remoteAddress)
         }
     };
 
