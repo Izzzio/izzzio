@@ -100,7 +100,10 @@ const config = {
 
     //Database
     walletsDB: 'wallets',               // false - для хранения в ОЗУ, mem://wallets.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
-    blocksDB: 'blocks'                  // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
+    blocksDB: 'blocks',                 // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
+
+    //Application
+    appEntry: false       //Точка входа в "приложение". False - если не требуется
 };
 
 //*********************************************************************

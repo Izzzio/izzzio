@@ -988,6 +988,22 @@ function Blockchain(config) {
         initHttpServer();
         initP2PServer();
         createWalletIfNotExsists();
+
+        if(config.appEntry) {
+            console.log("Info: Loading DApp...\n");
+            try {
+                /**
+                 * @var {DApp} clientApplication
+                 */
+                let clientApplication = new (require(config.appEntry))(config, blockchainObject);
+                clientApplication.init();
+            } catch (e) {
+                console.log("Error: DApp fatal:\n");
+                console.log(e);
+                process.exit(1);
+            }
+        }
+
     }
 
     /**
