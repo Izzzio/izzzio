@@ -247,7 +247,7 @@ function startCore() {
         }
     }
 
-    core = spawn('./node', ['main.js', '--autofix', '--work-dir', app.getPath('userData'), '--http-port', getRandomInt(3000, 6000)], {cwd: path});
+    core = spawn('./node', ['main.js', '--autofix', '--work-dir', '--verbose', app.getPath('userData'), '--http-port', getRandomInt(3000, 6000)], {cwd: path});
 
     core.on('error', (code) => {
         dialog.showErrorBox('Core starting error',
