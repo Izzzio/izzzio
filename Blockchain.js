@@ -1103,7 +1103,7 @@ function Blockchain(config) {
                     addBlock(generatedBlock);
                     broadcastLastBlock();
                     cb(generatedBlock);
-                    setTimeout(keyringEmission, 1000);
+                    setTimeout(keyringEmission, 10000);
                 });
             }, function () {
                 // wallet.accepted = true;
@@ -1202,7 +1202,7 @@ function Blockchain(config) {
         if(
             maxBlock <= 5 &&
             maxBlock !== -1 &&
-            wallet.accepted &&
+            //wallet.accepted &&
             miningNow === 0 &&
             blockHandler.keyring.length === 0 && config.newNetwork
         ) {
