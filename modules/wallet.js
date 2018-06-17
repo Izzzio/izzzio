@@ -18,6 +18,9 @@ const WalletRegister = require("./blocks/walletRegister");
 const moment = require('moment');
 const formatToken = require('./formatToken');
 
+
+const logger = new (require('./logger'))();
+
 const SIGN_TYPE = 'sha256';
 
 /**
@@ -89,6 +92,19 @@ let Wallet = function (walletFile, config) {
      */
     wallet.accepted = false;
 
+
+    /**
+     * Repair bad generated key
+     * @param key
+     * @return {*}
+     */
+    function repairKey(key) {
+        if(key[key.length - 1] !== "\n") {
+            key += "\n";
+        }
+        return key.replace(new RegExp("\n\n", 'g'),"\n");
+    }
+
     if(typeof walletFile !== 'undefined' && walletFile) {
         try {
             let walletData = JSON.parse(fs.readFileSync(walletFile));
@@ -99,6 +115,12 @@ let Wallet = function (walletFile, config) {
             wallet.addressBook = walletData.addressBook;
             wallet.block = walletData.block;
             wallet.accepted = walletData.accepted;
+
+            //1.0.4b bug workaround
+            wallet.keysPair.private = repairKey(wallet.keysPair.private);
+            wallet.keysPair.public = repairKey(wallet.keysPair.public);
+            //1.0.4b bug workaround
+
 
         } catch (e) {
             wallet.log('Error: Invalid wallet file!');
@@ -114,11 +136,16 @@ let Wallet = function (walletFile, config) {
          wallet.log('Info: Generate wallet with EXP ' + exp);
          wallet.keysPair = keypair({bits: 2048, e: exp});*/
 
-       /* let key = NodeRSA({b: 2048, environment: 'node'});
+        /* let key = NodeRSA({b: 2048, environment: 'node'});
 
-        wallet.keysPair.public = key.exportKey('public');
-        wallet.keysPair.private = key.exportKey('private');*/
+         wallet.keysPair.public = key.exportKey('public');
+         wallet.keysPair.private = key.exportKey('private');*/
         wallet.keysPair = keypair({bits: 2048});
+
+        //1.0.4b bug workaround
+        wallet.keysPair.private = repairKey(wallet.keysPair.private);
+        wallet.keysPair.public = repairKey(wallet.keysPair.public);
+        //1.0.4b bug workaround
 
         wallet.log('Info: Generated');
         this.createId();
@@ -146,6 +173,11 @@ let Wallet = function (walletFile, config) {
             wallet.generate();
         }
 
+        if(!wallet.selfValidate()) {
+            throw logger.fatal('Wallet self-validation error! Invalid key or sign checking');
+
+        }
+
         return wallet;
     };
 
@@ -157,9 +189,11 @@ let Wallet = function (walletFile, config) {
      * @returns {{data: *, sign: *}}
      */
     wallet.signData = function (data, key) {
+        key = typeof key === 'undefined' ? wallet.keysPair.private : key;
+        key = repairKey(key);
         const sign = crypto.createSign(SIGN_TYPE);
         sign.update(data);
-        let signKey = sign.sign(typeof key === 'undefined' ? wallet.keysPair.private : key).toString('hex');
+        let signKey = sign.sign(key).toString('hex');
         return {data: data, sign: signKey};
     };
 
@@ -177,7 +211,15 @@ let Wallet = function (walletFile, config) {
         }
         const verify = crypto.createVerify(SIGN_TYPE);
         verify.update(data);
-        return verify.verify(typeof key === 'undefined' ? wallet.keysPair.public : key, sign, 'hex');
+
+        key = typeof key === 'undefined' ? wallet.keysPair.public : key;
+
+        //NO WORKAROUND HERE! OLD TRANSACTIONS MAY STAY BAD!
+        //1.0.4b bug workaround
+        //key = repairKey(key);
+        //1.0.4b bug workaround
+
+        return verify.verify(key, sign, 'hex');
     };
 
     /**
@@ -265,6 +307,11 @@ let Wallet = function (walletFile, config) {
         to = String(to);
         amount = Number(amount);
 
+        //1.0.4b bug workaround
+        wallet.keysPair.private = repairKey(wallet.keysPair.private);
+        wallet.keysPair.public = repairKey(wallet.keysPair.public);
+        //1.0.4b bug workaround
+
         if(wallet.block === -1) {
             wallet.log('Error: Wallet not registered!');
             return false;
@@ -289,6 +336,22 @@ let Wallet = function (walletFile, config) {
     wallet.update = function () {
         wallet.log('Info: Wallet balance: ' + formatToken(wallet.balance, config.precision));
         wallet.save();
+    };
+
+
+    /**
+     * Self validate signing
+     * @return {boolean}
+     */
+    wallet.selfValidate = function () {
+        try {
+            let data = String(Math.random());
+            data = wallet.signData(data);
+            return wallet.verifyData(data.data, data.sign);
+        } catch (e) {
+            console.log(e);
+            return false;
+        }
     };
 
     return wallet;

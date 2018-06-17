@@ -14,7 +14,11 @@ const fs = require('fs-extra');
 const formatToken = require('./formatToken');
 const moment = require('moment');
 
+const KeyValue = require('./keyvalue');
 const levelup = require('level');
+
+const logger = new (require('./logger'))();
+const storj = require('./instanceStorage');
 
 /**
  * Предел до которого сеть может принять блок ключей
@@ -31,14 +35,35 @@ class BlockHandler {
     constructor(wallet, blockchain, blockchainObject, config, options) {
         this.wallet = wallet;
         this.blockchain = blockchain;
-        fs.removeSync(config.workDir + '/wallets');
-        this.wallets = levelup(config.workDir + '/wallets');
+
+        if(!config.program.fastLoad) {
+            try {
+                fs.removeSync(config.workDir + '/wallets');
+            } catch (e) {
+            }
+        }
+        this.wallets =  new KeyValue(config.walletsDB); // levelup(config.workDir + '/wallets');
         this.options = options;
         this.maxBlock = -1;
         this.enableLogging = true;
         this.ourWalletBlocks = {income: [], outcome: []};
+
+        if(config.program.fastLoad) {
+            try {
+                this.ourWalletBlocks = JSON.parse(fs.readFileSync(config.workDir + '/ourWalletBlocks.json'));
+            } catch (e) {
+            }
+        }
+
         this.syncInProgress = false;
+        storj.put('syncInProgress', false);
         this.keyring = [];
+
+        try {
+            this.keyring = JSON.parse(fs.readFileSync(config.workDir + '/keyring.json'));
+        } catch (e) {
+        }
+
         this.blockchainObject = blockchainObject;
         this.config = config;
 
@@ -57,7 +82,7 @@ class BlockHandler {
 
     log(string) {
         if(this.enableLogging) {
-            console.log(string);
+            console.log((new Date()).toUTCString() + ': ' + string);
         }
     }
 
@@ -67,18 +92,16 @@ class BlockHandler {
      */
     clearDb(cb) {
         let that = this;
-        that.wallets.close(function () {
-            setTimeout(function () {
-                try {
-                    fs.removeSync(that.config.workDir + '/wallets');
-                    that.wallets = levelup(that.config.workDir + '/wallets');
-                } catch (e) {
-                    console.log(e);
-                }
-                cb();
-            }, 100);
+        setTimeout(function () {
+            //try {
+                that.wallets.clear(function () {
+                    cb();
+                });
+            /*} catch (e) {
+                console.log(e);
+            }*/
 
-        });
+        }, 100);
     }
 
     /**
@@ -91,8 +114,9 @@ class BlockHandler {
             return;
         }
         that.syncInProgress = true;
+        storj.put('syncInProgress', true);
 
-        that.log('Info: Blockchain resynchronization started');
+        logger.info('Blockchain resynchronization started');
         that.ourWalletBlocks = {income: [], outcome: []};
         that.clearDb(function () {
             that.playBlockchain(0, cb);
@@ -126,8 +150,12 @@ class BlockHandler {
     playBlockchain(fromBlock, cb) {
         let that = this;
         that.syncInProgress = true;
-        that.enableLogging = false;
-        that.wallet.enableLogging = false;
+        storj.put('syncInProgress', true);
+        if(!that.config.program.verbose) {
+            that.enableLogging = false;
+            logger.disable = true;
+            that.wallet.enableLogging = false;
+        }
         Sync(function () {
             let prevBlock = null;
             for (let i = fromBlock; i < that.maxBlock + 1; i++) {
@@ -137,24 +165,27 @@ class BlockHandler {
                     if(prevBlock !== null) {
                         if(JSON.parse(prevBlock).hash !== JSON.parse(result).previousHash) {
                             if(that.config.program.autofix) {
-                                console.log('Info: Autofix: Delete chain data after ' + i + ' block');
+                                logger.info('Autofix: Delete chain data after ' + i + ' block');
 
                                 for (let a = i; a < that.maxBlock + 1; a++) {
                                     that.blockchain.del.sync(that.blockchain, a);
                                 }
 
-                                console.log('Info: Autofix: Set new blockchain height ' + i);
+                                logger.info('Info: Autofix: Set new blockchain height ' + i);
                                 that.blockchain.put.sync(that.blockchain, 'maxBlock', i - 1);
                                 that.syncInProgress = false;
+                                storj.put('syncInProgress', false);
                                 that.enableLogging = true;
+                                logger.disable = false;
                                 that.wallet.enableLogging = true;
                                 cb();
                                 return;
                                 break;
                             } else {
+                                logger.disable = false;
                                 console.log(JSON.parse(prevBlock));
                                 console.log(JSON.parse(result));
-                                console.log('Fatal error: Saved chain corrupted in block ' + i + '. Remove wallets and blocks dirs for resync. Also you can use --autofix');
+                                logger.fatal('Saved chain corrupted in block ' + i + '. Remove wallets and blocks dirs for resync. Also you can use --autofix');
                                 process.exit(1);
                             }
                         }
@@ -166,7 +197,7 @@ class BlockHandler {
                         that.blockchain.put.sync(that.blockchain, 'maxBlock', i - 1);
                     } else {
                         console.log(e);
-                        console.log('Fatal error: Saved chain corrupted. Remove wallets and blocks dirs for resync. Also you can use --autofix');
+                        logger.fatal('Saved chain corrupted. Remove wallets and blocks dirs for resync. Also you can use --autofix');
                         process.exit(1);
                     }
                     //continue;
@@ -175,7 +206,9 @@ class BlockHandler {
             }
 
             that.syncInProgress = false;
+            storj.put('syncInProgress', false);
             that.enableLogging = true;
+            logger.disable = false;
             that.wallet.enableLogging = true;
             if(typeof cb !== 'undefined') {
                 cb();
@@ -237,6 +270,7 @@ class BlockHandler {
      * @returns {*}
      */
     handleBlock(block, callback) {
+        let that = this;
         if(typeof callback === 'undefined') {
             callback = function () {
                 //Dumb
@@ -248,7 +282,7 @@ class BlockHandler {
             try {
                 blockData = JSON.parse(block.data);
             } catch (e) {
-                this.log('Info: Not JSON block ' + block.index);
+                that.log('Info: Not JSON block ' + block.index);
                 return callback();
             }
 
@@ -256,11 +290,11 @@ class BlockHandler {
 
             if(block.index === keyEmissionMaxBlock) {
                 if(this.keyring.length === 0) {
-                    console.log('Warning: Network without keyring');
+                    logger.warning('Network without keyring');
                 }
 
                 if(this.isKeyFromKeyring(this.wallet.keysPair.public)) {
-                    console.log('Warning: THRUSTED NODE. BE CAREFUL.');
+                    logger.warning('THRUSTED NODE. BE CAREFUL.');
                 }
             }
 
@@ -269,15 +303,20 @@ class BlockHandler {
                     this.handleWalletBlock(blockData, block, callback);
                     break;
                 case Transaction.prototype.constructor.name:
-                    this.handleTransaction(blockData, block, callback);
+                    if(this.handleTransaction(blockData, block, callback)) {
+                        fs.writeFileSync(that.config.workDir + '/ourWalletBlocks.json', JSON.stringify(this.ourWalletBlocks));
+                    } else {
+                        // logger.error('Block ' + block + ' rejected');
+                    }
                     break;
                 case Keyring.prototype.constructor.name:
                     if(block.index >= keyEmissionMaxBlock || this.keyring.length !== 0) {
-                        this.log('Warning: Fake keyring in block ' + block.index);
+                        logger.warning('Fake keyring in block ' + block.index);
                         return callback();
                     }
-                    this.log('Info: Keyring recived in block ' + block.index);
+                    logger.info('Keyring recived in block ' + block.index);
                     this.keyring = blockData.keys;
+                    fs.writeFileSync(this.config.workDir + '/keyring.json', JSON.stringify(this.keyring));
                     return callback();
                     break;
                 /*                case Smart.prototype.constructor.name:
@@ -287,13 +326,19 @@ class BlockHandler {
                     return callback();
                     break;
                 default:
-                    this.log('Info: Unexpected block type ' + block.index);
+                    logger.info('Unexpected block type ' + block.index);
                     return callback();
             }
         } catch (e) {
             console.log(e);
             return callback();
         }
+
+
+    }
+
+    checkBlock(block, callback) {
+
     }
 
 
@@ -326,14 +371,14 @@ class BlockHandler {
                         });
                     });
                 } else {
-                    that.log('Error: Uhm... Wallet recreation? Block: ' + block.index);
+                    logger.error('Uhm... Wallet recreation? Block: ' + block.index);
                     return callback();
                 }
             });
 
 
         } else {
-            that.log('Error: Incorrect sign in block ' + block.index);
+            logger.error('Incorrect sign in block ' + block.index);
             return callback();
         }
     }
@@ -350,19 +395,22 @@ class BlockHandler {
     handleTransaction(blockData, block, callback) {
         const that = this;
         if(blockData.amount <= 0) {
-            that.log('Error: Negative or zero amount in block ' + block.index);
-            return callback();
+            logger.error('Negative or zero amount in block ' + block.index);
+            callback();
+            return false;
         }
 
         if(blockData.from === blockData.to && !that.isKeyFromKeyring(blockData.pubkey) && block.index >= keyEmissionMaxBlock) { //Пресекаем попытку самоперевода, за исключением эмиссии
-            that.log('Error: Selfie in block ' + block.index);
-            return callback();
+            logger.error('Selfie in block ' + block.index);
+            callback();
+            return false;
         }
 
         that.wallets.get('transmutex_' + String(blockData.timestamp), function (err, val) {
             if(!err) {
-                that.log('Error: Transaction clone in ' + block.index);
-                return callback();
+                logger.error('Transaction clone in ' + block.index + '. Mutex: ' + String(blockData.timestamp));
+                callback();
+                return false;
             } else {
                 that.wallets.put('transmutex_' + String(blockData.timestamp), true, function () {
 
@@ -422,38 +470,50 @@ class BlockHandler {
                                                                 that.wallet.update();
                                                             }
 
-                                                            return callback();
+                                                            callback();
+                                                            return true;
                                                         });
                                                     });
 
                                                 } else {
-                                                    that.log('Error: Recepient not found in block ' + block.index);
-                                                    return callback();
+                                                    logger.error('Recepient not found (' + blockData.to + ') in block ' + block.index);
+                                                    callback();
+                                                    return false;
                                                 }
                                             });
 
                                         } else {
-                                            that.log('Error: Incorrect transanction in block ' + block.index);
-                                            return callback();
+                                            if(fromWallet.balance >= blockData.amount) {
+                                                logger.error('Incorrect transanction in block ' + block.index);
+                                            } else {
+                                                logger.error('Insufficient funds (Have ' + formatToken(fromWallet.balance, that.config.precision) + '  need ' + formatToken(blockData.amount, that.config.precision) + ' for ' + blockData.from + ') transanction in block ' + block.index);
+                                            }
+
+                                            callback();
+                                            return false;
                                         }
                                     } else {
-                                        that.log('Error: Fake level 2 transanction in block ' + block.index);
-                                        return callback();
+                                        logger.error('Fake level 2 transanction in block ' + block.index);
+                                        callback();
+                                        return false;
                                     }
                                 } else {
                                     that.log(blockData);
-                                    that.log('Error: Something strange in block ' + block.index);
-                                    return callback();
+                                    logger.error('Sender not found (' + blockData.from + ') in block ' + block.index);
+                                    callback();
+                                    return false;
                                 }
                             });
                         } else {
-                            that.log('Error: Fake transaction in block ' + block.index);
-                            return callback();
+                            logger.error('Fake transaction in block ' + block.index);
+                            callback();
+                            return false;
                         }
                     } catch (e) {
                         that.log(e);
-                        that.log('Error: Fake transaction in block ' + block.index);
-                        return callback();
+                        logger.error('Fake transaction in block ' + block.index);
+                        callback();
+                        return false;
                     }
                 });
             }

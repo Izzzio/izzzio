@@ -8,6 +8,9 @@
 class BitcoenRPC
 {
     private $_baseUrl = 'http://localhost:3001/';
+    private $_password = '';
+
+
     const METHODS = [
         'getInfo'            => ['httpMethod' => 'get'],
         'createWallet'       => ['httpMethod' => 'post'],
@@ -29,7 +32,7 @@ class BitcoenRPC
      * @param array $params
      * @return mixed|string
      */
-    private static function curlRequest($method = 'get', $url, $params = [])
+    private static function curlRequest($method = 'get', $url, $params = [], $password = '')
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -37,6 +40,12 @@ class BitcoenRPC
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params, '', '&'));
         }
+
+
+        if (!empty($password)) {
+            curl_setopt($ch, CURLOPT_USERPWD, '1337' . ":" . $password);
+        }
+
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0);
         curl_setopt($ch, CURLOPT_TIMEOUT, 0);
@@ -68,7 +77,7 @@ class BitcoenRPC
             throw new InvalidMethodException('Invalid method ' . $method);
         }
 
-        $responseBody = self::curlRequest(self::METHODS[$method]['httpMethod'], $this->_baseUrl . $method . $paramStr, $params);
+        $responseBody = self::curlRequest(self::METHODS[$method]['httpMethod'], $this->_baseUrl . $method . $paramStr, $params, $this->_password);
         if (in_array(strtolower($responseBody), ['true', 'false'])) {
             if (strtolower($responseBody) === 'true') {
                 return ['status' => 'ok'];
@@ -87,10 +96,12 @@ class BitcoenRPC
     /**
      * BitcoenRPC constructor.
      * @param string $RPCUrl
+     * @param string $password
      */
-    public function __construct($RPCUrl = 'http://localhost:3001/')
+    public function __construct($RPCUrl = 'http://localhost:3001/', $password = '')
     {
         $this->_baseUrl = $RPCUrl;
+        $this->_password = $password;
 
         return $this;
     }
@@ -291,7 +302,9 @@ class BitcoenRPC
      */
     public static function mil2Ben($amount)
     {
-        return $amount / self::MIL_TO_BEN;
+        $scale = strlen(substr(self::MIL_TO_BEN, 1));
+
+        return bcdiv($amount, self::MIL_TO_BEN, $scale);
     }
 
     /**

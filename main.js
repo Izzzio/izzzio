@@ -23,6 +23,8 @@ program
     .option('--http-port [port]', 'Interface and RPC binding port')
     .option('--disable-rpc-password', 'Disable RPC password', false)
     .option('--disable-mining', 'Completely disables mining', false)
+    .option('--fast-load', 'Don\'t checking databased on startup', false)
+    .option('--verbose', 'More logging info', false)
     .option('--enable-address-rotation', 'Activates the rotation of the addresses', false)
     .parse(process.argv);
 
@@ -86,7 +88,7 @@ const config = {
     initialEmission: 100000000,         //Сумма первоначальной эмиссии (нужна только при эмиссии)
 
     //Messaging Bus
-    enableMessaging: true,              //Разрешить использование шины сообщений (необходима для некоторых консенсусов)
+    enableMessaging: false,              //Разрешить использование шины сообщений (необходима для некоторых консенсусов)
     recieverAddress: getid() + getid() + getid(), //Адрес ноды в сети
     messagingMaxTTL: 3,                 //Максимальный предел скачков сообщения
     //maximumInputSize: 15 * 1024 * 1024, //Максимальный объем сообщения (здесь 15 мегабайт)
@@ -94,7 +96,14 @@ const config = {
 
     //Wallet
     walletFile: './wallet.json',         //Адрес файла кошелька
-    workDir: '.'
+    workDir: '.',
+
+    //Database
+    walletsDB: 'wallets',               // false - для хранения в ОЗУ, mem://wallets.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
+    blocksDB: 'blocks',                 // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
+
+    //Application
+    appEntry: false       //Точка входа в "приложение". False - если не требуется
 };
 
 //*********************************************************************
@@ -113,11 +122,11 @@ try {
             config[i] = loadedConfig[i];
         }
     }
-    try {
-        fs.writeFileSync('config.json', JSON.stringify(config));
-    } catch (e) {
-        console.log('Info: Can\'t save config');
-    }
+    /*   try {
+           fs.writeFileSync('config.json', JSON.stringify(config));
+       } catch (e) {
+           console.log('Info: Can\'t save config');
+       }*/
 } catch (e) {
     console.log('Info: No configure found. Using standard configuration.');
 }
