@@ -6,6 +6,7 @@
 
 const express = require("express");
 const Wallet = require("./wallet");
+const storj = require('./instanceStorage');
 
 /**
  * Wallet and RPC interface
@@ -109,14 +110,45 @@ class Frontend {
 
     getTransactions(req, res) {
         let that = this;
-        res.send(that.blockHandler.ourWalletBlocks);
+
+        function waitForSync() {
+            if(storj.get('blockHandler').syncInProgress) {
+                setTimeout(function () {
+                    waitForSync();
+                }, 1000);
+                return;
+            }
+
+            res.send(that.blockHandler.ourWalletBlocks);
+        }
+
+        setTimeout(function () {
+            waitForSync();
+        }, 10);
+
+
     }
 
     getWalletInfo(req, res) {
         let that = this;
-        that.blockHandler.getWallet(req.params.id, function (wallet) {
-            res.send(JSON.parse(wallet));
-        });
+
+        function waitForSync() {
+            if(storj.get('blockHandler').syncInProgress) {
+                setTimeout(function () {
+                    waitForSync();
+                }, 1000);
+                return;
+            }
+
+            that.blockHandler.getWallet(req.params.id, function (wallet) {
+                res.send(JSON.parse(wallet));
+            });
+        }
+
+        setTimeout(function () {
+            waitForSync();
+        }, 10);
+
     }
 
     createWallet(req, res) {
@@ -130,10 +162,25 @@ class Frontend {
 
     instantCreateWallet(req, res) {
         let that = this;
-        that.blockchainObject.createNewWallet(function (wallet) {
-            wallet.status = 'ok';
-            res.send(wallet);
-        }, true);
+
+        function waitForSync() {
+            if(storj.get('blockHandler').syncInProgress) {
+                setTimeout(function () {
+                    waitForSync();
+                }, 1000);
+                return;
+            }
+
+            that.blockchainObject.createNewWallet(function (wallet) {
+                wallet.status = 'ok';
+                res.send(wallet);
+            }, true);
+        }
+
+        setTimeout(function () {
+            waitForSync();
+        }, 10);
+
 
     }
 
@@ -171,58 +218,89 @@ class Frontend {
 
     restoreWallet(req, res) {
         let that = this;
-        that.wallet.keysPair.public = req.body.public;
-        that.wallet.keysPair.private = req.body.private;
-        that.wallet.id = req.body.id;
-        that.wallet.block = Number(req.body.block);
-        that.wallet.balance = Number(req.body.balance);
-        that.wallet.update();
 
-        if(that.wallet.selfValidate()) {
-            setTimeout(function () {
-                that.blockHandler.resync(function () {
-                    res.send({status: 'ok'});
-                });
-            }, 1000);
-        } else {
-            res.send({status: 'error', message: 'Incorrect wallet or keypair'});
+        function waitForSync() {
+            if(storj.get('blockHandler').syncInProgress) {
+                setTimeout(function () {
+                    waitForSync();
+                }, 1000);
+                return;
+            }
+
+            that.wallet.keysPair.public = req.body.public;
+            that.wallet.keysPair.private = req.body.private;
+            that.wallet.id = req.body.id;
+            that.wallet.block = Number(req.body.block);
+            that.wallet.balance = Number(req.body.balance);
+            that.wallet.update();
+
+            if(that.wallet.selfValidate()) {
+                setTimeout(function () {
+                    that.blockHandler.resync(function () {
+                        res.send({status: 'ok'});
+                    });
+                }, 1000);
+            } else {
+                res.send({status: 'error', message: 'Incorrect wallet or keypair'});
+            }
         }
+
+        setTimeout(function () {
+            waitForSync();
+        }, 10);
+
 
     }
 
     instantTransaction(req, res) {
         let that = this;
-        /**
-         *
-         * @type {Wallet}
-         */
-        let wallet = new Wallet();
 
-        wallet.enableLogging = false;
-        wallet.block = 0;
-        wallet.balance = 1000000000000000;
-        wallet.id = req.body.from;
+        function waitForSync() {
+            if(storj.get('blockHandler').syncInProgress) {
+                setTimeout(function () {
+                    waitForSync();
+                }, 1000);
+                return;
+            }
 
-        wallet.keysPair.public = req.body.public;
-        wallet.keysPair.private = req.body.private;
 
-        wallet.transanctions = [];
+            /**
+             *
+             * @type {Wallet}
+             */
+            let wallet = new Wallet();
 
-        if(!wallet.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp))) {
-            //return false;
+            wallet.enableLogging = false;
+            wallet.block = 0;
+            wallet.balance = 1000000000000000;
+            wallet.id = req.body.from;
+
+            wallet.keysPair.public = req.body.public;
+            wallet.keysPair.private = req.body.private;
+
+            wallet.transanctions = [];
+
+            if(!wallet.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp))) {
+                //return false;
+            }
+
+            let blockData = wallet.transanctions.pop();
+
+            that.blockchainObject.transactor.transact(blockData, function (blockData, cb) {
+                that.blockchainObject.generateNextBlockAuto(blockData, function (generatedBlock) {
+                    that.blockchainObject.addBlock(generatedBlock);
+                    that.blockchainObject.broadcastLastBlock();
+                    cb(generatedBlock);
+                });
+            }, function (generatedBlock) {
+                res.send(generatedBlock);
+            });
+
         }
 
-        let blockData = wallet.transanctions.pop();
-
-        that.blockchainObject.transactor.transact(blockData, function (blockData, cb) {
-            that.blockchainObject.generateNextBlockAuto(blockData, function (generatedBlock) {
-                that.blockchainObject.addBlock(generatedBlock);
-                that.blockchainObject.broadcastLastBlock();
-                cb(generatedBlock);
-            });
-        }, function (generatedBlock) {
-            res.send(generatedBlock);
-        });
+        setTimeout(function () {
+            waitForSync();
+        }, 10);
 
 
     }
