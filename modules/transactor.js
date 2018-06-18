@@ -1,8 +1,10 @@
-const Transaction = require("./blocks/transaction");
-const WalletRegister = require("./blocks/walletRegister");
+/**
+ iZ³ | Izzzio blockchain - https://izzz.io
+ @author: Andrey Nedobylsky (admin@twister-vl.ru)
+ */
 
-const levelup = require('levelup');
 const storj = require('./instanceStorage');
+const logger = new (require('./logger'))();
 
 
 /**
@@ -26,6 +28,8 @@ class Transactor {
         this.maxBlock = -1;
         this.enableLogging = true;
         this.transactions = [];
+
+        storj.put('transactor', this);
 
     }
 
@@ -75,25 +79,35 @@ class Transactor {
         for (let i of that.transactions) {
 
             //1.0 bug fix. Don't check transaction while sync!
-            if(typeof i === 'undefined' || !i.block || storj.get('blockHandler').syncInProgress) {
+            if(typeof i === 'undefined' || !i.block || !that.blockchainObject.isReadyForTransaction()) {
                 continue;
             }
             reactions++;
             that.blockchain.get(i.block.index, function (err, block) {
                 if(err) {
-                    console.log('Transactor: Block ' + i.block.index + ' was rejected.');
-                    i.generator(i.object, i.watchlist);
+                    logger.warning('Transactor: Block ' + i.block.index + ' was rejected.');
+                    i.repeats++;
+                    if(i.repeats < that.blockchainObject.config.maxTransactionAtempts) {
+                        i.generator(i.object, i.watchlist);
+                    } else {
+                        logger.error('Transactor: Block ' + i.block.index + ' failed.');
+                    }
                     return;// cb();
                 }
                 block = JSON.parse(block);
                 if(block.hash !== i.block.hash) {
-                    console.log('Transactor: Block ' + i.block.index + ' was rejected and replaced.');
-                    i.generator(i.object, i.watchlist);
+                    logger.warning('Transactor: Block ' + i.block.index + ' was rejected and replaced.');
+                    i.repeats++;
+                    if(i.repeats < that.blockchainObject.config.maxTransactionAtempts) {
+                        i.generator(i.object, i.watchlist);
+                    } else {
+                        logger.error('Transactor: Block ' + i.block.index + ' failed.');
+                    }
                     return;// cb();
                 }
 
                 if((Number(block.index) + Number(that.options.acceptCount)) <= Number(that.maxBlock)) {
-                    console.log('Transactor: Block ' + i.block.index + ' was accepted to network.');
+                    logger.info('Transactor: Block ' + i.block.index + ' was accepted to network.');
                     if(typeof that.transactions[i.index].accepted !== 'undefined') {
                         that.transactions[i.index].accepted(block);
                     }
@@ -121,13 +135,24 @@ class Transactor {
         let that = this;
         //console.log('Transactor: Create transaction');
 
-        that.transactions.push({object: object, block: null, generator: generator});
+        if(!that.blockchainObject.isReadyForTransaction()) {
+            return false;
+        }
+
+        that.transactions.push({object: object, block: null, generator: generator, repeats: 0});
         let index = that.transactions.length - 1;
-        console.log('Transactor: Generating new block');
+        logger.info('Transactor: Generating new block');
+
+        let repeats = 0;
 
         function watchlist(block) {
             if(typeof block === 'undefined') {
-                console.log('Transactor: Can\'t generate new block. Attempt generation again');
+                repeats++;
+                if(repeats > that.blockchainObject.config.maxTransactionAtempts) {
+                    logger.error('Transactor: Block generation failed.');
+                    return false;
+                }
+                logger.warning('Transactor: Can\'t generate new block. Attempt generation again');
                 setTimeout(function () {
                     generator(object, watchlist);
                 }, 5000);
@@ -136,7 +161,7 @@ class Transactor {
             /**
              * @var {Block} block
              */
-            console.log('Transactor: Block ' + block.index + ' generated. Addes to watch list');
+            logger.info('Transactor: Block ' + block.index + ' generated. Addes to watch list');
             that.transactions[index].block = block;
             that.transactions[index].watchlist = watchlist;
             that.transactions[index].index = index;

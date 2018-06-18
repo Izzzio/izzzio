@@ -309,7 +309,7 @@ function Blockchain(config) {
                 logger.info('Loading saved chain...');
                 blockchain.get('maxBlock', function (err, value) {
                     if(err) {
-                        logger.error('Database failure. Reapir or resync database!');
+                        logger.error('Database failure. Repair or resync database!');
                         return;
                     }
                     maxBlock = Number(value);
@@ -729,6 +729,7 @@ function Blockchain(config) {
         });
     }
 
+
     /**
      * Получили новую цепочку блоков
      * @param message
@@ -740,9 +741,19 @@ function Blockchain(config) {
             return;
         }
 
+        //Now we process some chain
+        if(storj.get('chainResponseMutex')) {
+            return;
+        }
+
+        //Set block for new chain responses
+        storj.put('chainResponseMutex', true);
+
+
         let receivedBlocks = JSON.parse(message.data);
 
-        if(receivedBlocks.length == 0 || receivedBlocks[0] === false) {
+        if(receivedBlocks.length === 0 || receivedBlocks[0] === false) {
+            storj.put('chainResponseMutex', false);
             return;
         }
 
@@ -760,6 +771,7 @@ function Blockchain(config) {
                 } else {
                     logger.error('Can\'t receive last block. Maybe database busy?');
                 }
+                storj.put('chainResponseMutex', false);
                 return;
             }
 
@@ -768,16 +780,27 @@ function Blockchain(config) {
                     if(config.program.verbose) {
                         logger.error('Incorrect received block timestamp or local time ' + latestBlockReceived.timestamp + ' current ' + moment().utc().valueOf());
                     }
+                    storj.put('chainResponseMutex', false);
+
                     return;
                 }
                 if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
                     lastKnownBlock = latestBlockReceived.index;
-                    logger.info('Synchronize: ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
+                    if(receivedBlocks.length === 1) {
+                        if(lastKnownBlock !== latestBlockReceived.index) {
+                            logger.info('Synchronize: Recived last chain block ' + latestBlockReceived.index);
+                        }
+                    } else {
+                        if(config.program.verbose) {
+                            logger.info('Synchronize: Recived ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
+                        }
+                    }
                     if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) { //когда получен один блок от того который у нас есть
 
                         if(isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
                             addBlockToChain(latestBlockReceived);
                             responseLatestMsg(function (msg) {
+                                storj.put('chainResponseMutex', false);
                                 broadcast(msg);
                             });
                         }
@@ -793,16 +816,27 @@ function Blockchain(config) {
                             broadcast(queryAllMsg(getBlockFrom));
                         }
 
+                        storj.put('chainResponseMutex', false);
+
                     } else {
                         if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
-                            replaceChain(receivedBlocks);
+                            replaceChain(receivedBlocks, function () {
+                                storj.put('chainResponseMutex', false);
+                            });
+                        } else {
+                            storj.put('chainResponseMutex', false);
                         }
+
+
                     }
                 } else {
                     //console.log('received blockchain is not longer than received blockchain. Do nothing');
+                    storj.put('chainResponseMutex', false);
+
                 }
             } catch (e) {
                 logger.info('Received chain corrupted error');
+                storj.put('chainResponseMutex', false);
             }
         });
 
@@ -813,21 +847,39 @@ function Blockchain(config) {
     /**
      * Производим замену цепочки на обновлённую
      * @param {Block[]} newBlocks
+     * @param {function} cb
      */
-    function replaceChain(newBlocks) {
+    function replaceChain(newBlocks, cb) {
+
 
         let maxIndex = maxBlock - config.limitedConfidenceBlockZone;
         if(maxIndex < 0) {
             maxIndex = 0;
         }
 
+        const validChain = isValidChain(newBlocks);
+
+        if(!(newBlocks[0].index >= maxIndex)) {//ограничение доверия принимаемой цепочки блоков
+
+            if(config.program.verbose) {
+                logger.error('LimitedConfidence: Invalid chain');
+            }
+
+            if(typeof cb !== 'undefined') {
+                cb();
+            }
+
+            return;
+        }
+
+
         if(
-            isValidChain(newBlocks) &&
-            (newBlocks[0].index >= maxIndex) //ограничение доверия принимаемой цепочки блоков
+            validChain // &&  newBlocks[0].index >= maxIndex
         /*&& newBlocks.length >= maxBlock*/
         ) {
             //console.log(newBlocks);
-            logger.info('Received blockchain is valid.');
+            //logger.info('Received blockchain is valid.');
+            logger.info('Synchronize: ' + newBlocks[0].index + ' of ' + newBlocks[newBlocks.length - 1].index);
             Sync(function () {
                 for (let i of newBlocks) {
                     addBlockToChainIndex.sync(null, i.index, i, true);
@@ -836,15 +888,27 @@ function Blockchain(config) {
                     broadcast(msg);
                 });
 
-                clearInterval(replaceChainTimer);
+                clearTimeout(replaceChainTimer);
                 replaceChainTimer = setTimeout(function () {
+                    //If receiving chain, no syncing
+                    if(storj.get('chainResponseMutex')) {
+                        return;
+                    }
                     blockHandler.resync();
-                }, config.peerExchangeInterval + 1000);
+                }, config.peerExchangeInterval + 2000);
+
+                if(typeof cb !== 'undefined') {
+                    cb();
+                }
 
             });
 
         } else {
+            if(typeof cb !== 'undefined') {
+                cb();
+            }
             logger.error('Received blockchain corrupted');
+
         }
     }
 
@@ -1190,6 +1254,37 @@ function Blockchain(config) {
         return false;
     }
 
+    /**
+     * Check is blockchain ready for transaction
+     * @return {boolean}
+     */
+    function isReadyForTransaction() {
+        if(blockHandler.syncInProgress) {
+            return false;
+        }
+
+        if(storj.get('chainResponseMutex')) {
+            return false;
+        }
+
+        if(!config.newNetwork) {
+            if(getCurrentPeers().length === 0) {
+                return false;
+            }
+
+            if(!wallet.accepted) {
+                return false;
+            }
+
+            //Technically we ready for transaction but this state is bad for normal mode
+            if(maxBlock <= 5 || maxBlock === -1) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 
 //**************************************************************************
 
@@ -1279,20 +1374,39 @@ function Blockchain(config) {
             transactor.startWatch(5000);
 
             process.on('SIGINT', () => {
+
+
+                if(storj.get('terminateAttempts') === 1) {
+                    logger.info('Terminating immediately.');
+                    process.exit(1);
+                    return;
+                }
+
+                if(storj.get('terminateAttempts') === 0) {
+                    storj.put('terminateAttempts', 1);
+                    logger.warning('Press the Ctrl+C again to exit without saving data.');
+                    return;
+                }
+
+                storj.put('terminating', true);
+                storj.put('terminateAttempts', 0);
+
                 console.log('');
                 logger.info('Terminating...');
                 blockHandler.syncInProgress = true;
                 wallet.save();
                 config.emptyBlockInterval = 10000000000;
-                logger.info('Saving blockchain DB');
-                blockchain.close(function () {
-                    logger.info('Saving wallets cache');
-                    blockHandler.wallets.close(function () {
-                        setTimeout(function () {
-                            process.exit();
-                        }, 2000);
+                setTimeout(function () {
+                    logger.info('Saving blockchain DB');
+                    blockchain.close(function () {
+                        logger.info('Saving wallets cache');
+                        blockHandler.wallets.close(function () {
+                            setTimeout(function () {
+                                process.exit();
+                            }, 2000);
+                        });
                     });
-                });
+                }, 1000);
 
             });
         });
@@ -1360,6 +1474,7 @@ function Blockchain(config) {
         miningNow: miningNow,
         miningForce: miningForce,
         connections: connections,
+        isReadyForTransaction: isReadyForTransaction,
         registerMessageHandler: registerMessageHandler,
         setMiningForce: function (miningNowP, miningForceP) {
             miningNow = miningNowP;
@@ -1368,8 +1483,10 @@ function Blockchain(config) {
 
     };
     frontend.blockchainObject = blockchainObject;
+    transactor.blockchainObject = blockchainObject;
     return blockchainObject;
 }
+
 
 module.exports = Blockchain;
 

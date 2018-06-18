@@ -1,6 +1,5 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
- BitCoen project - https://bitcoen.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
@@ -15,7 +14,6 @@ const formatToken = require('./formatToken');
 const moment = require('moment');
 
 const KeyValue = require('./keyvalue');
-const levelup = require('level');
 
 const logger = new (require('./logger'))();
 const storj = require('./instanceStorage');
@@ -119,7 +117,10 @@ class BlockHandler {
         logger.info('Blockchain resynchronization started');
         that.ourWalletBlocks = {income: [], outcome: []};
         that.clearDb(function () {
-            that.playBlockchain(0, cb);
+            that.playBlockchain(0, function () {
+                logger.info('Blockchain resynchronization finished');
+                cb();
+            });
         });
 
     }

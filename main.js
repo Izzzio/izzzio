@@ -1,6 +1,5 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
- BitCoen project - https://bitcoen.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
@@ -81,6 +80,7 @@ const config = {
     ],
     emptyBlockInterval: 10000,          //Интервал проверки необходимости выпуска пустого блока
     blacklisting: false,
+    maxTransactionAtempts: 5,           //Сколько попыток добавить блок мы предпренимаем
 
 
     //Tokens

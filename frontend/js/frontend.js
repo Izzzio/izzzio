@@ -1,3 +1,8 @@
+/**
+ iZ³ | Izzzio blockchain - https://izzz.io
+ @author: Andrey Nedobylsky (admin@twister-vl.ru)
+ */
+
 let blockchainStart = (1512670045 * 1000);
 let blockToAccept = 20;
 
@@ -43,6 +48,9 @@ function formatToken(number) {
  */
 function updateInfo() {
     $.get('/getInfo', function (data) {
+
+        data.syncInProgress = !data.isReadyForTransaction;
+
         if(String(balance) !== String(data.balance)) {
             $('.balance').text(formatToken(data.balance));
             balance = data.balance;
@@ -279,9 +287,13 @@ function updateWalletBlockInfo() {
  * Update transactions information
  */
 function updateWalletBlocks() {
-    $.get('/getTransactions', function (data) {
-        walletBlocks = data;
-        updateWalletBlockInfo();
+    $.get('/isReadyForTransaction', function (data) {
+        if(JSON.parse(data)) {
+            $.get('/getTransactions', function (data) {
+                walletBlocks = data;
+                updateWalletBlockInfo();
+            });
+        }
     });
 }
 
@@ -318,7 +330,7 @@ function transanctionsPage() {
         }
 
         htmlTransList += '<div class="w-tr-table-row row ' + (accepted ? '' : 'info') + '">';
-        htmlTransList += '<div class="w-tr-table-cell w-tr-table-block"><a target="_blank" href="http://explorer.bitcoen.io/#'+i.index+'"> ' + i.index + '</a></div>';
+        htmlTransList += '<div class="w-tr-table-cell w-tr-table-block"><a target="_blank" href="http://explorer.bitcoen.io/#' + i.index + '"> ' + i.index + '</a></div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-oper ' + (income ? 'w-oper-plus' : 'w-oper-minus') + ' "></div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-amount">' + formatToken(data.amount) + '</div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-status">' + (accepted ? '<img src="img/lk/done-tick.svg" title="Transaction accepted" alt="">' : '<img src="img/lk/pending.png" title="Pending transaction accepted" class="ld ld-heartbeat " style="animation-duration: 1s" alt="">') + '</div>';

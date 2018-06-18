@@ -1,6 +1,5 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
- BitCoen project - https://bitcoen.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
@@ -38,6 +37,10 @@ class Frontend {
 
         app.get('/getWalletInfo/:id', function (req, res) {
             that.getWalletInfo(req, res)
+        });
+
+        app.get('/isReadyForTransaction', function (req, res) {
+            that.isReadyForTransaction(req, res)
         });
 
         app.post('/createTransaction', function (req, res) {
@@ -98,6 +101,8 @@ class Frontend {
                 data.minerForce = minerForce;
                 data.peers = peers;
                 data.syncInProgress = that.blockHandler.syncInProgress;
+                data.recivingBlocks = storj.get('chainResponseMutex');
+                data.isReadyForTransaction = that.blockchainObject.isReadyForTransaction();
                 data.options = that.options;
                 let wallet = JSON.parse(JSON.stringify(that.wallet));
                 delete wallet.keysPair;
@@ -108,11 +113,16 @@ class Frontend {
 
     }
 
+    isReadyForTransaction(req, res){
+        let that = this;
+        res.send(JSON.stringify(that.blockchainObject.isReadyForTransaction()));
+    }
+
     getTransactions(req, res) {
         let that = this;
 
         function waitForSync() {
-            if(storj.get('blockHandler').syncInProgress) {
+            if(!that.blockchainObject.isReadyForTransaction()) {
                 setTimeout(function () {
                     waitForSync();
                 }, 1000);
@@ -133,7 +143,7 @@ class Frontend {
         let that = this;
 
         function waitForSync() {
-            if(storj.get('blockHandler').syncInProgress) {
+            if(!that.blockchainObject.isReadyForTransaction()) {
                 setTimeout(function () {
                     waitForSync();
                 }, 1000);
@@ -164,7 +174,7 @@ class Frontend {
         let that = this;
 
         function waitForSync() {
-            if(storj.get('blockHandler').syncInProgress) {
+            if(!that.blockchainObject.isReadyForTransaction()) {
                 setTimeout(function () {
                     waitForSync();
                 }, 1000);
@@ -220,7 +230,7 @@ class Frontend {
         let that = this;
 
         function waitForSync() {
-            if(storj.get('blockHandler').syncInProgress) {
+            if(!that.blockchainObject.isReadyForTransaction()) {
                 setTimeout(function () {
                     waitForSync();
                 }, 1000);
@@ -256,7 +266,7 @@ class Frontend {
         let that = this;
 
         function waitForSync() {
-            if(storj.get('blockHandler').syncInProgress) {
+            if(!that.blockchainObject.isReadyForTransaction()) {
                 setTimeout(function () {
                     waitForSync();
                 }, 1000);
