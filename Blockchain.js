@@ -38,6 +38,7 @@ function Blockchain(config) {
     const Wallet = require('./modules/wallet');
     const BlockHandler = require('./modules/blockHandler');
     const Transactor = require('./modules/transactor');
+    const MessagesDispatcher = require('./modules/messagesDispatcher');
     const Frontend = require('./modules/frontend');
     const app = express();
 
@@ -1136,7 +1137,8 @@ function Blockchain(config) {
             id: id,
             timestamp: moment().utc().valueOf(),
             TTL: typeof TTL !== 'undefined' ? TTL : 0, //количество скачков сообщения
-            index: index
+            index: index,
+            mutex: getid() + getid() + getid()
         };
     }
 
@@ -1506,7 +1508,12 @@ function Blockchain(config) {
     };
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
+
+    blockchainObject.messagesDispatcher = new MessagesDispatcher(config, blockchainObject);
+
     storj.put('blockchainObject', blockchainObject);
+
+
     return blockchainObject;
 }
 

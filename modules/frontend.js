@@ -80,8 +80,29 @@ class Frontend {
             that.restoreWallet(req, res)
         });
 
+
+        that.registerMessages();
+
         storj.put('httpServer', app);
 
+    }
+
+    registerMessages() {
+        let that = this;
+        utils.waitForSync(function () {
+            const dispatcher = storj.get('messagesDispatcher');
+            dispatcher.registerMessageHandler('getWalletInfo', function (message) {
+                that.blockHandler.getWallet(message.data.id, function (wallet) {
+                    dispatcher.broadcastMessage({
+                        walletInfo: JSON.parse(wallet),
+                        wallet: message.data.id,
+                        mutex: message.mutex
+                    }, 'getWalletInfo' + dispatcher.RESPONSE_SUFFIX, message.recepient);
+
+                });
+            });
+
+        });
     }
 
     index(req, res) {

@@ -9,6 +9,8 @@ const storj = require('./instanceStorage');
 const utils = require('./utils');
 const fs = require('fs-extra');
 
+const MessagesDispatcher = require('./messagesDispatcher');
+
 /**
  * Transaction Indexer
  */
@@ -127,7 +129,7 @@ class TransactionIndex {
 
 
             that.registerRPCMethods();
-
+            that.registerMessagesHandlers();
             logger.info('Transactions index ready');
             if(typeof cb !== 'undefined') {
                 cb();
@@ -434,6 +436,55 @@ class TransactionIndex {
         });
     }
 
+
+    registerMessagesHandlers() {
+        if(this.indexDisabled) {
+            if(typeof cb !== 'undefined') {
+                cb();
+            }
+            return;
+        }
+
+        let that = this;
+
+        utils.waitForSync(function () {
+            /**
+             * @var {MessagesDispatcher} dispatcher
+             */
+            const dispatcher = storj.get('messagesDispatcher');
+            dispatcher.registerMessageHandler('getWalletTransactions', function (message) {
+                that.getWalletTransactions(message.data.id, function (err, txs) {
+                    dispatcher.broadcastMessage({
+                        txs: txs,
+                        wallet: message.data.id,
+                        mutex: message.mutex
+                    }, 'getWalletTransactions' + dispatcher.RESPONSE_SUFFIX, message.recepient);
+                });
+            });
+
+            dispatcher.registerMessageHandler('getTransactionByHash', function (message) {
+                that.getTransactionByHash(message.data.id, function (err, tx) {
+                    dispatcher.broadcastMessage({
+                        txs: tx,
+                        hash: message.data.id,
+                        mutex: message.mutex
+                    }, 'getTransactionByHash' + dispatcher.RESPONSE_SUFFIX, message.recepient);
+                });
+            });
+
+
+            dispatcher.registerMessageHandler('getTransactionsByBlockIndex', function (message) {
+                that.getTransactionsByBlockIndex(message.data.id, function (err, txs) {
+                    dispatcher.broadcastMessage({
+                        txs: txs,
+                        wallet: message.data.id,
+                        mutex: message.mutex
+                    }, 'getTransactionsByBlockIndex' + dispatcher.RESPONSE_SUFFIX, message.recepient);
+                });
+            });
+
+        });
+    }
 
     /**
      *
