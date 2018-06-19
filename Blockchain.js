@@ -472,6 +472,9 @@ function Blockchain(config) {
     function initMessageHandler(ws) {
         ws.on('message', (data) => {
             if(data.length > config.maximumInputSize) {
+                if(config.program.verbose) {
+                    logger.error('Input message exceeds maximum input size (' + data.length + ' > ' + config.maximumInputSize + ')');
+                }
                 data = null;
                 return;
             }
@@ -751,6 +754,7 @@ function Blockchain(config) {
 
 
         let receivedBlocks = JSON.parse(message.data);
+
 
         if(receivedBlocks.length === 0 || receivedBlocks[0] === false) {
             storj.put('chainResponseMutex', false);
