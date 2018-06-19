@@ -101,7 +101,7 @@ const config = {
     //Database
     walletsDB: 'wallets',                   // false - для хранения в ОЗУ, mem://wallets.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
     blocksDB: 'blocks',                     // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
-    blocksSavingInterval: false,            // false = для отключения автосохранения, или количество милилсекунд
+    blocksSavingInterval: 300000,            // false = для отключения автосохранения, или количество милилсекунд
     transactionIndexDB: 'transactions.db',  // база данных для индекса транзакций, false - для работы с ОЗУ (каждый раз индекс будет перестроен)
     transactionIndexPerf: true,             // режим высокой производительности индекса (требует много ОЗУ)
     transactionIndexEnable: false,          // активировать построение индекса
