@@ -151,12 +151,12 @@ class KeyValue {
         let that = this;
         switch (that.type) {
             case STORAGE_TYPE.MEMORY:
-                if(typeof that.name !== 'undefined') {
-                    fs.writeFileSync(that.config.workDir + '/' + that.name, JSON.stringify(that.memKeyValue));
-                }
-                if(typeof callback !== 'undefined') {
-                    callback();
-                }
+                that.save(function () {
+                    if(typeof callback !== 'undefined') {
+                        callback();
+                    }
+                });
+
                 break;
             case STORAGE_TYPE.LEVELDB:
                 that.levelup.close(callback);
@@ -190,6 +190,25 @@ class KeyValue {
                     if(typeof callback !== 'undefined') {
                         callback();
                     }
+                }
+                break;
+        }
+    }
+
+    save(callback) {
+        let that = this;
+        switch (that.type) {
+            case STORAGE_TYPE.MEMORY:
+                if(typeof that.name !== 'undefined') {
+                    fs.writeFileSync(that.config.workDir + '/' + that.name, JSON.stringify(that.memKeyValue));
+                }
+                if(typeof callback !== 'undefined') {
+                    callback();
+                }
+                break;
+            case STORAGE_TYPE.LEVELDB: //LevelDB can't save manually
+                if(typeof callback !== 'undefined') {
+                    callback();
                 }
                 break;
         }

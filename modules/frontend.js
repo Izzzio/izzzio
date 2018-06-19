@@ -6,6 +6,7 @@
 const express = require("express");
 const Wallet = require("./wallet");
 const storj = require('./instanceStorage');
+const utils = require('./utils');
 
 /**
  * Wallet and RPC interface
@@ -79,6 +80,8 @@ class Frontend {
             that.restoreWallet(req, res)
         });
 
+        storj.put('httpServer', app);
+
     }
 
     index(req, res) {
@@ -113,7 +116,7 @@ class Frontend {
 
     }
 
-    isReadyForTransaction(req, res){
+    isReadyForTransaction(req, res) {
         let that = this;
         res.send(JSON.stringify(that.blockchainObject.isReadyForTransaction()));
     }
@@ -121,43 +124,22 @@ class Frontend {
     getTransactions(req, res) {
         let that = this;
 
-        function waitForSync() {
-            if(!that.blockchainObject.isReadyForTransaction()) {
-                setTimeout(function () {
-                    waitForSync();
-                }, 1000);
-                return;
-            }
-
+        utils.waitForSync(function () {
             res.send(that.blockHandler.ourWalletBlocks);
-        }
-
-        setTimeout(function () {
-            waitForSync();
-        }, 10);
-
+        });
 
     }
 
     getWalletInfo(req, res) {
         let that = this;
 
-        function waitForSync() {
-            if(!that.blockchainObject.isReadyForTransaction()) {
-                setTimeout(function () {
-                    waitForSync();
-                }, 1000);
-                return;
-            }
+        utils.waitForSync(function () {
 
             that.blockHandler.getWallet(req.params.id, function (wallet) {
                 res.send(JSON.parse(wallet));
             });
-        }
+        });
 
-        setTimeout(function () {
-            waitForSync();
-        }, 10);
 
     }
 
@@ -173,34 +155,27 @@ class Frontend {
     instantCreateWallet(req, res) {
         let that = this;
 
-        function waitForSync() {
-            if(!that.blockchainObject.isReadyForTransaction()) {
-                setTimeout(function () {
-                    waitForSync();
-                }, 1000);
-                return;
-            }
-
+        utils.waitForSync(function () {
             that.blockchainObject.createNewWallet(function (wallet) {
                 wallet.status = 'ok';
                 res.send(wallet);
             }, true);
-        }
-
-        setTimeout(function () {
-            waitForSync();
-        }, 10);
-
+        });
 
     }
 
     createTransaction(req, res) {
         let that = this;
-        if(!that.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp), function (block) {
-            res.send(block);
-        })) {
-            res.send('false');
-        }
+
+        utils.waitForSync(function () {
+            if(!that.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp), function (block) {
+                res.send(block);
+            })) {
+                res.send('false');
+            }
+        });
+
+
     }
 
 
@@ -229,14 +204,7 @@ class Frontend {
     restoreWallet(req, res) {
         let that = this;
 
-        function waitForSync() {
-            if(!that.blockchainObject.isReadyForTransaction()) {
-                setTimeout(function () {
-                    waitForSync();
-                }, 1000);
-                return;
-            }
-
+        utils.waitForSync(function () {
             that.wallet.keysPair.public = req.body.public;
             that.wallet.keysPair.private = req.body.private;
             that.wallet.id = req.body.id;
@@ -253,11 +221,7 @@ class Frontend {
             } else {
                 res.send({status: 'error', message: 'Incorrect wallet or keypair'});
             }
-        }
-
-        setTimeout(function () {
-            waitForSync();
-        }, 10);
+        });
 
 
     }
@@ -265,15 +229,7 @@ class Frontend {
     instantTransaction(req, res) {
         let that = this;
 
-        function waitForSync() {
-            if(!that.blockchainObject.isReadyForTransaction()) {
-                setTimeout(function () {
-                    waitForSync();
-                }, 1000);
-                return;
-            }
-
-
+        utils.waitForSync(function () {
             /**
              *
              * @type {Wallet}
@@ -305,12 +261,7 @@ class Frontend {
             }, function (generatedBlock) {
                 res.send(generatedBlock);
             });
-
-        }
-
-        setTimeout(function () {
-            waitForSync();
-        }, 10);
+        });
 
 
     }

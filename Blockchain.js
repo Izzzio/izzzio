@@ -217,6 +217,10 @@ function Blockchain(config) {
 
     storj.put('frontend', frontend);
 
+    blockHandler.index.registerRPCMethods();
+
+    //************************************************************************************
+
     const sockets = [];
 
     let miningNow = 0;
@@ -248,6 +252,7 @@ function Blockchain(config) {
         if(block.index > maxBlock) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
+            storj.put('maxBlock', maxBlock);
         }
         blockHandler.changeMaxBlock(maxBlock);
         transactor.changeMaxBlock(maxBlock);
@@ -271,6 +276,7 @@ function Blockchain(config) {
         if(block.index > maxBlock) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
+            storj.put('maxBlock', maxBlock);
         }
 
         if(!noHandle) {
@@ -313,6 +319,7 @@ function Blockchain(config) {
                         return;
                     }
                     maxBlock = Number(value);
+                    storj.put('maxBlock', maxBlock);
                     lastKnownBlock = maxBlock;
                     logger.info('Block count: ' + maxBlock);
                     blockHandler.changeMaxBlock(maxBlock);
@@ -1374,6 +1381,13 @@ function Blockchain(config) {
         startNode(function initilized() {
             setInterval(peerExchange, config.peerExchangeInterval);
             setInterval(broadcastLastBlock, config.hearbeatInterval);
+            if(config.blocksSavingInterval) {
+                setInterval(function () {
+                    if(!storj.get('terminating')) {
+                        blockchain.save();
+                    }
+                }, config.blocksSavingInterval);
+            }
 
             transactor.startWatch(5000);
 
@@ -1405,9 +1419,13 @@ function Blockchain(config) {
                     blockchain.close(function () {
                         logger.info('Saving wallets cache');
                         blockHandler.wallets.close(function () {
-                            setTimeout(function () {
-                                process.exit();
-                            }, 2000);
+                            logger.info('Saving transactions index');
+                            blockHandler.index.terminate(function () {
+                                setTimeout(function () {
+                                    process.exit();
+                                }, 2000);
+                            });
+
                         });
                     });
                 }, 1000);
@@ -1488,6 +1506,7 @@ function Blockchain(config) {
     };
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
+    storj.put('blockchainObject', blockchainObject);
     return blockchainObject;
 }
 

@@ -12,13 +12,16 @@ class BitcoenRPC
 
 
     const METHODS = [
-        'getInfo'            => ['httpMethod' => 'get'],
-        'createWallet'       => ['httpMethod' => 'post'],
-        'changeWallet'       => ['httpMethod' => 'post'],
-        'getTransactions'    => ['httpMethod' => 'get'],
-        'createTransaction'  => ['httpMethod' => 'post'],
-        'instantTransaction' => ['httpMethod' => 'post'],
-        'getWalletInfo'      => ['httpMethod' => 'get'],
+        'getInfo'                     => ['httpMethod' => 'get'],
+        'createWallet'                => ['httpMethod' => 'post'],
+        'changeWallet'                => ['httpMethod' => 'post'],
+        'getTransactions'             => ['httpMethod' => 'get'],
+        'createTransaction'           => ['httpMethod' => 'post'],
+        'instantTransaction'          => ['httpMethod' => 'post'],
+        'getWalletInfo'               => ['httpMethod' => 'get'],
+        'getWalletTransactions'       => ['httpMethod' => 'get'],
+        'getTransactionByHash'        => ['httpMethod' => 'get'],
+        'getTransactionsByBlockIndex' => ['httpMethod' => 'get'],
     ];
 
     const TINY_ADDRESS_PREFIX = 'BL_';
@@ -283,6 +286,74 @@ class BitcoenRPC
     public function getWalletInfo($id)
     {
         return $this->request('getWalletInfo', [], '/' . urldecode($id));
+    }
+
+    /**
+     * Get income and outcome transactions lists for full wallet address
+     * @return array ['outcome'=>[['from'=>'string','to'=>'string','amount'=>'int','fromTimestamp'=>'int']]]
+     * @throws InvalidMethodException
+     * @throws ReturnException
+     * @throws RpcCallException
+     */
+    public function getWalletTransactions($id)
+    {
+        $txs = $this->request('getWalletTransactions', [], '/' . urldecode($id));
+
+        return [
+            'income'  => self::indexTxsToStandartFormat($txs['income']),
+            'outcome' => self::indexTxsToStandartFormat($txs['outcome']),
+        ];
+    }
+
+
+    /**
+     * Get transactions in block
+     * @return array [['from'=>'string','to'=>'string','amount'=>'int','fromTimestamp'=>'int']]
+     * @throws InvalidMethodException
+     * @throws ReturnException
+     * @throws RpcCallException
+     */
+    public function getTransactionsByBlockIndex($id)
+    {
+        $txs = $this->request('getTransactionsByBlockIndex', [], '/' . urldecode($id));
+
+        return self::indexTxsToStandartFormat($txs);
+    }
+
+    /**
+     * Get transaction by hash
+     * @return array ['from'=>'string','to'=>'string','amount'=>'int','fromTimestamp'=>'int']
+     * @throws InvalidMethodException
+     * @throws ReturnException
+     * @throws RpcCallException
+     */
+    public function getTransactionByHash($hash)
+    {
+        $tx = $this->request('getTransactionByHash', [], '/' . urldecode($hash));
+
+        return self::indexTxsToStandartFormat([$tx])[0];
+    }
+
+
+    /**
+     * Converts index transactions format to standart
+     * @param $txs
+     * @return array
+     */
+    private static function indexTxsToStandartFormat($txs)
+    {
+        $new = [];
+        foreach ($txs as $tx) {
+            $new[] = [
+                'from'          => $tx['from_address'],
+                'to'            => $tx['to_address'],
+                'amount'        => $tx['amount'],
+                'fromTimestamp' => $tx['from_timestamp'],
+                'timestamp'     => $tx['timestamp'],
+            ];
+        }
+
+        return $new;
     }
 
     /**
