@@ -128,8 +128,11 @@ class TransactionIndex {
                 "  INDEX `from_address_to_address` (`from_address` ASC, `to_address` ASC));\n");*/
 
 
-            that.registerRPCMethods();
-            that.registerMessagesHandlers();
+            utils.waitForSync(function () {
+                that.registerRPCMethods();
+                that.registerMessagesHandlers();
+            });
+
             logger.info('Transactions index ready');
             if(typeof cb !== 'undefined') {
                 cb();
