@@ -1,12 +1,12 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
- BitCoen project - https://bitcoen.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
 const express = require("express");
 const Wallet = require("./wallet");
 const storj = require('./instanceStorage');
+const utils = require('./utils');
 
 /**
  * Wallet and RPC interface
@@ -38,6 +38,10 @@ class Frontend {
 
         app.get('/getWalletInfo/:id', function (req, res) {
             that.getWalletInfo(req, res)
+        });
+
+        app.get('/isReadyForTransaction', function (req, res) {
+            that.isReadyForTransaction(req, res)
         });
 
         app.post('/createTransaction', function (req, res) {
@@ -76,6 +80,29 @@ class Frontend {
             that.restoreWallet(req, res)
         });
 
+
+        that.registerMessages();
+
+        storj.put('httpServer', app);
+
+    }
+
+    registerMessages() {
+        let that = this;
+        utils.waitForSync(function () {
+            const dispatcher = storj.get('messagesDispatcher');
+            dispatcher.registerMessageHandler('getWalletInfo', function (message) {
+                that.blockHandler.getWallet(message.data.id, function (wallet) {
+                    dispatcher.broadcastMessage({
+                        walletInfo: JSON.parse(wallet),
+                        wallet: message.data.id,
+                        mutex: message.mutex
+                    }, 'getWalletInfo' + dispatcher.RESPONSE_SUFFIX, message.recepient);
+
+                });
+            });
+
+        });
     }
 
     index(req, res) {
@@ -98,6 +125,8 @@ class Frontend {
                 data.minerForce = minerForce;
                 data.peers = peers;
                 data.syncInProgress = that.blockHandler.syncInProgress;
+                data.recivingBlocks = storj.get('chainResponseMutex');
+                data.isReadyForTransaction = that.blockchainObject.isReadyForTransaction();
                 data.options = that.options;
                 let wallet = JSON.parse(JSON.stringify(that.wallet));
                 delete wallet.keysPair;
@@ -108,46 +137,30 @@ class Frontend {
 
     }
 
+    isReadyForTransaction(req, res) {
+        let that = this;
+        res.send(JSON.stringify(that.blockchainObject.isReadyForTransaction()));
+    }
+
     getTransactions(req, res) {
         let that = this;
 
-        function waitForSync() {
-            if(storj.get('blockHandler').syncInProgress) {
-                setTimeout(function () {
-                    waitForSync();
-                }, 1000);
-                return;
-            }
-
+        utils.waitForSync(function () {
             res.send(that.blockHandler.ourWalletBlocks);
-        }
-
-        setTimeout(function () {
-            waitForSync();
-        }, 10);
-
+        });
 
     }
 
     getWalletInfo(req, res) {
         let that = this;
 
-        function waitForSync() {
-            if(storj.get('blockHandler').syncInProgress) {
-                setTimeout(function () {
-                    waitForSync();
-                }, 1000);
-                return;
-            }
+        utils.waitForSync(function () {
 
             that.blockHandler.getWallet(req.params.id, function (wallet) {
                 res.send(JSON.parse(wallet));
             });
-        }
+        });
 
-        setTimeout(function () {
-            waitForSync();
-        }, 10);
 
     }
 
@@ -163,34 +176,27 @@ class Frontend {
     instantCreateWallet(req, res) {
         let that = this;
 
-        function waitForSync() {
-            if(storj.get('blockHandler').syncInProgress) {
-                setTimeout(function () {
-                    waitForSync();
-                }, 1000);
-                return;
-            }
-
+        utils.waitForSync(function () {
             that.blockchainObject.createNewWallet(function (wallet) {
                 wallet.status = 'ok';
                 res.send(wallet);
             }, true);
-        }
-
-        setTimeout(function () {
-            waitForSync();
-        }, 10);
-
+        });
 
     }
 
     createTransaction(req, res) {
         let that = this;
-        if(!that.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp), function (block) {
-            res.send(block);
-        })) {
-            res.send('false');
-        }
+
+        utils.waitForSync(function () {
+            if(!that.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp), function (block) {
+                res.send(block);
+            })) {
+                res.send('false');
+            }
+        });
+
+
     }
 
 
@@ -219,14 +225,7 @@ class Frontend {
     restoreWallet(req, res) {
         let that = this;
 
-        function waitForSync() {
-            if(storj.get('blockHandler').syncInProgress) {
-                setTimeout(function () {
-                    waitForSync();
-                }, 1000);
-                return;
-            }
-
+        utils.waitForSync(function () {
             that.wallet.keysPair.public = req.body.public;
             that.wallet.keysPair.private = req.body.private;
             that.wallet.id = req.body.id;
@@ -243,11 +242,7 @@ class Frontend {
             } else {
                 res.send({status: 'error', message: 'Incorrect wallet or keypair'});
             }
-        }
-
-        setTimeout(function () {
-            waitForSync();
-        }, 10);
+        });
 
 
     }
@@ -255,15 +250,7 @@ class Frontend {
     instantTransaction(req, res) {
         let that = this;
 
-        function waitForSync() {
-            if(storj.get('blockHandler').syncInProgress) {
-                setTimeout(function () {
-                    waitForSync();
-                }, 1000);
-                return;
-            }
-
-
+        utils.waitForSync(function () {
             /**
              *
              * @type {Wallet}
@@ -295,12 +282,7 @@ class Frontend {
             }, function (generatedBlock) {
                 res.send(generatedBlock);
             });
-
-        }
-
-        setTimeout(function () {
-            waitForSync();
-        }, 10);
+        });
 
 
     }

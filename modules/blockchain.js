@@ -50,6 +50,11 @@ class Blockchain {
         let that = this;
         that.db.close(callback);
     }
+
+    save(callback){
+        let that = this;
+        that.db.save(callback);
+    }
 }
 
 module.exports = Blockchain;

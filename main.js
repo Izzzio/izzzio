@@ -1,6 +1,5 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
- BitCoen project - https://bitcoen.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
@@ -81,6 +80,7 @@ const config = {
     ],
     emptyBlockInterval: 10000,          //Интервал проверки необходимости выпуска пустого блока
     blacklisting: false,
+    maxTransactionAtempts: 5,           //Сколько попыток добавить блок мы предпренимаем
 
 
     //Tokens
@@ -99,8 +99,12 @@ const config = {
     workDir: '.',
 
     //Database
-    walletsDB: 'wallets',               // false - для хранения в ОЗУ, mem://wallets.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
-    blocksDB: 'blocks',                 // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
+    walletsDB: 'wallets',                   // false - для хранения в ОЗУ, mem://wallets.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
+    blocksDB: 'blocks',                     // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
+    blocksSavingInterval: 300000,            // false = для отключения автосохранения, или количество милилсекунд
+    transactionIndexDB: 'transactions.db',  // база данных для индекса транзакций, false - для работы с ОЗУ (каждый раз индекс будет перестроен)
+    transactionIndexPerf: true,             // режим высокой производительности индекса (требует много ОЗУ)
+    transactionIndexEnable: false,          // активировать построение индекса
 
     //Application
     appEntry: false       //Точка входа в "приложение". False - если не требуется

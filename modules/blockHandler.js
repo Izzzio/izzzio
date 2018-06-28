@@ -1,6 +1,5 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
- BitCoen project - https://bitcoen.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
@@ -15,7 +14,7 @@ const formatToken = require('./formatToken');
 const moment = require('moment');
 
 const KeyValue = require('./keyvalue');
-const levelup = require('level');
+const TransactionsIndex = require('./transactionIndex');
 
 const logger = new (require('./logger'))();
 const storj = require('./instanceStorage');
@@ -42,11 +41,14 @@ class BlockHandler {
             } catch (e) {
             }
         }
-        this.wallets =  new KeyValue(config.walletsDB); // levelup(config.workDir + '/wallets');
+        this.wallets = new KeyValue(config.walletsDB); // levelup(config.workDir + '/wallets');
         this.options = options;
         this.maxBlock = -1;
         this.enableLogging = true;
         this.ourWalletBlocks = {income: [], outcome: []};
+        this.index = new TransactionsIndex(config);
+        this.index.initialize();
+
 
         if(config.program.fastLoad) {
             try {
@@ -94,9 +96,9 @@ class BlockHandler {
         let that = this;
         setTimeout(function () {
             //try {
-                that.wallets.clear(function () {
-                    cb();
-                });
+            that.wallets.clear(function () {
+                cb();
+            });
             /*} catch (e) {
                 console.log(e);
             }*/
@@ -119,7 +121,10 @@ class BlockHandler {
         logger.info('Blockchain resynchronization started');
         that.ourWalletBlocks = {income: [], outcome: []};
         that.clearDb(function () {
-            that.playBlockchain(0, cb);
+            that.playBlockchain(0, function () {
+                logger.info('Blockchain resynchronization finished');
+                cb();
+            });
         });
 
     }
@@ -289,46 +294,51 @@ class BlockHandler {
             // that.log(blockData.type + block.index);
 
             if(block.index === keyEmissionMaxBlock) {
-                if(this.keyring.length === 0) {
+                if(that.keyring.length === 0) {
                     logger.warning('Network without keyring');
                 }
 
-                if(this.isKeyFromKeyring(this.wallet.keysPair.public)) {
+                if(that.isKeyFromKeyring(that.wallet.keysPair.public)) {
                     logger.warning('THRUSTED NODE. BE CAREFUL.');
                 }
             }
 
-            switch (blockData.type) {
-                case WalletRegister.prototype.constructor.name:
-                    this.handleWalletBlock(blockData, block, callback);
-                    break;
-                case Transaction.prototype.constructor.name:
-                    if(this.handleTransaction(blockData, block, callback)) {
-                        fs.writeFileSync(that.config.workDir + '/ourWalletBlocks.json', JSON.stringify(this.ourWalletBlocks));
-                    } else {
-                        // logger.error('Block ' + block + ' rejected');
-                    }
-                    break;
-                case Keyring.prototype.constructor.name:
-                    if(block.index >= keyEmissionMaxBlock || this.keyring.length !== 0) {
-                        logger.warning('Fake keyring in block ' + block.index);
+            that.index.checkBlockChange(block, blockData.type, function () {
+
+
+                switch (blockData.type) {
+                    case WalletRegister.prototype.constructor.name:
+                        that.handleWalletBlock(blockData, block, callback);
+                        break;
+                    case Transaction.prototype.constructor.name:
+                        if(that.handleTransaction(blockData, block, callback)) {
+                            fs.writeFileSync(that.config.workDir + '/ourWalletBlocks.json', JSON.stringify(that.ourWalletBlocks));
+                        } else {
+                            // logger.error('Block ' + block + ' rejected');
+                        }
+                        break;
+                    case Keyring.prototype.constructor.name:
+                        if(block.index >= keyEmissionMaxBlock || that.keyring.length !== 0) {
+                            logger.warning('Fake keyring in block ' + block.index);
+                            return callback();
+                        }
+                        logger.info('Keyring recived in block ' + block.index);
+                        that.keyring = blockData.keys;
+                        fs.writeFileSync(that.config.workDir + '/keyring.json', JSON.stringify(that.keyring));
                         return callback();
-                    }
-                    logger.info('Keyring recived in block ' + block.index);
-                    this.keyring = blockData.keys;
-                    fs.writeFileSync(this.config.workDir + '/keyring.json', JSON.stringify(this.keyring));
-                    return callback();
-                    break;
-                /*                case Smart.prototype.constructor.name:
-                                    this.handleSmartBlock(blockData, block, callback);
-                                    break;*/
-                case 'Empty':
-                    return callback();
-                    break;
-                default:
-                    logger.info('Unexpected block type ' + block.index);
-                    return callback();
-            }
+                        break;
+                    /*                case Smart.prototype.constructor.name:
+                                        this.handleSmartBlock(blockData, block, callback);
+                                        break;*/
+                    case 'Empty':
+                        return callback();
+                        break;
+                    default:
+                        logger.info('Unexpected block type ' + block.index);
+                        return callback();
+                }
+
+            });
         } catch (e) {
             console.log(e);
             return callback();
@@ -361,13 +371,19 @@ class BlockHandler {
                 if(err) {
                     that.wallets.del(blockData.id, {sync: true}, function (err) {
                         that.wallets.put(blockData.id, JSON.stringify(testWallet), {sync: true}, function (err) {
+                            //If wallet is our wallet
                             if(testWallet.id === that.wallet.id) {
                                 that.wallet.block = block.index;
                                 that.wallet.balance = testWallet.balance;
                                 that.wallet.accepted = true;
                                 that.wallet.update();
                             }
-                            return callback();
+
+                            that.index.handleWalletRegister(block, blockData,function () {
+                                return callback();
+                            });
+
+
                         });
                     });
                 } else {
@@ -470,7 +486,11 @@ class BlockHandler {
                                                                 that.wallet.update();
                                                             }
 
-                                                            callback();
+                                                            that.index.handleTransaction(block, block.hash, blockData, function () {
+                                                                callback();
+                                                                return true;
+                                                            });
+
                                                             return true;
                                                         });
                                                     });
