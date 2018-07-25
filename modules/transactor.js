@@ -135,9 +135,9 @@ class Transactor {
         let that = this;
         //console.log('Transactor: Create transaction');
 
-        if(!that.blockchainObject.isReadyForTransaction()) {
+        /*if(!that.blockchainObject.isReadyForTransaction()) {
             return false;
-        }
+        }*/
 
         that.transactions.push({object: object, block: null, generator: generator, repeats: 0});
         let index = that.transactions.length - 1;
