@@ -350,6 +350,8 @@ class BitcoenRPC
                 'amount'        => $tx['amount'],
                 'fromTimestamp' => $tx['from_timestamp'],
                 'timestamp'     => $tx['timestamp'],
+                'block'         => $tx['block'],
+                'txh'           => $tx['transaction_hash'],
             ];
         }
 
