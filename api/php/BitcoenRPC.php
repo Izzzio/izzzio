@@ -290,7 +290,7 @@ class BitcoenRPC
 
     /**
      * Get income and outcome transactions lists for full wallet address
-     * @return array ['outcome'=>[['from'=>'string','to'=>'string','amount'=>'int','fromTimestamp'=>'int']]]
+     * @return array ['outcome'=>[['from'=>'string','to'=>'string','amount'=>'int','fromTimestamp'=>'int','block'=>'int','txh'=>'string']]]
      * @throws InvalidMethodException
      * @throws ReturnException
      * @throws RpcCallException
@@ -308,7 +308,7 @@ class BitcoenRPC
 
     /**
      * Get transactions in block
-     * @return array [['from'=>'string','to'=>'string','amount'=>'int','fromTimestamp'=>'int']]
+     * @return array [['from'=>'string','to'=>'string','amount'=>'int','fromTimestamp'=>'int','block'=>'int','txh'=>'string']]
      * @throws InvalidMethodException
      * @throws ReturnException
      * @throws RpcCallException
@@ -322,7 +322,7 @@ class BitcoenRPC
 
     /**
      * Get transaction by hash
-     * @return array ['from'=>'string','to'=>'string','amount'=>'int','fromTimestamp'=>'int']
+     * @return array ['from'=>'string','to'=>'string','amount'=>'int','fromTimestamp'=>'int','block'=>'int','txh'=>'string']
      * @throws InvalidMethodException
      * @throws ReturnException
      * @throws RpcCallException
