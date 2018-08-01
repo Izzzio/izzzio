@@ -1,11 +1,10 @@
 <?php
 /**
  * iZ³ | Izzzio blockchain - https://izzz.io
- * BitCoen project - https://bitcoen.io
  * @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-class BitcoenRPC
+class NodeRPC
 {
     private $_baseUrl = 'http://localhost:3001/';
     private $_password = '';
@@ -26,7 +25,7 @@ class BitcoenRPC
 
     const TINY_ADDRESS_PREFIX = 'BL_';
 
-    const MIL_TO_BEN = 10000000000;
+    const MIL_TO_IZ = 10000000000;
 
     /**
      * cURL request
@@ -373,11 +372,11 @@ class BitcoenRPC
      * @param int $amount
      * @return float|int
      */
-    public static function mil2Ben($amount)
+    public static function mil2IZ($amount)
     {
-        $scale = strlen(substr(self::MIL_TO_BEN, 1));
+        $scale = strlen(substr(self::MIL_TO_IZ, 1));
 
-        return bcdiv($amount, self::MIL_TO_BEN, $scale);
+        return bcdiv($amount, self::MIL_TO_IZ, $scale);
     }
 
     /**
@@ -385,9 +384,9 @@ class BitcoenRPC
      * @param float|int $amount
      * @return int
      */
-    public static function ben2Mil($amount)
+    public static function IZ2Mil($amount)
     {
-        return round($amount * self::MIL_TO_BEN);
+        return round($amount * self::MIL_TO_IZ);
     }
 
 }

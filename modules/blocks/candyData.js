@@ -1,7 +1,6 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
  Candy - https://github.com/Izzzio/Candy
- Not a part of BitCoen project!
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 

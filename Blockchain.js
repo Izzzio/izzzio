@@ -1,6 +1,5 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
- BitCoen project - https://bitcoen.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
@@ -441,13 +440,18 @@ function Blockchain(config) {
 
         for (let i in sockets) {
             if(sockets.hasOwnProperty(i)) {
-                if(sockets[i]._socket.remoteAddress === ws._socket.remoteAddress && sockets[i].readyState === 1 && !sockets[i]._isServer) {
-                    //TODO: Modify double connection handler
-                    /* if(config.program.verbose) {
-                         logger.info('Dublicated peer ' + ws._socket.remoteAddress);
-                     }
-                     ws.close();
-                     return;*/
+                if(
+                    sockets[i]._socket.remoteAddress === ws._socket.remoteAddress &&
+                    sockets[i]._socket.remotePort === ws._socket.remotePort &&
+                    sockets[i].readyState === 1 &&
+                    !sockets[i]._isServer &&
+                    !config.program.ignoreDoubleConnections
+                ) {
+                    if(config.program.verbose) {
+                        logger.info('Dublicated peer ' + ws._socket.remoteAddress);
+                    }
+                    ws.close();
+                    return;
                 }
 
                 if(sockets[i].readyState !== 1) {
@@ -509,7 +513,15 @@ function Blockchain(config) {
                     handleBlockchainResponse(message);
                     break;
                 case MessageType.MY_PEERS:
-                    connectToPeers(message.data);
+                    if(!storj.get('peerExchangeMutex')) { //Блокируем получение списка пиров на таймаут обмена
+
+                        storj.put('peerExchangeMutex', true);
+                        setTimeout(function () {
+                            storj.put('peerExchangeMutex', false);
+                        }, config.peerExchangeInterval);
+
+                        connectToPeers(message.data);
+                    }
                     break;
                 case  MessageType.BROADCAST:
 

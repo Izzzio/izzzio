@@ -1,10 +1,5 @@
-**BitCoen wallet. Based on iZ³ platform**
+#iZ³ Node
 
-* The description will be supplemented
-
-## Releases
-
-You can find releases here [https://github.com/Izzzio/BitCoenWallet/releases](https://github.com/Izzzio/BitCoenWallet/releases)
 
 
 ## Building
@@ -16,7 +11,7 @@ You can find releases here [https://github.com/Izzzio/BitCoenWallet/releases](ht
 
 NPM version >= 5.3.0
 
-**BitCoen Wallet shell** depends on Electron version >= 1.6.2
+**Wallet shell** depends on Electron version >= 1.6.2
 
 #### Before building:
 
@@ -52,7 +47,7 @@ node main.js
 
 ## Contributing
 
-1. Fork it ( [https://github.com/Izzzio/BitCoenWallet/fork](https://github.com/Izzzio/BitCoenWallet/fork) )
+1. Fork it ( [https://github.com/Izzzio/iz3node/fork](https://github.com/Izzzio/iz3node/fork) )
 2. Create your feature branch (git checkout -b my-new-feature)
 3. Commit your changes (git commit -am 'Add some feature')
 4. Push to the branch (git push origin my-new-feature)
