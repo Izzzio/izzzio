@@ -1,0 +1,15 @@
+{
+  "p2pPort": 6000,
+  "httpServer": "localhost",
+  "httpPort": 3001,
+  "enableMessaging": false,
+  "rpcPassword": "",
+  "blockAcceptCount": 0,
+  "maxPeers": 25,
+  "workDir": ".",
+  "walletFile": "wallet.json",
+  "transactionIndexEnable": false,
+  "initialPeers": [],
+  "blocksDB": "mem://blocks.json",
+  "walletsDB": false
+}
