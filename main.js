@@ -81,6 +81,7 @@ const config = {
     emptyBlockInterval: 10000,          //Интервал проверки необходимости выпуска пустого блока
     blacklisting: false,
     maxTransactionAtempts: 5,           //Сколько попыток добавить блок мы предпренимаем
+    keyringKeysCount: 5,                //Сколько генерировать ключей в связку при старте сети. Используется в Trusted консенсусе и  других
 
 
     //Tokens

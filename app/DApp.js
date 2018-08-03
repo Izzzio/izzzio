@@ -5,6 +5,8 @@
 
 const MESSAGE_MUTEX_TIMEOUT = 1000;
 
+const storj = require('../modules/instanceStorage');
+
 class DApp {
 
     constructor(config, blockchain) {
@@ -67,10 +69,20 @@ class DApp {
     generateAndAddBlock(blockData, cb, cancelCondition) {
         let that = this;
         that.generateBlock(blockData, function (generatedBlock) {
-            that.blockchain.addBlock(generatedBlock);
-            that.blockchain.broadcastLastBlock();
-            cb(generatedBlock);
+            that.blockchain.addBlock(generatedBlock, function () {
+                that.blockchain.broadcastLastBlock();
+                cb(generatedBlock);
+            });
+
         }, cancelCondition);
+    }
+
+    /**
+     * Returns config object
+     * @return {*}
+     */
+    static getConfig() {
+        return storj.get('config');
     }
 
     /**

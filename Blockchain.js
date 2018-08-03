@@ -256,14 +256,16 @@ function Blockchain(config) {
         }
         blockHandler.changeMaxBlock(maxBlock);
         transactor.changeMaxBlock(maxBlock);
-        blockchain.put(Number(index), JSON.stringify(block));
-        if(!noHandle) {
-            blockHandler.handleBlock(block, cb);
-        } else {
-            if(cb) {
-                cb();
+        blockchain.put(Number(index), JSON.stringify(block), function () {
+            if(!noHandle) {
+                blockHandler.handleBlock(block, cb);
+            } else {
+                if(cb) {
+                    cb();
+                }
             }
-        }
+        });
+
     }
 
 
@@ -271,8 +273,9 @@ function Blockchain(config) {
      * Добавляет блок в конец цепочки
      * @param block
      * @param {Boolean} noHandle
+     * @param {Function} cb
      */
-    function addBlockToChain(block, noHandle) {
+    function addBlockToChain(block, noHandle, cb) {
         if(block.index > maxBlock) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
@@ -283,7 +286,7 @@ function Blockchain(config) {
             noHandle = false;
         }
 
-        addBlockToChainIndex(maxBlock, block, noHandle);
+        addBlockToChainIndex(maxBlock, block, noHandle, cb);
     }
 
 //Врапперы для модуля Sync, а то он любит портить this объекта
@@ -672,13 +675,14 @@ function Blockchain(config) {
     /**
      * Добавляет блок в цепочку с проверкой
      * @param newBlock
+     * @param cb
      */
-    function addBlock(newBlock) {
+    function addBlock(newBlock, cb) {
         getLatestBlock(function (lastestBlock) {
             if(isValidNewBlock(newBlock, lastestBlock)) {
-                addBlockToChain(newBlock, function (err) {
-                    console.log(err);
-                });
+                addBlockToChain(newBlock, false, cb);
+            } else {
+                logger.error("Trying add invalid block");
             }
         });
 
@@ -1191,8 +1195,8 @@ function Blockchain(config) {
                 generateNextBlockAuto(blockData, function (generatedBlock) {
                     addBlock(generatedBlock);
                     broadcastLastBlock();
-                    cb(generatedBlock);
                     setTimeout(keyringEmission, 10000);
+                    cb(generatedBlock);
                 });
             }, function () {
                 // wallet.accepted = true;
@@ -1259,23 +1263,32 @@ function Blockchain(config) {
         if(config.program.enableAddressRotation) {
             rotateAddress();
         }
-        let validatorReversed = config.validators;
+        let validators = config.validators;
         /**
          * Модули консенсусов изначально расположены в порядке повышения приоритета.
          * Выбор консенсуса для генерации блока, должен идти в порядке убывания приоритета
          */
-        validatorReversed.reverse();
-        for (let a in validatorReversed) {
-            if(validatorReversed.hasOwnProperty(a)) {
-                if(validatorReversed[a].isReady()) {
-                    validatorReversed[a].generateNextBlock(blockData, cb, cancelCondition);
-                    validatorReversed.reverse();
+        /* validatorReversed.reverse();
+         for (let a in validatorReversed) {
+             if(validatorReversed.hasOwnProperty(a)) {
+                 if(validatorReversed[a].isReady()) {
+                     validatorReversed[a].generateNextBlock(blockData, cb, cancelCondition);
+                     validatorReversed.reverse();
+                     return;
+                 }
+             }
+         }*/
+
+        for (let a = validators.length - 1; a > -1; a--) {
+            if(validators.hasOwnProperty(a)) {
+                if(validators[a].isReady()) {
+                    validators[a].generateNextBlock(blockData, cb, cancelCondition);
                     return;
                 }
             }
         }
 
-        validatorReversed.reverse();
+        //validatorReversed.reverse();
         return false;
     }
 
@@ -1329,17 +1342,19 @@ function Blockchain(config) {
             logger.info('Starting keyring emission');
 
             let keyring = new (require('./modules/blocks/keyring'))([], wallet.id);
-            keyring.generateKeys(config.workDir + '/keyringKeys.json', 100, wallet);
+            keyring.generateKeys(config.workDir + '/keyringKeys.json', config.keyringKeysCount, wallet);
             transactor.transact(keyring, function (blockData, cb) {
                 config.validators[0].generateNextBlock(blockData, function (generatedBlock) {
                     addBlock(generatedBlock);
                     broadcastLastBlock();
-                    cb(generatedBlock);
                     setTimeout(coinEmission, 2000);
+                    cb(generatedBlock);
                 });
             }, function () {
                 console.log('Keyring: Keyring accepted');
             });
+        } else {
+            logger.error('Cant generate keyring');
         }
     }
 
@@ -1350,6 +1365,7 @@ function Blockchain(config) {
      */
     function coinEmission() {
         if(!blockHandler.isKeyFromKeyring(wallet.keysPair.public)) {
+            logger.error("The selected key does not belong to the keychain! Emission corrupted.");
             return;
         }
 

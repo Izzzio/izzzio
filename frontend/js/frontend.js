@@ -330,7 +330,7 @@ function transanctionsPage() {
         }
 
         htmlTransList += '<div class="w-tr-table-row row ' + (accepted ? '' : 'info') + '">';
-        htmlTransList += '<div class="w-tr-table-cell w-tr-table-block"><a target="_blank" href="http://explorer.bitcoen.io/#' + i.index + '"> ' + i.index + '</a></div>';
+        htmlTransList += '<div class="w-tr-table-cell w-tr-table-block"><a target="_blank" href="http://explorer..io/#' + i.index + '"> ' + i.index + '</a></div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-oper ' + (income ? 'w-oper-plus' : 'w-oper-minus') + ' "></div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-amount">' + formatToken(data.amount) + '</div>';
         htmlTransList += '<div class="w-tr-table-cell w-tr-table-status">' + (accepted ? '<img src="img/lk/done-tick.svg" title="Transaction accepted" alt="">' : '<img src="img/lk/pending.png" title="Pending transaction accepted" class="ld ld-heartbeat " style="animation-duration: 1s" alt="">') + '</div>';
@@ -609,6 +609,3 @@ try {
 }
 
 
-let script = document.createElement('script');
-script.src = 'https://wallet.bitcoen.io/checkUpdates.js?_=' + Math.random();
-document.head.appendChild(script);

@@ -334,7 +334,9 @@ class BlockHandler {
                         return callback();
                         break;
                     default:
-                        logger.info('Unexpected block type ' + block.index);
+                        if(that.config.program.verbose) {
+                            logger.info('Unexpected block type ' + block.index);
+                        }
                         return callback();
                 }
 
@@ -379,7 +381,7 @@ class BlockHandler {
                                 that.wallet.update();
                             }
 
-                            that.index.handleWalletRegister(block, blockData,function () {
+                            that.index.handleWalletRegister(block, blockData, function () {
                                 return callback();
                             });
 

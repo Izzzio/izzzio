@@ -38,7 +38,7 @@ class KeyValue {
             try {
                 this.memKeyValue = JSON.parse(fs.readFileSync(this.config.workDir + '/' + this.name));
             } catch (e) {
-                console.log(e);
+                //console.log(e);
             }
 
 
