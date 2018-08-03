@@ -1,7 +1,7 @@
 # Benchmark
 Node benchmarking tools
 
-![Node benchmark](/Izzzio/iz3node/blob/master/benchmark/benchmark.gif?raw=true)
+![Node benchmark](https://github.com/Izzzio/iz3node/blob/master/benchmark/benchmark.gif?raw=true)
 
 Start new network before testing by these steps:
 
