@@ -61,7 +61,7 @@ function Blockchain(config) {
 
     if(config.rpcPassword.length !== 0) {
         app.use(auth.connect(basic));
-    }
+    };
 
     app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
         extended: false
