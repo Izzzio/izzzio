@@ -15,12 +15,18 @@ function log(type, log) {
  * @return {{disable: boolean, log: log, write: write, info: info, error: error, fatal: fatal, init:init, warning: warning}}
  * @constructor
  */
-function Logger() {
+function Logger(prefix) {
     return {
         disable: false,
+        getPrefix: function () {
+            if(typeof prefix === 'string') {
+                return " " + prefix + ': '
+            }
+            return "";
+        },
         log: function (type, data) {
             if(!this.disable) {
-                return log(type, data);
+                return log(type, this.getPrefix() + data);
             }
             return '';
         },

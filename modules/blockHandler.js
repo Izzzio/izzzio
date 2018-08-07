@@ -49,6 +49,13 @@ class BlockHandler {
         this.index = new TransactionsIndex(config);
         this.index.initialize();
 
+        /**
+         * External block handlers
+         * @type {{}}
+         * @private
+         */
+        this._blocksHandlers = {};
+
 
         if(config.program.fastLoad) {
             try {
@@ -72,6 +79,25 @@ class BlockHandler {
         this.transactor = undefined;
         this.frontend = undefined;
         this.runningSmarts = [];
+    }
+
+    /**
+     * Регестрируем новый обработчик блока
+     * @param {string} type
+     * @param {function} handler
+     */
+    registerBlockHandler(type, handler) {
+
+        if(typeof handler !== 'function') {
+            return false;
+        }
+
+        if(typeof this._blocksHandlers[type] === 'undefined') {
+            this._blocksHandlers[type] = [];
+        }
+
+        this._blocksHandlers[type].push(handler);
+        return true;
     }
 
     /**
@@ -334,8 +360,25 @@ class BlockHandler {
                         return callback();
                         break;
                     default:
-                        if(that.config.program.verbose) {
-                            logger.info('Unexpected block type ' + block.index);
+
+                        /**
+                         * Запускаем на каждый тип блока свой обработчик
+                         */
+                        if(typeof that._blocksHandlers[blockData.type] !== 'undefined') {
+                            for (let i in that._blocksHandlers[blockData.type]) {
+                                if(that._blocksHandlers[blockData.type].hasOwnProperty(i)) {
+                                    try {
+                                        that._blocksHandlers[blockData.type][i](blockData, block, callback);
+                                    } catch (e) {
+                                        console.log(e);
+                                        return callback();
+                                    }
+                                }
+                            }
+                        } else {
+                            if(that.config.program.verbose) {
+                                logger.info('Unexpected block type ' + block.index);
+                            }
                         }
                         return callback();
                 }
