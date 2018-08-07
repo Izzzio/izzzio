@@ -81,8 +81,34 @@ class DApp {
      * Returns config object
      * @return {*}
      */
-    static getConfig() {
+    getConfig() {
         return storj.get('config');
+    }
+
+    /**
+     * Returns block handler object
+     * @return {BlockHandler}
+     */
+    getBlockHandler() {
+        return this.blockchain.blockHandler;
+    }
+
+    /**
+     * Returns current wallet object
+     * @return {Wallet}
+     */
+    getCurrentWallet() {
+        return this.blockchain.wallet;
+    }
+
+    /**
+     * Register block handler by type
+     * @param {string} type
+     * @param {function} handler
+     * @return {boolean}
+     */
+    registerBlockHandler(type, handler) {
+        return this.getBlockHandler().registerBlockHandler(type, handler);
     }
 
     /**
