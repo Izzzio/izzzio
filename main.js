@@ -5,10 +5,10 @@
 
 'use strict';
 
-
+const version = require('./package.json').version;
 let program = require('commander');
 program
-    .version(require('./package.json').version)
+    .version(version)
     .description(' iZ3 blockchain core.')
     .option('-a, --autofix', 'Fix saved chain if possible. WARNING: You can lose important data')
     .option('--clear', 'Clear all saved chain and deletes wallet. WARNING: You can lose important data')
