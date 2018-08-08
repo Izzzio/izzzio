@@ -17,17 +17,21 @@ class Validators {
     constructor (config){
         this.validators = [];
         this.modules = [];
-        for (let v of config.validators)
+        for (let v of config.validators){
+            this.addModule(v);
+        }
     };
     
     addModule(moduleName = '') {
         try {
             this.validators.push(moduleName);
-            this.modules[moduleName] = require(validatorsPath + moduleName + '.js');
+            this.modules[moduleName] = require(validatorsPath + moduleName);
             console.log('Info: ' + moduleName + ' was added to validators array');
         } catch (e) {
             console.log(e);
             console.log('Info: Adding canceled becauseof error');
         }
     }; 
-}
+};
+    
+module.exports = Validators;

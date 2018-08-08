@@ -46,7 +46,8 @@ function Blockchain(config) {
     storj.put('config', config);
 
     const blockController = new (require('./modules/blockchain'))();
-
+    
+    const Validators = require('./modules/validators');
 
     const basic = auth.basic({
             realm: "RPC Auth"
@@ -69,12 +70,12 @@ function Blockchain(config) {
 
     app.use(bodyParser.json());
 
-
     console.log('Initialize...');
     console.log('');
     console.log('Message bus address: ' + config.recieverAddress);
     console.log('');
-
+   
+    
 
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
@@ -84,7 +85,11 @@ function Blockchain(config) {
         wallet.block = -1;
     }
     console.log('');
-
+    /**
+    * загружаем валидаторы
+    */
+    let validators = new Validators(config);
+    console.log(validators);
     /**
      * База данных блоков
      */
