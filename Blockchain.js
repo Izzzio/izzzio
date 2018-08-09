@@ -309,7 +309,7 @@ function Blockchain(config) {
         blockchain.get(0, function (err, value) {
             if(err) {
                 let genesisBlock = getGenesisBlock();
-                if(!validators.validators[0].isValidHash(genesisBlock.hash)) {
+                if(!config.validators[0].isValidHash(genesisBlock.hash)) {
                     logger.error('Invalid genesis hash: ' + genesisBlock.hash);
                     process.exit();
                 }
