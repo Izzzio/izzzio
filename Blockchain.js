@@ -85,11 +85,10 @@ function Blockchain(config) {
         wallet.block = -1;
     }
     console.log('');
-    /**
-    * загружаем валидаторы
-    */
+    
     let validators = new Validators(config);
     console.log(validators);
+
     /**
      * База данных блоков
      */
@@ -311,7 +310,7 @@ function Blockchain(config) {
         blockchain.get(0, function (err, value) {
             if(err) {
                 let genesisBlock = getGenesisBlock();
-                if(!config.validators[0].isValidHash(genesisBlock.hash)) {
+                if(!validators.validators[0].isValidHash(genesisBlock.hash)) {
                     logger.error('Invalid genesis hash: ' + genesisBlock.hash);
                     process.exit();
                 }
@@ -702,7 +701,7 @@ function Blockchain(config) {
      */
     function isValidNewBlock(newBlock, previousBlock) {
 
-        let validatorReversed = config.validators;
+        let validatorReversed = validators.validators;
         /**
          * Модули консенсусов изначально расположены в порядке повышения приоритета.
          * Выбор консенсуса должен идти в порядке убывания приоритета

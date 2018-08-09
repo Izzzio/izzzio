@@ -56,6 +56,22 @@ class Validators {
             console.log('Info: Adding canceled because of error');
         }
     };
+    
+    /**
+     * delete information about module
+     * @param {string} moduleName
+     */
+    
+    deleteModule(moduleName){
+        if (this.modules.hasOwnProperty(moduleName) === true){
+            this.validators.splice(this.validators.indexOf(moduleName),1);
+            delete this.modules[moduleName];
+            delete this.versions[moduleName];
+        } else {
+            console.log(`Info: Can't delete ${moduleName} from validator's array: no such validator`)    
+        };    
+    };
+    
 };
     
 module.exports = Validators;
