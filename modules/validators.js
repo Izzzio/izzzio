@@ -61,7 +61,6 @@ class Validators {
      * delete information about module
      * @param {string} moduleName
      */
-    
     deleteModule(moduleName){
         if (this.modules.hasOwnProperty(moduleName) === true){
             this.validators.splice(this.validators.indexOf(moduleName),1);
