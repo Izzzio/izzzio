@@ -46,8 +46,8 @@ function Blockchain(config) {
     storj.put('config', config);
 
     const blockController = new (require('./modules/blockchain'))();
-    
-    const Validators = require('./modules/validators');
+
+    const NodeMetaInfo = require('./modules/NodeMetaInfo');
 
     const basic = auth.basic({
             realm: "RPC Auth"
@@ -62,7 +62,7 @@ function Blockchain(config) {
 
     if(config.rpcPassword.length !== 0) {
         app.use(auth.connect(basic));
-    };
+    }
 
     app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
         extended: false
@@ -74,10 +74,10 @@ function Blockchain(config) {
     console.log('');
     console.log('Message bus address: ' + config.recieverAddress);
     console.log('');
-   
-        
-    let validators = new Validators(config);
-    
+
+
+    let nodeMetaInfo = new NodeMetaInfo(config);
+
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
     logger.info('Wallet address ' + wallet.getAddress(false));
@@ -97,7 +97,7 @@ function Blockchain(config) {
 
     /**
      * Типы сообщений в p2p сети
-     * @type {{QUERY_LATEST: number, QUERY_ALL: number, RESPONSE_BLOCKCHAIN: number, MY_PEERS: number, BROADCAST: number, VALIDATORS: number}}
+     * @type {{QUERY_LATEST: number, QUERY_ALL: number, RESPONSE_BLOCKCHAIN: number, MY_PEERS: number, BROADCAST: number, META: number}}
      */
     const MessageType = {
         QUERY_LATEST: 0,
@@ -105,7 +105,7 @@ function Blockchain(config) {
         RESPONSE_BLOCKCHAIN: 2,
         MY_PEERS: 3,
         BROADCAST: 4,
-        VALIDATORS: 5
+        META: 5
     };
 
     let maxBlock = -1;
@@ -472,9 +472,9 @@ function Blockchain(config) {
         p2pErrorHandler(ws);
         sockets.push(ws);
         initMessageHandler(ws);
+        write(ws, metaMsg());         //посылаем метаинформацию
         write(ws, queryChainLengthMsg());
         write(ws, queryChainLengthMsg());
-        write(ws, validatorsMsg());         //посылаем список валидаторов
         sendAllBlockchain(ws, maxBlock - 1);
 
         /*write(ws, createMessage({
@@ -529,17 +529,17 @@ function Blockchain(config) {
                         connectToPeers(message.data);
                     }
                     break;
-                case MessageType.VALIDATORS:    //если получили сообщение со списком консенсусов, то присваиваем соответствующему сокету свойство validators
-                    try{
+                case MessageType.META:    //Сохранение метаинформации о нодах
+                    try {
                         let ind = sockets.indexOf(ws);
-                        if (ind > -1) {
-                            sockets[ind].validators = JSON.parse(message.data);
+                        if(ind > -1) {
+                            sockets[ind].nodeMetaInfo = (new NodeMetaInfo()).parse(message.data);
                         } else {
-                            console.log('Error: Unexperced error occured when trying to add validators');
+                            logger.error('Unexpected error occurred when trying to add validators');
                         }
                     } catch (err) {
-                        console.log(err);    
-                    };
+                        logger.error(err);
+                    }
                     break;
                 case  MessageType.BROADCAST:
 
@@ -1049,17 +1049,17 @@ function Blockchain(config) {
             type: MessageType.MY_PEERS, data: peers
         }
     }
-    
+
     /**
      * сообщение со списком консенсусов и messageBusAddress
      * @param   {object} v = validators объект с валидаторами
-     * @returns {object} {{type: number, data: *}}  
+     * @returns {object} {{type: number, data: *}}
      */
-    function validatorsMsg(v = validators){
+    function metaMsg(v = nodeMetaInfo) {
         return {
-            'type': MessageType.VALIDATORS, 'data': JSON.stringify(v)
-        } 
-    };
+            'type': MessageType.META, 'data': JSON.stringify(v)
+        }
+    }
 
     /**
      * Write to socket
@@ -1099,6 +1099,26 @@ function Blockchain(config) {
     }
 
     /**
+     * Возвращает адрес сокет по адресу шины сообщений
+     * @param address
+     * @return {*}
+     */
+    function getSocketByBusAddress(address) {
+        const sockets = getCurrentPeers(true);
+        for (let i in sockets) {
+            if(sockets.hasOwnProperty(i)) {
+                if(sockets[i] && sockets[i].nodeMetaInfo) {
+                    if(sockets[i].nodeMetaInfo.messageBusAddress === address) {
+                        return sockets[i];
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Запуск сети
      */
     function startBlockchainServers() {
@@ -1128,10 +1148,14 @@ function Blockchain(config) {
      * Формирует список подключенных пиров
      * @returns {Array}
      */
-    function getCurrentPeers() {
+    function getCurrentPeers(fullSockets) {
         return sockets.map(function (s) {
-            if(s.readyState === 1) {
-                return 'ws://' + s._socket.remoteAddress + ':' + /*s._socket.remotePort*/ config.p2pPort
+            if(s && s.readyState === 1) {
+                if(fullSockets) {
+                    return s;
+                } else {
+                    return 'ws://' + s._socket.remoteAddress + ':' + /*s._socket.remotePort*/ config.p2pPort
+                }
             }
         }).filter((v, i, a) => a.indexOf(v) === i);
     }
@@ -1495,7 +1519,7 @@ function Blockchain(config) {
 
     blockchainObject = {
         config: config,
-        validators: validators,
+        validators: nodeMetaInfo,
         start: start,
         getid: getid,
         write: write,
@@ -1553,13 +1577,14 @@ function Blockchain(config) {
         miningNow: miningNow,
         miningForce: miningForce,
         connections: connections,
+        getSocketByBusAddress: getSocketByBusAddress,
         isReadyForTransaction: isReadyForTransaction,
         registerMessageHandler: registerMessageHandler,
         setMiningForce: function (miningNowP, miningForceP) {
             miningNow = miningNowP;
             miningForce = miningForceP;
         }
-        
+
 
     };
     frontend.blockchainObject = blockchainObject;

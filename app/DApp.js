@@ -3,21 +3,69 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-const MESSAGE_MUTEX_TIMEOUT = 1000;
-
 const storj = require('../modules/instanceStorage');
+const MessagesDispatcher = require('../modules/messagesDispatcher');
+
+let that;
 
 class DApp {
 
     constructor(config, blockchain) {
         this.config = config;
         this.blockchain = blockchain;
+
+        that = this;
         /**
-         * Input message mutex
-         * @type {{}}
+         * Message dispatcher
+         * @type {MessagesDispatcher}
          * @private
          */
-        this._messageMutex = {};
+        this._messagesDispatcher = new MessagesDispatcher(config, blockchain);
+
+        /**
+         * Network functions
+         * @type {{getCurrentPeers: (function(*=): (*|Array)), getSocketByBusAddress: getSocketByBusAddress}}
+         */
+        this.network = {
+            getCurrentPeers: that.blockchain.getCurrentPeers,
+            getSocketByBusAddress: that.blockchain.getSocketByBusAddress
+        };
+
+        /**
+         * Messaging functions
+         * @type {{registerMessageHandler: MessagesDispatcher.registerMessageHandler, broadcastMessage: MessagesDispatcher.broadcastMessage}}
+         */
+        this.messaging = {
+            registerMessageHandler: that._messagesDispatcher.registerMessageHandler,
+            broadcastMessage: that._messagesDispatcher.broadcastMessage
+        };
+
+        /**
+         * Blockchain functions
+         * @type {{generateBlock: (function(*=, *=, *=): boolean), generateAndAddBlock: DApp.generateAndAddBlock, handler: {get: (function(): (*|BlockHandler)), registerHandler: (function(string, Function): boolean)}, accounting: {wallet: {getCurrent: (function(): (DApp.block.accounting.wallet|{getCurrent}|*))}}}}
+         */
+        this.blocks = {
+            generateBlock: that.generateBlock,
+            generateAndAddBlock: that.generateAndAddBlock,
+            addBlock: that.blockchain.addBlock,
+            handler: {
+                get: that.getBlockHandler,
+                registerHandler: that.registerBlockHandler
+            },
+            accounting: {
+                wallet: {
+                    getCurrent: that.getCurrentWallet
+                }
+            }
+        };
+
+        /**
+         * System functions
+         * @type {{getConfig: *}}
+         */
+        this.system = {
+            getConfig: that.getConfig()
+        };
     }
 
 
@@ -28,26 +76,9 @@ class DApp {
      * @return {boolean}
      */
     registerMessageHandler(message, handler) {
-        let that = this;
-        if(typeof that.blockchain !== 'undefined') {
-            this.blockchain.registerMessageHandler(message, function (messageBody) {
-                if(messageBody.id === message || message.length === 0) {
-                    if(typeof  messageBody.mutex !== 'undefined' && typeof that._messageMutex[messageBody.mutex] === 'undefined') {
-                        handler(messageBody);
-                        that._messageMutex[messageBody.mutex] = true;
-                        setTimeout(function () {
-                            if(typeof that._messageMutex[messageBody.mutex] !== 'undefined') {
-                                delete that._messageMutex[messageBody.mutex];
-                            }
-                        }, MESSAGE_MUTEX_TIMEOUT);
-                    }
-                }
-            });
-            return true;
-        }
-
-        return false;
+        return that._messagesDispatcher.registerMessageHandler(message, handler);
     }
+
 
     /**
      * Generates new block with configured consensus
@@ -56,7 +87,6 @@ class DApp {
      * @param cancelCondition
      */
     generateBlock(blockData, cb, cancelCondition) {
-        let that = this;
         return that.blockchain.generateNextBlockAuto(blockData, cb, cancelCondition);
     }
 
@@ -90,7 +120,7 @@ class DApp {
      * @return {BlockHandler}
      */
     getBlockHandler() {
-        return this.blockchain.blockHandler;
+        return that.blockchain.blockHandler;
     }
 
     /**
@@ -98,7 +128,7 @@ class DApp {
      * @return {Wallet}
      */
     getCurrentWallet() {
-        return this.blockchain.wallet;
+        return that.blockchain.wallet;
     }
 
     /**
@@ -108,7 +138,16 @@ class DApp {
      * @return {boolean}
      */
     registerBlockHandler(type, handler) {
-        return this.getBlockHandler().registerBlockHandler(type, handler);
+        return that.getBlockHandler().registerBlockHandler(type, handler);
+    }
+
+    /**
+     * Returns array of peers addresses or sockets
+     * @param fullSockets
+     * @return {*|Array}
+     */
+    getCurrentPeers(fullSockets) {
+        return that.blockchain.getCurrentPeers(fullSockets);
     }
 
     /**
