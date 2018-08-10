@@ -46,7 +46,8 @@ function Blockchain(config) {
     storj.put('config', config);
 
     const blockController = new (require('./modules/blockchain'))();
-
+    
+    const Validators = require('./modules/validators');
 
     const basic = auth.basic({
             realm: "RPC Auth"
@@ -61,7 +62,7 @@ function Blockchain(config) {
 
     if(config.rpcPassword.length !== 0) {
         app.use(auth.connect(basic));
-    }
+    };
 
     app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
         extended: false
@@ -69,13 +70,14 @@ function Blockchain(config) {
 
     app.use(bodyParser.json());
 
-
     console.log('Initialize...');
     console.log('');
     console.log('Message bus address: ' + config.recieverAddress);
     console.log('');
-
-
+   
+        
+    let validators = new Validators(config);
+    
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
     logger.info('Wallet address ' + wallet.getAddress(false));
@@ -95,14 +97,15 @@ function Blockchain(config) {
 
     /**
      * Типы сообщений в p2p сети
-     * @type {{QUERY_LATEST: number, QUERY_ALL: number, RESPONSE_BLOCKCHAIN: number, MY_PEERS: number, BROADCAST: number}}
+     * @type {{QUERY_LATEST: number, QUERY_ALL: number, RESPONSE_BLOCKCHAIN: number, MY_PEERS: number, BROADCAST: number, VALIDATORS: number}}
      */
     const MessageType = {
         QUERY_LATEST: 0,
         QUERY_ALL: 1,
         RESPONSE_BLOCKCHAIN: 2,
         MY_PEERS: 3,
-        BROADCAST: 4
+        BROADCAST: 4,
+        VALIDATORS: 5
     };
 
     let maxBlock = -1;
@@ -440,7 +443,6 @@ function Blockchain(config) {
             return;
         }
 
-
         for (let i in sockets) {
             if(sockets.hasOwnProperty(i)) {
                 if(
@@ -472,6 +474,7 @@ function Blockchain(config) {
         initMessageHandler(ws);
         write(ws, queryChainLengthMsg());
         write(ws, queryChainLengthMsg());
+        write(ws, validatorsMsg());         //посылаем список валидаторов
         sendAllBlockchain(ws, maxBlock - 1);
 
         /*write(ws, createMessage({
@@ -525,6 +528,18 @@ function Blockchain(config) {
 
                         connectToPeers(message.data);
                     }
+                    break;
+                case MessageType.VALIDATORS:    //если получили сообщение со списком консенсусов, то присваиваем соответствующему сокету свойство validators
+                    try{
+                        let ind = sockets.indexOf(ws);
+                        if (ind > -1) {
+                            sockets[ind].validators = JSON.parse(message.data);
+                        } else {
+                            console.log('Error: Unexperced error occured when trying to add validators');
+                        }
+                    } catch (err) {
+                        console.log(err);    
+                    };
                     break;
                 case  MessageType.BROADCAST:
 
@@ -1034,6 +1049,17 @@ function Blockchain(config) {
             type: MessageType.MY_PEERS, data: peers
         }
     }
+    
+    /**
+     * сообщение со списком консенсусов и messageBusAddress
+     * @param   {object} v = validators объект с валидаторами
+     * @returns {object} {{type: number, data: *}}  
+     */
+    function validatorsMsg(v = validators){
+        return {
+            'type': MessageType.VALIDATORS, 'data': JSON.stringify(v)
+        } 
+    };
 
     /**
      * Write to socket
@@ -1469,6 +1495,7 @@ function Blockchain(config) {
 
     blockchainObject = {
         config: config,
+        validators: validators,
         start: start,
         getid: getid,
         write: write,
@@ -1532,6 +1559,7 @@ function Blockchain(config) {
             miningNow = miningNowP;
             miningForce = miningForceP;
         }
+        
 
     };
     frontend.blockchainObject = blockchainObject;
