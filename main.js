@@ -25,6 +25,7 @@ program
     .option('--fast-load', 'Don\'t checking databased on startup', false)
     .option('--verbose', 'More logging info', false)
     .option('--enable-address-rotation', 'Activates the rotation of the addresses', false)
+    .option('--no-splash', 'Disable this f*king splash screen', false)
     .parse(process.argv);
 
 const getid = require('./modules/getid');
@@ -139,7 +140,9 @@ try {
 
 config.program = program;
 
-require('./modules/splash')();
+if(config.program.splash) {
+    require('./modules/splash')();
+}
 
 
 if(program.clear) {
