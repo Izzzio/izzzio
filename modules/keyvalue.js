@@ -101,6 +101,7 @@ class KeyValue {
             callback = options;
         }
         key = String(key);
+
         switch (that.type) {
             case STORAGE_TYPE.MEMORY:
 
@@ -110,6 +111,9 @@ class KeyValue {
                 }
                 break;
             case STORAGE_TYPE.LEVELDB:
+                /*if(typeof value !== 'string'){
+                    value = JSON.stringify(value);
+                }*/
                 that.levelup.put(key, value, callback);
                 break;
         }
