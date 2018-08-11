@@ -62,13 +62,34 @@ class MessagesDispatcher {
      * Broadcast message
      * @param {object} data
      * @param {string} message
-     * @param {string} reciver
+     * @param {string} receiver
      */
-    broadcastMessage(data, message, reciver) {
+    broadcastMessage(data, message, receiver) {
         let that = this;
 
         if(typeof that.blockchain !== 'undefined') {
-            let messageBody = that.blockchain.broadcastMessage(data, message, reciver, that.getAddress());
+            let messageBody = that.blockchain.broadcastMessage(data, message, receiver, that.getAddress());
+            that._messageMutex[messageBody.mutex] = true;
+            setTimeout(function () {
+                if(typeof that._messageMutex[messageBody.mutex] !== 'undefined') {
+                    delete that._messageMutex[messageBody.mutex];
+                }
+            }, MESSAGE_MUTEX_TIMEOUT);
+        }
+    }
+
+    /**
+     * Send message directly to socket
+     * @param socket
+     * @param {object} data
+     * @param {string} message
+     * @param {string} receiver
+     */
+    sendMessage(socket, data, message, receiver) {
+        let that = this;
+        if(typeof that.blockchain !== 'undefined') {
+            let messageBody = that.blockchain.createMessage(data, receiver, that.getAddress(), message, that.blockchain.lastMsgIndex + 1);
+            that.blockchain.write(socket, messageBody);
             that._messageMutex[messageBody.mutex] = true;
             setTimeout(function () {
                 if(typeof that._messageMutex[messageBody.mutex] !== 'undefined') {

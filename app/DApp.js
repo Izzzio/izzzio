@@ -24,20 +24,28 @@ class DApp {
 
         /**
          * Network functions
-         * @type {{getCurrentPeers: (function(*=): (*|Array)), getSocketByBusAddress: getSocketByBusAddress}}
+         * @type {{getCurrentPeers: ((function(*=): (*|Array))|getCurrentPeers), getSocketByBusAddress: getSocketByBusAddress, socketSend: *}}
          */
         this.network = {
             getCurrentPeers: that.blockchain.getCurrentPeers,
-            getSocketByBusAddress: that.blockchain.getSocketByBusAddress
+            getSocketByBusAddress: that.blockchain.getSocketByBusAddress,
+            socketSend: that.blockchain.write
         };
 
         /**
          * Messaging functions
-         * @type {{registerMessageHandler: MessagesDispatcher.registerMessageHandler, broadcastMessage: MessagesDispatcher.broadcastMessage}}
+         * @type {{registerMessageHandler: MessagesDispatcher.registerMessageHandler, broadcastMessage: MessagesDispatcher.broadcastMessage, sendMessage: MessagesDispatcher.sendMessage}}
          */
         this.messaging = {
-            registerMessageHandler: that._messagesDispatcher.registerMessageHandler,
-            broadcastMessage: that._messagesDispatcher.broadcastMessage
+            registerMessageHandler: function () {
+                return that._messagesDispatcher.registerMessageHandler.apply(that._messagesDispatcher, arguments)
+            },
+            broadcastMessage: function () {
+                return that._messagesDispatcher.broadcastMessage.apply(that._messagesDispatcher, arguments)
+            },
+            sendMessage: function () {
+                return that._messagesDispatcher.sendMessage.apply(that._messagesDispatcher, arguments)
+            }
         };
 
         /**
@@ -155,6 +163,13 @@ class DApp {
      */
     init() {
 
+    }
+
+    /**
+     * Terminating app
+     */
+    terminate(cb) {
+        cb();
     }
 }
 

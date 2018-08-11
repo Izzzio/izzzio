@@ -548,6 +548,7 @@ function Blockchain(config) {
                      */
                     for (let a in messagesHandlers) {
                         if(messagesHandlers.hasOwnProperty(a)) {
+                            message._socket = ws;
                             if(messagesHandlers[a].handle(message)) {
                                 lastMsgIndex = message.index;
                                 break; //Если сообщение обработано, выходим
@@ -1135,6 +1136,7 @@ function Blockchain(config) {
                  */
                 let clientApplication = new (require(config.appEntry))(config, blockchainObject);
                 clientApplication.init();
+                storj.put("dapp", clientApplication);
             } catch (e) {
                 console.log("Error: DApp fatal:\n");
                 console.log(e);
@@ -1495,19 +1497,29 @@ function Blockchain(config) {
                 wallet.save();
                 config.emptyBlockInterval = 10000000000;
                 setTimeout(function () {
-                    logger.info('Saving blockchain DB');
-                    blockchain.close(function () {
-                        logger.info('Saving wallets cache');
-                        blockHandler.wallets.close(function () {
-                            logger.info('Saving transactions index');
-                            blockHandler.index.terminate(function () {
-                                setTimeout(function () {
-                                    process.exit();
-                                }, 2000);
-                            });
 
+                    function terminate() {
+                        logger.info('Saving blockchain DB');
+                        blockchain.close(function () {
+                            logger.info('Saving wallets cache');
+                            blockHandler.wallets.close(function () {
+                                logger.info('Saving transactions index');
+                                blockHandler.index.terminate(function () {
+                                    setTimeout(function () {
+                                        process.exit();
+                                    }, 2000);
+                                });
+
+                            });
                         });
-                    });
+                    }
+
+                    if(typeof storj.get("dapp") !== 'undefined'){
+                        storj.get("dapp").terminate(terminate);
+                    }else{
+                        terminate();
+                    }
+
                 }, 1000);
 
             });

@@ -209,7 +209,12 @@ class BlockHandler {
                                 that.enableLogging = true;
                                 logger.disable = false;
                                 that.wallet.enableLogging = true;
-                                cb();
+                                if(typeof cb !== 'undefined') {
+                                    process.nextTick(function () {
+                                        cb();
+                                    });
+
+                                }
                                 return;
                                 break;
                             } else {
@@ -242,7 +247,9 @@ class BlockHandler {
             logger.disable = false;
             that.wallet.enableLogging = true;
             if(typeof cb !== 'undefined') {
-                cb();
+                process.nextTick(function () {
+                    cb();
+                });
             }
         });
     }
@@ -379,8 +386,9 @@ class BlockHandler {
                             if(that.config.program.verbose) {
                                 logger.info('Unexpected block type ' + block.index);
                             }
+                            return callback();
                         }
-                        return callback();
+
                 }
 
             });
