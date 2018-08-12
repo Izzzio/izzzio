@@ -209,12 +209,14 @@ class BlockHandler {
                                 that.enableLogging = true;
                                 logger.disable = false;
                                 that.wallet.enableLogging = true;
-                                if(typeof cb !== 'undefined') {
-                                    process.nextTick(function () {
-                                        cb();
-                                    });
 
-                                }
+                                process.nextTick(function () {
+                                    if(typeof cb !== 'undefined') {
+                                        cb();
+                                    }
+                                });
+
+
                                 return;
                                 break;
                             } else {
@@ -246,11 +248,11 @@ class BlockHandler {
             that.enableLogging = true;
             logger.disable = false;
             that.wallet.enableLogging = true;
-            if(typeof cb !== 'undefined') {
-                process.nextTick(function () {
+            process.nextTick(function () {
+                if(typeof cb !== 'undefined') {
                     cb();
-                });
-            }
+                }
+            });
         });
     }
 

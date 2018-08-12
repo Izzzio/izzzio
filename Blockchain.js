@@ -1514,7 +1514,7 @@ function Blockchain(config) {
                         });
                     }
 
-                    if(typeof storj.get("dapp") !== 'undefined'){
+                    if(storj.get("dapp") !== null){
                         storj.get("dapp").terminate(terminate);
                     }else{
                         terminate();
