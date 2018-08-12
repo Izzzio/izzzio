@@ -210,11 +210,10 @@ class BlockHandler {
                                 logger.disable = false;
                                 that.wallet.enableLogging = true;
 
-                                process.nextTick(function () {
-                                    if(typeof cb !== 'undefined') {
-                                        cb();
-                                    }
-                                });
+
+                                if(typeof cb !== 'undefined') {
+                                    cb();
+                                }
 
 
                                 return;
@@ -248,11 +247,11 @@ class BlockHandler {
             that.enableLogging = true;
             logger.disable = false;
             that.wallet.enableLogging = true;
-            process.nextTick(function () {
-                if(typeof cb !== 'undefined') {
-                    cb();
-                }
-            });
+
+            if(typeof cb !== 'undefined') {
+                cb();
+            }
+
         });
     }
 

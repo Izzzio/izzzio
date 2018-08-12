@@ -13,6 +13,8 @@ class DApp {
     constructor(config, blockchain) {
         this.config = config;
         this.blockchain = blockchain;
+        this.rpc = storj.get('httpServer');
+
 
         that = this;
         /**
@@ -24,12 +26,20 @@ class DApp {
 
         /**
          * Network functions
-         * @type {{getCurrentPeers: ((function(*=): (*|Array))|getCurrentPeers), getSocketByBusAddress: getSocketByBusAddress, socketSend: *}}
+         * @type {{getCurrentPeers: ((function(*=): (*|Array))|getCurrentPeers), getSocketByBusAddress: getSocketByBusAddress, socketSend: *, rpc: {registerGetHandler: DApp.network.rpc.registerGetHandler, registerPostHandler: DApp.network.rpc.registerPostHandler}}}
          */
         this.network = {
             getCurrentPeers: that.blockchain.getCurrentPeers,
             getSocketByBusAddress: that.blockchain.getSocketByBusAddress,
-            socketSend: that.blockchain.write
+            socketSend: that.blockchain.write,
+            rpc: {
+                registerGetHandler: function (url, cb) {
+                    that.rpc.get(url, cb);
+                },
+                registerPostHandler: function (url, cb) {
+                    that.rpc.post(url, cb);
+                },
+            }
         };
 
         /**
