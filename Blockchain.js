@@ -60,6 +60,8 @@ function Blockchain(config) {
         }
     );
 
+    const routes = {};
+
     if(config.rpcPassword.length !== 0) {
         app.use(auth.connect(basic));
     }
@@ -105,7 +107,8 @@ function Blockchain(config) {
         RESPONSE_BLOCKCHAIN: 2,
         MY_PEERS: 3,
         BROADCAST: 4,
-        META: 5
+        META: 5,
+        SW_BROADCAST: 6
     };
 
     let maxBlock = -1;
@@ -1206,7 +1209,7 @@ function Blockchain(config) {
             timestamp: moment().utc().valueOf(),
             TTL: typeof TTL !== 'undefined' ? TTL : 0, //количество скачков сообщения
             index: index,
-            mutex: getid() + getid() + getid()
+            mutex: getid() + getid() + getid(),
         };
     }
 
@@ -1595,9 +1598,9 @@ function Blockchain(config) {
         setMiningForce: function (miningNowP, miningForceP) {
             miningNow = miningNowP;
             miningForce = miningForceP;
-        }
-
-
+        },
+        MessageType: MessageType,
+        routes: routes
     };
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
