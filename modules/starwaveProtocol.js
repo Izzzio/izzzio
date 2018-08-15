@@ -10,6 +10,7 @@
 
 const MESSAGE_MUTEX_TIMEOUT = 1000;
 const RESPONSE_SUFFIX = '_RESP';
+const LATENCY_TIME = 10*1000; //отклонение на устаревание сообщения
 
 const storj = require('./instanceStorage');
 const moment = require('moment');
@@ -161,7 +162,16 @@ class starwaveProtocol {
 
     manageIncomingMessage(message){
         //проверяем актуальность сообщения
+        if ((moment().utc.valueOf() - message.timestampOfStart) > (message.relevancyTime + LATENCY_TIME)){
+            return false; //оставляем без внимания сообщение
+        }
 
+        //проверяем наличие закольцованности. если в маршруте уже есть этот адрес, а конечная точка еще не нашлась,то не пускаем дальше
+        if ((message.route(message.route.length - 1) !== message.reciver) &&
+                (message.route.indexOf(this.config.recieverAddress) > -1)){
+            return false; //т.е. массив маршрута еще в стадии построения, и к нам пришло сообщение повторно
+        }
+        //проверяем, достигли сообщение конечной точки
         if (this.endpointForMessage(message)){
 
         }
