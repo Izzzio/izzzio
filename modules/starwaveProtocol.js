@@ -50,7 +50,7 @@ class starwaveProtocol {
      * @param route
      * @param type
      * @param timestampOfStart
-     * @return {{type: number, data: *, reciver: *, sender: *, id: *, timestamp: number, TTL: number, index: number, relevancyTime: number, route: []}}
+     * @returns {{data: *, reciver: *, sender: *, id: *, timestamp: number, TTL: number, index: *, mutex: string, relevancyTime: Array, route: Array, type: number, timestampOfStart: number}}
      */
     createMessage(data, reciver, sender, id, timestamp, index, TTL, relevancyTime, route, type, timestampOfStart) {
         return {
@@ -82,8 +82,9 @@ class starwaveProtocol {
                 if(messageBody.id === message || message.length === 0) {
                     if(typeof  messageBody.mutex !== 'undefined' && typeof that._messageMutex[messageBody.mutex] === 'undefined') {
                         handler(messageBody, function (data) {
-                            that.createMessage(data,messageBody.recepient, message + RESPONSE_SUFFIX,that.getAddress(), messageBody);
-                            that.send(data, message + RESPONSE_SUFFIX, messageBody.recepient);
+                            //that.createMessage(data,messageBody.recepient, message + RESPONSE_SUFFIX,that.getAddress(), messageBody);
+                           // that.send(data, message + RESPONSE_SUFFIX, messageBody.recepient);
+                            //обработка сообщения
                         });
                         that.handleMessageMutex(messageBody);
                     }
@@ -158,6 +159,11 @@ class starwaveProtocol {
          return 1; //отправили напрямую
      };
 
+    /**
+     * разбираем входящее сообщение и смотрим что с ним  делать дальше
+     * @param message
+     * @returns {*}
+     */
     manageIncomingMessage(message) {
         //проверяем актуальность сообщения
         if ((moment().utc.valueOf() - message.timestampOfStart) > (message.relevancyTime + LATENCY_TIME)) {
@@ -185,7 +191,7 @@ class starwaveProtocol {
     /**
      * пересылаем полученное сообщение дальше по маршруту
      * @param message
-     * @returns {*}
+     * @returns {*} отправленное сообщение
      */
     retranslateMessage(message){
         //пересоздаем сообщение(если необходимо что-то добавить)
