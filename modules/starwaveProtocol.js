@@ -56,7 +56,7 @@ class starwaveProtocol {
         return {
             data: data,
             reciver: reciver,
-            sender: sender,
+            sender: sender !== undefined ? sender : this.config.recieverAddress,
             id: id,
             timestamp: timestamp !== undefined ? timestamp : moment().utc().valueOf(),  //при пересылке сообщений. если указано время, значит, пересылается сообщение и оставляем первоначальное время создания
             TTL: typeof TTL !== 'undefined' ? TTL : 0, //количество скачков сообщения
