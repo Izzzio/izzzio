@@ -34,7 +34,7 @@ class starwaveProtocol {
         this._waitingMessages = {};
         this.RESPONSE_SUFFIX = RESPONSE_SUFFIX;
 
-        storj.put('messagesDispatcher', this);
+        storj.put('starwaveProtocol', this);
     }
 
     /**
