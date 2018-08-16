@@ -6,6 +6,9 @@
  * @param relevancyTime //время жизни сообщения в мс
  * @param route // маршрут, по которому прошло сообщение
  * @param timestampOfStart //время первоначальной отправки сообщения от которого отсчитывается время жизни
+ *
+ * маршрут считается заполенным, если конечный  элемент массива маршрута равен получателю сообщения
+ * маршрут записывается полный: от отправителя до получателя
  */
 
 const MESSAGE_MUTEX_TIMEOUT = 1000;
@@ -14,6 +17,7 @@ const LATENCY_TIME = 10*1000; //отклонение на устаревание
 
 const storj = require('./instanceStorage');
 const moment = require('moment');
+const getid = require('./getid');
 
 class starwaveProtocol {
 
@@ -59,35 +63,10 @@ class starwaveProtocol {
             index: index,
             mutex: getid() + getid() + getid(),
             relevancyTime: relevancyTime !== undefined ? relevancyTime : [], // время актуальности сообщений
-            route: route !== undefined ? route : []     //маршрут сообщения
+            route: route !== undefined ? route : [],     //маршрут сообщения
             type: type !== undefined ? type : this.blockchain.MessageType.SW_BROADCAST,
             timestampOfStart: timestampOfStart !== undefined ? timestampOfStart : moment().utc().valueOf()
         };
-    };
-
-    /**
-     * Рассылает широковещательное сообщение по системе всем, кроме отправителя(если указан флаг)
-     * @param {object} message
-     */
-    broadcastMessage(message) {
-        let that = this;
-       //примечание по заданию: Если маршрут пустой ИЛИ если в маршруте нет известных получателей (за исключением отправителя), сообщения рассылаются всем кроме отправителя
-        //если пустой, значит, первая отправка и идет всем
-        if(typeof that.blockchain !== 'undefined') {
-            let prevSender; //отправитель сообщения
-            if (message.route.length > 0) { //если массив маршрута пуст, значит, это первая отправка сообщения.
-                //сохраняем предыдущего отправителя(он записан последним в массиве маршрутов)
-                prevSender = that.blockchain.getSocketByBusAddress(message.route[message.route.length - 1]);
-            }
-            //добавляем свой адрес в маршруты
-            message.route.push(this.config.recieverAddress);
-            //устанавливаем тип сообщения
-            message.type = this.blockchain.MessageType.SW_BROADCAST;
-            //рассылаем всем, кроме отправителя(если это уже не первая пересылка)
-            that.blockchain.broadcast(message, prevSender);
-
-            this.handleMessageMutex(messageBody);
-        }
     };
 
     /**
@@ -120,7 +99,7 @@ class starwaveProtocol {
      * @param messageBusAddress
      * @param {object} message
      */
-    sendMessageToPeer(messageBusAddress, message) {
+    sendMessageToPeer(messageBusAddress, message ) {
         let that = this;
         if(typeof that.blockchain !== 'undefined') {
 
@@ -128,8 +107,10 @@ class starwaveProtocol {
             if (!socket) {  //нет такого подключенного сокета
                 return false;
             } else{
-                //добавляем свой адрес в маршруты
-                message.route.push(this.config.recieverAddress);
+                //добавляем свой адрес в маршруты, если маршрут не закончен
+                if (!this.routeIsComplete(message)){
+                    message.route.push(this.config.recieverAddress);
+                }
                 //отправляем сообщение
                 that.blockchain.write(socket, message);
                 this.handleMessageMutex(message);
@@ -140,15 +121,100 @@ class starwaveProtocol {
     };
 
     /**
-     *  посылает сообщение по протоколу starwave
-     * @param message //объект сообщения
+     * Рассылает широковещательное сообщение по системе всем, кроме отправителя(если указан флаг)
+     * @param {object} message
      */
-    sendMessage(message){
-        if (!this.sendMessageToPeer(message.reciver, message)) {   //не получилось отправить напрямую, нет напрямую подключенного пира, делаем рассылку всем
-            this.broadcastMessage(message);
-            return 2; //отправили широковещательно
-        };
-        return 1; //отправили напрямую
+    broadcastMessage(message) {
+        let that = this;
+        //примечание по заданию: Если маршрут пустой ИЛИ если в маршруте нет известных получателей (за исключением отправителя), сообщения рассылаются всем кроме отправителя
+        //если пустой, значит, первая отправка и идет всем
+        if(typeof that.blockchain !== 'undefined') {
+            let prevSender; //отправитель сообщения
+            if (message.route.length > 0) { //если массив маршрута пуст, значит, это первая отправка сообщения и рассылать нужно без ограничений
+                //сохраняем предыдущего отправителя(он записан последним в массиве маршрутов)
+                prevSender = that.blockchain.getSocketByBusAddress(message.route[message.route.length - 1]);
+            }
+            //добавляем свой адрес в маршруты
+            message.route.push(this.config.recieverAddress);
+            //устанавливаем тип сообщения
+            message.type = this.blockchain.MessageType.SW_BROADCAST;
+            //рассылаем всем, кроме отправителя(если это уже не первая пересылка)
+            that.blockchain.broadcast(message, prevSender);
+
+            this.handleMessageMutex(messageBody);
+        }
+    };
+
+     /**
+      *  посылает сообщение по протоколу starwave
+      * @param message //объект сообщения
+      */
+     sendMessage(message){
+         if (!this.sendMessageToPeer(message.reciver, message)) {   //не получилось отправить напрямую, нет напрямую подключенного пира, делаем рассылку всем
+             //очищаем маршрут, начиная с текущего узла
+             this.broadcastMessage(message);
+             return 2; //отправили широковещательно
+         }
+         return 1; //отправили напрямую
+     };
+
+    manageIncomingMessage(message) {
+        //проверяем актуальность сообщения
+        if ((moment().utc.valueOf() - message.timestampOfStart) > (message.relevancyTime + LATENCY_TIME)) {
+            return 0; //оставляем без внимания сообщение
+        }
+        //проверяем, достигли сообщение конечной точки
+        if (this.endpointForMessage(message)) {
+            //сохраняем карту маршрута
+            if (message.route.length > 1) { //если карта маршрута из одного элемента, значит, есть прямое подключение к отправителю и записывать не нужно
+                this.routes[message.sender] = message.route.push(this.config.recieverAddress).reverse();//переворачиваем массив, чтобы использовать его для посылки
+                return 1;   //признак того, что сообщение достигло цели
+            }
+        } else {        //если сообщение проходное
+            return this.retranslateMessage(message);
+        }
+        //сообщение актуально и не достигло получателя, значит
+        //проверяем наличие закольцованности. если в маршруте уже есть этот адрес, а конечная точка еще не нашлась,то не пускаем дальше
+        //см. описание выше
+        if (!this.routeIsComplete(message) &&
+            (message.route.indexOf(this.config.recieverAddress) > -1)) {
+            return 0;                           //т.е. массив маршрута еще в стадии построения, и к нам пришло сообщение повторно
+        }
+    };
+
+    /**
+     * пересылаем полученное сообщение дальше по маршруту
+     * @param message
+     * @returns {*}
+     */
+    retranslateMessage(message){
+        //пересоздаем сообщение(если необходимо что-то добавить)
+        let newMessage = message;
+        if (this.routeIsComplete(newMessage)) {
+            let ind = newMessage.route.indexOf(this.config.recieverAddress); // индекс текущего узла в маршрутной карте
+            if (!this.sendMessageToPeer(newMessage.route[ind + 1], newMessage)) { //не получилось отправить напрямую, нет напрямую подключенного пира, делаем рассылку всем
+                //очищаем маршрут, начиная с текущего узла, потому что маршрут сломан и перестраиваем его
+                newMessage.route = newMessage.route.splice(ind);
+                this.broadcastMessage(newMessage);
+            }
+        } else{//если маршрут не закончен
+            this.sendMessage(newMessage);
+        }
+        return newMessage;
+    };
+
+    /**
+     * работаем с мьютексом сообщения
+     * @param messageBody
+     */
+    handleMessageMutex(messageBody){
+        //взято из диспетчера
+        this._messageMutex[messageBody.mutex] = true;
+        setTimeout(()=>{
+            if(typeof this._messageMutex[messageBody.mutex] !== 'undefined') {
+                delete this._messageMutex[messageBody.mutex];
+            }
+        }, MESSAGE_MUTEX_TIMEOUT);
     };
 
     /**
@@ -160,32 +226,13 @@ class starwaveProtocol {
         return message.reciver === this.config.recieverAddress;
     };
 
-    manageIncomingMessage(message){
-        //проверяем актуальность сообщения
-        if ((moment().utc.valueOf() - message.timestampOfStart) > (message.relevancyTime + LATENCY_TIME)){
-            return false; //оставляем без внимания сообщение
-        }
-
-        //проверяем наличие закольцованности. если в маршруте уже есть этот адрес, а конечная точка еще не нашлась,то не пускаем дальше
-        if ((message.route(message.route.length - 1) !== message.reciver) &&
-                (message.route.indexOf(this.config.recieverAddress) > -1)){
-            return false; //т.е. массив маршрута еще в стадии построения, и к нам пришло сообщение повторно
-        }
-        //проверяем, достигли сообщение конечной точки
-        if (this.endpointForMessage(message)){
-
-        }
-    };
-
-    //работаем с мьютексом сообщения
-    handleMessageMutex(messageBody){
-        //взято из диспетчера
-        this._messageMutex[messageBody.mutex] = true;
-        setTimeout(()=>{
-            if(typeof this._messageMutex[messageBody.mutex] !== 'undefined') {
-                delete this._messageMutex[messageBody.mutex];
-            }
-        }, MESSAGE_MUTEX_TIMEOUT);
+    /**
+     * прверяет, закончен ли маршрут
+     * @param message
+     * @returns {boolean}
+     */
+    routeIsComplete(message){
+        return (message.route(message.route.length - 1) === message.reciver);
     };
 
     /**
