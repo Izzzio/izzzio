@@ -15,6 +15,11 @@ class DApp {
         this.blockchain = blockchain;
         this.rpc = storj.get('httpServer');
 
+        /***
+         * @var {starwaveProtocol} this.starwave
+         */
+        this.starwave = storj.get('starwaveProtocol');
+
 
         that = this;
         /**
@@ -44,7 +49,7 @@ class DApp {
 
         /**
          * Messaging functions
-         * @type {{registerMessageHandler: MessagesDispatcher.registerMessageHandler, broadcastMessage: MessagesDispatcher.broadcastMessage, sendMessage: MessagesDispatcher.sendMessage}}
+         * @type {{registerMessageHandler: (function(): boolean), broadcastMessage: (function(): void), sendMessage: (function(): void), starwave: {registerMessageHandler: (function(): any), sendMessage: (function(): any), createMessage: (function(): any)}}}
          */
         this.messaging = {
             registerMessageHandler: function () {
@@ -55,6 +60,17 @@ class DApp {
             },
             sendMessage: function () {
                 return that._messagesDispatcher.sendMessage.apply(that._messagesDispatcher, arguments)
+            },
+            starwave: {
+                registerMessageHandler: function () {
+                    return that.starwave.registerMessageHandler.apply(that._messagesDispatcher, arguments)
+                },
+                sendMessage: function () {
+                    return that.starwave.sendMessage.apply(that._messagesDispatcher, arguments)
+                },
+                createMessage: function () {
+                    return that.starwave.createMessage.apply(that._messagesDispatcher, arguments)
+                },
             }
         };
 
