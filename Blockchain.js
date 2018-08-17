@@ -49,6 +49,11 @@ function Blockchain(config) {
 
     const NodeMetaInfo = require('./modules/NodeMetaInfo');
 
+    const StarwaveProtocol = require('./modules/starwaveProtocol');
+
+    let starwave = new StarwaveProtocol(config, blockchainObject);
+
+
     const basic = auth.basic({
             realm: "RPC Auth"
         }, (username, password, callback) => {
@@ -59,6 +64,8 @@ function Blockchain(config) {
             callback(password === config.rpcPassword);
         }
     );
+
+    const routes = {};
 
     if(config.rpcPassword.length !== 0) {
         app.use(auth.connect(basic));
@@ -105,7 +112,8 @@ function Blockchain(config) {
         RESPONSE_BLOCKCHAIN: 2,
         MY_PEERS: 3,
         BROADCAST: 4,
-        META: 5
+        META: 5,
+        SW_BROADCAST: 6
     };
 
     let maxBlock = -1;
@@ -586,6 +594,9 @@ function Blockchain(config) {
                         }
                     }
                     lastMsgIndex = message.index;
+                    break;
+                case MessageType.SW_BROADCAST:
+                    lastMsgIndex = starwave.handleMessage(message, messagesHandlers, ws);
                     break;
             }
         });
@@ -1206,7 +1217,7 @@ function Blockchain(config) {
             timestamp: moment().utc().valueOf(),
             TTL: typeof TTL !== 'undefined' ? TTL : 0, //количество скачков сообщения
             index: index,
-            mutex: getid() + getid() + getid()
+            mutex: getid() + getid() + getid(),
         };
     }
 
@@ -1514,9 +1525,9 @@ function Blockchain(config) {
                         });
                     }
 
-                    if(storj.get("dapp") !== null){
+                    if(storj.get("dapp") !== null) {
                         storj.get("dapp").terminate(terminate);
-                    }else{
+                    } else {
                         terminate();
                     }
 
@@ -1595,12 +1606,14 @@ function Blockchain(config) {
         setMiningForce: function (miningNowP, miningForceP) {
             miningNow = miningNowP;
             miningForce = miningForceP;
-        }
-
-
+        },
+        MessageType: MessageType,
+        routes: routes,
+        messagesHandlers: messagesHandlers
     };
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
+    starwave.blockchain = blockchainObject;
 
     blockchainObject.messagesDispatcher = new MessagesDispatcher(config, blockchainObject);
 
