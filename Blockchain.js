@@ -596,7 +596,7 @@ function Blockchain(config) {
                     lastMsgIndex = message.index;
                     break;
                 case MessageType.SW_BROADCAST:
-                    lastMsgIndex = starwave.handleMessage(message,messagesHandlers,ws);
+                    lastMsgIndex = starwave.handleMessage(message, messagesHandlers, ws);
                     break;
             }
         });
@@ -1525,9 +1525,9 @@ function Blockchain(config) {
                         });
                     }
 
-                    if(storj.get("dapp") !== null){
+                    if(storj.get("dapp") !== null) {
                         storj.get("dapp").terminate(terminate);
-                    }else{
+                    } else {
                         terminate();
                     }
 
@@ -1608,10 +1608,12 @@ function Blockchain(config) {
             miningForce = miningForceP;
         },
         MessageType: MessageType,
-        routes: routes
+        routes: routes,
+        messagesHandlers: messagesHandlers
     };
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
+    starwave.blockchain = blockchainObject;
 
     blockchainObject.messagesDispatcher = new MessagesDispatcher(config, blockchainObject);
 

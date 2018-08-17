@@ -42,7 +42,7 @@ You can use any bash-like interpreter to run. We recommend using git bash from G
 You can run node server by command
 
 ```
-node main.js
+node index.js
 ```
 
 ## Contributing

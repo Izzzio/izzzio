@@ -13,7 +13,7 @@
 
 const MESSAGE_MUTEX_TIMEOUT = 1000;
 const RESPONSE_SUFFIX = '_RESP';
-const LATENCY_TIME = 10*1000; //отклонение на устаревание сообщения
+const LATENCY_TIME = 10 * 1000; //отклонение на устаревание сообщения
 
 const storj = require('./instanceStorage');
 const moment = require('moment');
@@ -52,7 +52,7 @@ class starwaveProtocol {
      * @param timestampOfStart
      * @returns {{data: *, reciver: *, sender: *, id: *, timestamp: number, TTL: number, index: *, mutex: string, relevancyTime: Array, route: Array, type: number, timestampOfStart: number}}
      */
-    createMessage(data, reciver, sender, id, timestamp, index, TTL, relevancyTime, route, type, timestampOfStart) {
+    createMessage(data, reciver, sender, id, timestamp, TTL, relevancyTime, route, type, timestampOfStart) {
         return {
             data: data,
             reciver: reciver,
@@ -60,7 +60,6 @@ class starwaveProtocol {
             id: id,
             timestamp: timestamp !== undefined ? timestamp : moment().utc().valueOf(),  //при пересылке сообщений. если указано время, значит, пересылается сообщение и оставляем первоначальное время создания
             TTL: typeof TTL !== 'undefined' ? TTL : 0, //количество скачков сообщения
-            index: index,
             mutex: getid() + getid() + getid(),
             relevancyTime: relevancyTime !== undefined ? relevancyTime : [], // время актуальности сообщений
             route: route !== undefined ? route : [],     //маршрут сообщения
@@ -83,7 +82,7 @@ class starwaveProtocol {
                     if(typeof  messageBody.mutex !== 'undefined' && typeof that._messageMutex[messageBody.mutex] === 'undefined') {
                         handler(messageBody, function (data) {
                             //that.createMessage(data,messageBody.recepient, message + RESPONSE_SUFFIX,that.getAddress(), messageBody);
-                           // that.send(data, message + RESPONSE_SUFFIX, messageBody.recepient);
+                            // that.send(data, message + RESPONSE_SUFFIX, messageBody.recepient);
                             //обработка сообщения
                         });
                         that.handleMessageMutex(messageBody);
@@ -101,22 +100,28 @@ class starwaveProtocol {
      * @param messageBusAddress
      * @param {object} message
      */
-    sendMessageToPeer(messageBusAddress, message ) {
+    sendMessageToPeer(messageBusAddress, message) {
         let that = this;
         if(typeof that.blockchain !== 'undefined') {
 
-            let socket = this.blockchain.getSocketByBusAddress(messageBusAddress);
-            if (!socket) {  //нет такого подключенного сокета
-                return false;
-            } else{
-                //добавляем свой адрес в маршруты, если маршрут не закончен
-                if (!this.routeIsComplete(message)){
-                    message.route.push(this.config.recieverAddress);
+            if(messageBusAddress === this.getAddress()) { //Сообщение самому себе
+                this.handleMessage(message, this.blockchain.messagesHandlers, null);
+                return true;
+            } else {
+                let socket = this.blockchain.getSocketByBusAddress(messageBusAddress);
+
+                if(!socket) {  //нет такого подключенного сокета
+                    return false;
+                } else {
+                    //добавляем свой адрес в маршруты, если маршрут не закончен
+                    if(!this.routeIsComplete(message)) {
+                        message.route.push(this.config.recieverAddress);
+                    }
+                    //отправляем сообщение
+                    that.blockchain.write(socket, message);
+                    this.handleMessageMutex(message);
+                    return true; //сообщение отправлено
                 }
-                //отправляем сообщение
-                that.blockchain.write(socket, message);
-                this.handleMessageMutex(message);
-                return true; //сообщение отправлено
             }
 
         }
@@ -132,7 +137,7 @@ class starwaveProtocol {
         //если пустой, значит, первая отправка и идет всем
         if(typeof that.blockchain !== 'undefined') {
             let prevSender; //отправитель сообщения
-            if (message.route.length > 0) { //если массив маршрута пуст, значит, это первая отправка сообщения и рассылать нужно без ограничений
+            if(message.route.length > 0) { //если массив маршрута пуст, значит, это первая отправка сообщения и рассылать нужно без ограничений
                 //сохраняем предыдущего отправителя(он записан последним в массиве маршрутов)
                 prevSender = that.blockchain.getSocketByBusAddress(message.route[message.route.length - 1]);
             }
@@ -142,22 +147,22 @@ class starwaveProtocol {
             message.type = this.blockchain.MessageType.SW_BROADCAST;
             //рассылаем всем, кроме отправителя(если это уже не первая пересылка)
             that.blockchain.broadcast(message, prevSender);
-            this.handleMessageMutex(messageBody);
+            this.handleMessageMutex(message);
         }
     };
 
-     /**
-      *  посылает сообщение по протоколу starwave
-      * @param message //объект сообщения
-      */
-     sendMessage(message){
-         if (!this.sendMessageToPeer(message.reciver, message)) {   //не получилось отправить напрямую, нет напрямую подключенного пира, делаем рассылку всем
-             //очищаем маршрут, начиная с текущего узла
-             this.broadcastMessage(message);
-             return 2; //отправили широковещательно
-         }
-         return 1; //отправили напрямую
-     };
+    /**
+     *  посылает сообщение по протоколу starwave
+     * @param message //объект сообщения
+     */
+    sendMessage(message) {
+        if(!this.sendMessageToPeer(message.reciver, message)) {   //не получилось отправить напрямую, нет напрямую подключенного пира, делаем рассылку всем
+            //очищаем маршрут, начиная с текущего узла
+            this.broadcastMessage(message);
+            return 2; //отправили широковещательно
+        }
+        return 1; //отправили напрямую
+    };
 
     /**
      * разбираем входящее сообщение и смотрим что с ним  делать дальше
@@ -165,15 +170,17 @@ class starwaveProtocol {
      * @returns {*}
      */
     manageIncomingMessage(message) {
+
         //проверяем актуальность сообщения
-        if ((moment().utc.valueOf() - message.timestampOfStart) > (message.relevancyTime + LATENCY_TIME)) {
+        if((moment().utc.valueOf() - message.timestampOfStart) > (message.relevancyTime + LATENCY_TIME)) {
             return 0; //оставляем без внимания сообщение
         }
         //проверяем, достигли сообщение конечной точки
-        if (this.endpointForMessage(message)) {
+        if(this.endpointForMessage(message)) {
             //сохраняем карту маршрута
-            if (message.route.length > 1) { //если карта маршрута из одного элемента, значит, есть прямое подключение к отправителю и записывать не нужно
-                this.routes[message.sender] = message.route.push(this.config.recieverAddress).reverse();//переворачиваем массив, чтобы использовать его для посылки
+            if(message.route.length <= 1) { //если карта маршрута из одного элемента, значит, есть прямое подключение к отправителю и записывать не нужно
+                message.route.push(this.config.recieverAddress);//переворачиваем массив, чтобы использовать его для посылки
+                this.routes[message.sender] = message.route.reverse();
                 return 1;   //признак того, что сообщение достигло цели
             }
         } else {        //если сообщение проходное
@@ -182,7 +189,7 @@ class starwaveProtocol {
         //сообщение актуально и не достигло получателя, значит
         //проверяем наличие закольцованности. если в маршруте уже есть этот адрес, а конечная точка еще не нашлась,то не пускаем дальше
         //см. описание выше
-        if (!this.routeIsComplete(message) &&
+        if(!this.routeIsComplete(message) &&
             (message.route.indexOf(this.config.recieverAddress) > -1)) {
             return 0;                           //т.е. массив маршрута еще в стадии построения, и к нам пришло сообщение повторно
         }
@@ -193,17 +200,17 @@ class starwaveProtocol {
      * @param message
      * @returns {*} отправленное сообщение
      */
-    retranslateMessage(message){
+    retranslateMessage(message) {
         //пересоздаем сообщение(если необходимо что-то добавить)
         let newMessage = message;
-        if (this.routeIsComplete(newMessage)) {
+        if(this.routeIsComplete(newMessage)) {
             let ind = newMessage.route.indexOf(this.config.recieverAddress); // индекс текущего узла в маршрутной карте
-            if (!this.sendMessageToPeer(newMessage.route[ind + 1], newMessage)) { //не получилось отправить напрямую, нет напрямую подключенного пира, делаем рассылку всем
+            if(!this.sendMessageToPeer(newMessage.route[ind + 1], newMessage)) { //не получилось отправить напрямую, нет напрямую подключенного пира, делаем рассылку всем
                 //очищаем маршрут, начиная с текущего узла, потому что маршрут сломан и перестраиваем его
                 newMessage.route = newMessage.route.splice(ind);
                 this.broadcastMessage(newMessage);
             }
-        } else{//если маршрут не закончен
+        } else {//если маршрут не закончен
             this.sendMessage(newMessage);
         }
         return newMessage;
@@ -216,9 +223,9 @@ class starwaveProtocol {
      * @param ws
      * @returns {*} //возвращает индекс обработанного сообщения
      */
-    handleMessage(message, messagesHandlers, ws){
-        if (message.type === this.blockchain.MessageType.SW_BROADCAST){
-            if (this.manageIncomingMessage(message) === 1){
+    handleMessage(message, messagesHandlers, ws) {
+        if(message.type === this.blockchain.MessageType.SW_BROADCAST) {
+            if(this.manageIncomingMessage(message) === 1) {
                 //значит, сообщение пришло в конечную точку и
                 /**
                  * Проходимся по обработчикам входящих сообщений
@@ -227,7 +234,7 @@ class starwaveProtocol {
                     if(messagesHandlers.hasOwnProperty(a)) {
                         message._socket = ws;
                         if(messagesHandlers[a].handle(message)) {
-                            return message.index; //Если сообщение обработано, выходим
+                            return message.id; //Если сообщение обработано, выходим
                         }
                     }
                 }
@@ -239,10 +246,10 @@ class starwaveProtocol {
      * работаем с мьютексом сообщения
      * @param messageBody
      */
-    handleMessageMutex(messageBody){
+    handleMessageMutex(messageBody) {
         //взято из диспетчера
         this._messageMutex[messageBody.mutex] = true;
-        setTimeout(()=>{
+        setTimeout(() => {
             if(typeof this._messageMutex[messageBody.mutex] !== 'undefined') {
                 delete this._messageMutex[messageBody.mutex];
             }
@@ -254,7 +261,7 @@ class starwaveProtocol {
      * @param message
      * @returns {boolean}
      */
-    endpointForMessage(message){
+    endpointForMessage(message) {
         return message.reciver === this.config.recieverAddress;
     };
 
@@ -263,8 +270,8 @@ class starwaveProtocol {
      * @param message
      * @returns {boolean}
      */
-    routeIsComplete(message){
-        return (message.route(message.route.length - 1) === message.reciver);
+    routeIsComplete(message) {
+        return (message.route[message.route.length - 1] === message.reciver);
     };
 
     /**
