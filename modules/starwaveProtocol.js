@@ -95,6 +95,7 @@ class starwaveProtocol {
         return false;
     };
 
+
     /**
      * Посылает сообщение непосредственно подключенному пиру(по его busAddress)
      * @param messageBusAddress
@@ -141,7 +142,6 @@ class starwaveProtocol {
             message.type = this.blockchain.MessageType.SW_BROADCAST;
             //рассылаем всем, кроме отправителя(если это уже не первая пересылка)
             that.blockchain.broadcast(message, prevSender);
-
             this.handleMessageMutex(messageBody);
         }
     };
@@ -208,6 +208,32 @@ class starwaveProtocol {
         }
         return newMessage;
     };
+
+    /**
+     * полная обработка сообщения по протоколу
+     * @param message
+     * @param messagesHandlers
+     * @param ws
+     * @returns {*} //возвращает индекс обработанного сообщения
+     */
+    handleMessage(message, messagesHandlers, ws){
+        if (message.type === this.blockchain.MessageType.SW_BROADCAST){
+            if (this.manageIncomingMessage(message) === 1){
+                //значит, сообщение пришло в конечную точку и
+                /**
+                 * Проходимся по обработчикам входящих сообщений
+                 */
+                for (let a in messagesHandlers) {
+                    if(messagesHandlers.hasOwnProperty(a)) {
+                        message._socket = ws;
+                        if(messagesHandlers[a].handle(message)) {
+                            return message.index; //Если сообщение обработано, выходим
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * работаем с мьютексом сообщения

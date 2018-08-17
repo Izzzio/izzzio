@@ -49,6 +49,11 @@ function Blockchain(config) {
 
     const NodeMetaInfo = require('./modules/NodeMetaInfo');
 
+    const StarwaveProtocol = require('./modules/starwaveProtocol');
+
+    let starwave = new StarwaveProtocol(config, blockchainObject);
+
+
     const basic = auth.basic({
             realm: "RPC Auth"
         }, (username, password, callback) => {
@@ -589,6 +594,9 @@ function Blockchain(config) {
                         }
                     }
                     lastMsgIndex = message.index;
+                    break;
+                case MessageType.SW_BROADCAST:
+                    lastMsgIndex = starwave.handleMessage(message,messagesHandlers,ws);
                     break;
             }
         });
