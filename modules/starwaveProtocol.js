@@ -180,18 +180,18 @@ class starwaveProtocol {
             if(message.route.length > 1) { //если карта маршрута из одного элемента, значит, есть прямое подключение к отправителю и записывать не нужно
                 message.route.push(this.config.recieverAddress);//переворачиваем массив, чтобы использовать его для посылки
                 this.blockchain.routes[message.sender] = message.route.reverse();
-                return 1;   //признак того, что сообщение достигло цели
             }
+            return 1;   //признак того, что сообщение достигло цели
         } else {        //если сообщение проходное
             return this.retranslateMessage(message);
         }
         //сообщение актуально и не достигло получателя, значит
         //проверяем наличие закольцованности. если в маршруте уже есть этот адрес, а конечная точка еще не нашлась,то не пускаем дальше
         //см. описание выше
-        if(!this.routeIsComplete(message) &&
+       /* if(!this.routeIsComplete(message) &&
             (message.route.indexOf(this.config.recieverAddress) > -1)) {
             return 0;                           //т.е. массив маршрута еще в стадии построения, и к нам пришло сообщение повторно
-        }
+        }*/
     };
 
     /**
