@@ -1,4 +1,11 @@
 /**
+ iZ³ | Izzzio blockchain - https://izzz.io
+ @author:  iZ³ Team (info@izzz.io)
+ */
+
+
+
+/**
  Starwave protocol
  Протокол использует объект BlockChain и его методы отправки сообщений: blockchain.broadcast, blockchain.write
  добавлен новый тип сообщений SW_BROADCAST - это тип, который используют сообщения этого протокола
