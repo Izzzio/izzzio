@@ -171,13 +171,13 @@ class starwaveProtocol {
         }
 
         //проверяем актуальность сообщения
-        if((moment().utc().valueOf()) > (message.timestamp + message.relevancyTime)) {
+        if((moment().utc().valueOf()) > (message.timestamp + message.relevancyTime + LATENCY_TIME)) {
             return 0; //оставляем без внимания сообщение
         }
         //проверяем, достигли сообщение конечной точки
         if(this.endpointForMessage(message)) {
             //сохраняем карту маршрута
-            if(message.route.length <= 1) { //если карта маршрута из одного элемента, значит, есть прямое подключение к отправителю и записывать не нужно
+            if(message.route.length > 1) { //если карта маршрута из одного элемента, значит, есть прямое подключение к отправителю и записывать не нужно
                 message.route.push(this.config.recieverAddress);//переворачиваем массив, чтобы использовать его для посылки
                 this.blockchain.routes[message.sender] = message.route.reverse();
                 return 1;   //признак того, что сообщение достигло цели
