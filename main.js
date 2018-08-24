@@ -95,6 +95,8 @@ const config = {
     messagingMaxTTL: 3,                 //Максимальный предел скачков сообщения
     //maximumInputSize: 15 * 1024 * 1024, //Максимальный объем сообщения (здесь 15 мегабайт)
     maximumInputSize: 2 * 1024 * 1024,
+    allowMultipleSocketsOnBus: false, // разрешение на подключение сокетов с разными адресами на один адрес шины
+
 
     //Wallet
     walletFile: './wallet.json',         //Адрес файла кошелька
@@ -107,6 +109,7 @@ const config = {
     transactionIndexDB: 'transactions.db',  // база данных для индекса транзакций, false - для работы с ОЗУ (каждый раз индекс будет перестроен)
     transactionIndexPerf: true,             // режим высокой производительности индекса (требует много ОЗУ)
     transactionIndexEnable: false,          // активировать построение индекса
+
 
     //Application
     appEntry: false       //Точка входа в "приложение". False - если не требуется
