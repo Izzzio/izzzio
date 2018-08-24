@@ -1,6 +1,8 @@
 /**
- *
+ iZ³ | Izzzio blockchain - https://izzz.io
+ @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
+
 let ivm = require('isolated-vm');
 
 
@@ -13,6 +15,7 @@ class VM {
         this.script = '';
         this.state = undefined;
         this.context = undefined;
+        this.timeout = 1000;
     }
 
     /**
@@ -55,11 +58,6 @@ class VM {
         jail.setSync('global', jail.derefInto());
         jail.setSync('console', this.objToReference(console));
         jail.setSync('_randomSeed', randomSeed);
-        jail.setSync('test', this.objToReference({
-            a: function (a, b, c) {
-                return a + b;
-            }
-        }));
 
         let bootstrap = this.isolate.compileScriptSync('new ' + function () {
 
@@ -114,10 +112,18 @@ class VM {
              * Contract register method
              * @param contract
              */
-            global.registerContract =  function registerContract(contract) {
+            global.registerContract = function registerContract(contract) {
                 global.contract = new contract();
-            }
+            };
 
+            /**
+             * Decode and register external object
+             * @param objName
+             */
+            global._registerGlobalObjFromExternal = function _registerGlobalObjFromExternal(objName) {
+                global[objName] = decodeReferences(global[objName]);
+                return true;
+            };
 
         });
         bootstrap.runSync(context);
@@ -153,7 +159,7 @@ class VM {
      * @return {*}
      */
     execute() {
-        return this.compiledScript.runSync(this.context)
+        return this.compiledScript.runSync(this.context, {timeout: this.timeout})
     }
 
     /**
@@ -173,10 +179,49 @@ class VM {
             }
         }
 
-        return vmContext.applySync(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()));
+        return vmContext.applySync(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout});
+    }
+
+    /**
+     * Setup execution time limit
+     * @param limit
+     */
+    setTimingLimits(limit) {
+        this.timeout = limit;
+    }
+
+    /**
+     * Get property value from context
+     * @param context
+     * @return {*}
+     */
+    getContextProperty(context) {
+        let vmContext = this.context.global;
+        let prevContext = vmContext;
+        context = context.split('.');
+        for (let a in context) {
+            if(context.hasOwnProperty(a)) {
+                prevContext = vmContext;
+                vmContext = vmContext.getSync(context[a]);
+            }
+        }
+
+        return vmContext.copySync()
+    }
+
+    /**
+     * Defines object in global context
+     * @param name
+     * @param object
+     * @return {*}
+     */
+    setObjectGlobal(name, object) {
+        this.context.global.setSync(name, this.objToReference(object));
+        return this.runContextMethod("_registerGlobalObjFromExternal", name);
     }
 }
 
+/*
 let vm = new VM();
 vm.compileScript('new ' + function () {
 
@@ -187,7 +232,12 @@ vm.compileScript('new ' + function () {
         }
 
         test(a, b) {
-            return a + b+this.a;
+            this.a = a;
+            return a + b + this.a;
+        }
+
+        fall(){
+            while(true){}
         }
     }
 
@@ -196,7 +246,12 @@ vm.compileScript('new ' + function () {
 }, {randomSeed: 1});
 let result = vm.execute();
 //console.log(result);
-console.log(vm.runContextMethod("contract.test", 1, 2));
+
+vm.setObjectGlobal('test', {a: 123});
+
+console.log(vm.runContextMethod("contract.test", 2, 2));
+console.log(vm.getContextProperty("contract.a"));
+console.log(vm.runContextMethod("contract.fall"));*/
 //console.log(vm.runMethod("contract.test", 3, 4));
 
 /*
@@ -207,3 +262,6 @@ console.log(context.global.getSync("testFunc").applySync(undefined, [3, 4]));
 console.log(context.global.getSync("testFunc").applySync(undefined, [3, 4]));
 
 console.log(result);*/
+
+
+module.exports = VM;
