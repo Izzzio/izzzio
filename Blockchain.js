@@ -497,6 +497,15 @@ function Blockchain(config) {
      */
     function initMessageHandler(ws) {
         ws.on('message', (data) => {
+
+            //prevent multiple sockets on one busaddress
+            if (!config.allowMultiplySocketsOnBus){
+                if (starwave.preventMultipleSockets(ws) === 0) {
+                    data = null;
+                    return;
+                }
+            }
+
             if(data.length > config.maximumInputSize) {
                 if(config.program.verbose) {
                     logger.error('Input message exceeds maximum input size (' + data.length + ' > ' + config.maximumInputSize + ')');
@@ -511,8 +520,6 @@ function Blockchain(config) {
             } catch (e) {
                 logger.error('' + e)
             }
-
-            //console.log(message);
 
             switch (message.type) {
                 case MessageType.QUERY_LATEST:
@@ -1096,7 +1103,7 @@ function Blockchain(config) {
     const broadcast = function (message, excludeIp) {
         sockets.forEach(function (socket) {
             if(typeof excludeIp === 'undefined' || socket._socket.recieverAddress !== excludeIp) {
-                write(socket, message)
+                write(socket, message);
             } else {
 
             }
@@ -1609,7 +1616,7 @@ function Blockchain(config) {
         },
         MessageType: MessageType,
         routes: routes,
-        messagesHandlers: messagesHandlers
+        messagesHandlers: messagesHandlers,
     };
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;

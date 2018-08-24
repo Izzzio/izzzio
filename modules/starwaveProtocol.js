@@ -287,6 +287,42 @@ class starwaveProtocol {
     getAddress() {
         return this.blockchain.config.recieverAddress;
     };
+
+    /**
+     * close connection with socket if there are more then one url on that busaddress
+     * @param socket
+     * @returns {number} //status of the operation
+     */
+    preventMultipleSockets(socket){
+        let busAddress;
+        if (socket.nodeMetaInfo) {
+            busAddress = socket.nodeMetaInfo.messageBusAddress;
+            if (busAddress === undefined) {
+                return 2; //socket without busAddress
+            }
+        }else{
+            return 3; //socket has no meta info
+        }
+        //if there are more than 1 socket on busaddress we close connection
+        const sockets = this.getCurrentPeers(true);
+        let socketsOnBus = 0;
+        const socketsNumber = sockets.length;
+        for (let i = 0; i < socketsNumber; i++){
+            if(sockets[i] && sockets[i].nodeMetaInfo) {
+                if (sockets[i].nodeMetaInfo.messageBusAddress === busAddress){
+                    socketsOnBus++;
+                }
+            }
+        }
+        if (socketsOnBus > 1) {
+            socket.close();
+            return 0; //close connection
+        } else {
+            return 1; // no other connections
+        }
+    }
+
+
 }
 
 module.exports = starwaveProtocol;
