@@ -4,6 +4,7 @@
  */
 
 let ivm = require('isolated-vm');
+const fs = require('fs');
 
 /**
  * Smart contract isolated virtual machine
@@ -152,6 +153,14 @@ class VM {
      */
     injectScript(code) {
         this.isolate.compileScriptSync(code).runSync(this.context);
+    }
+
+    /**
+     * Inject module
+     * @param filePath
+     */
+    injectSource(filePath){
+        this.injectScript(fs.readFileSync(filePath).toString());
     }
 
     /**

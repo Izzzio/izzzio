@@ -73,7 +73,7 @@ class KeyValueInstancer {
      * @return {*|void}
      */
     rollback(callback) {
-        return this.db.deploy(callback);
+        return this.db.rollback(callback);
     }
 
     /**

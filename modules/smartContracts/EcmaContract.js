@@ -36,7 +36,7 @@ class EcmaContract {
         this.blockHandler = storj.get('blockHandler');
 
         this.blockHandler.registerBlockHandler(EcmaContractDeployBlock.blockType, function (blockData, block, callback) {
-            that.handleBlock(blockData, block, callback)
+            that.handleBlock(blockData, block, callback);
         });
 
         /*this.blockHandler.registerBlockHandler('Document', function (blockData, block, callback) {
@@ -67,14 +67,18 @@ class EcmaContract {
                 }
 
                 constructor() {
-                    this.walletsBalance = {};
-                    //this.db = db.get('tokens');
-                    this.db = new global.db('test');
+                    this.wallets = new TokensRegister(this.contract.ticker);
                 }
 
                 test() {
-                    this.db.put('key', 'Hello world!');
-                    return this.db.get('key');
+                    this.wallets.setBalance('000', '20');
+                    this.wallets.setBalance('001', '0');
+
+
+                    this.wallets.transfer('000', '001', '1');
+
+
+                    return 123;
                 }
 
                 /**
@@ -141,9 +145,7 @@ class EcmaContract {
                 setTimeout(function () {
                     that.callContractMethodRollback(generatedBLock.index, 'contract.test', function (err, val) {
                         console.log("RESULT", val);
-                        that.db.deploy(function () {
-                            process.exit();
-                        });
+                        process.exit();
 
                     });
                 }, 1000);
@@ -199,6 +201,10 @@ class EcmaContract {
      */
     _setupVmFunctions(vm, db) {
         let that = this;
+
+        /**
+         * Assertions
+         */
         vm.setObjectGlobal('assert', {
             assert: function (assertion, message) {
                 if(!assertion) {
@@ -223,6 +229,10 @@ class EcmaContract {
                 this.assert(a < b, message);
             },
         });
+
+        /**
+         * Contract Key-Value DB
+         */
         vm.setObjectGlobal('_db', {
             create: function (dbName) {
                 let newDb = new KeyValueInstancer(db, dbName);
@@ -252,9 +262,11 @@ class EcmaContract {
                 return true;
             }
         });
-
+        //Inject DB module
         vm.injectScript('new ' + function () {
-            global.db = function (dbName) {
+            let _db = global._db;
+            global._db = undefined;
+            global.KeyValue = function (dbName) {
                 let that = this;
 
                 function waitForReturn() {
@@ -267,22 +279,22 @@ class EcmaContract {
                     }
                 }
 
-                this.handler = global._db.create(dbName);
+                this.handler = _db.create(dbName);
                 this.dbName = dbName;
                 this.get = function (key) {
-                    global._db._get(that.handler, key);
+                    _db._get(that.handler, key);
                     return waitForReturn();
                 };
                 this.put = function (key, value) {
-                    global._db._put(that.handler, key, value);
+                    _db._put(that.handler, key, value);
                     return waitForReturn();
                 };
                 return this;
             };
 
         });
-
-        //process.exit();
+        vm.injectSource(__dirname + '/modules/BigNumber.js');
+        vm.injectSource(__dirname + '/modules/TokensRegister.js');
     }
 
     /**
@@ -302,10 +314,40 @@ class EcmaContract {
                 cb(err);
             } else {
                 try {
-                    //let result = instance.vm.runContextMethod(method, ...args);
                     instance.vm.runContextMethodAsync(method, function (result) {
-                        console.log(result);
                         instance.db.rollback(function () {
+                            cb(null, result);
+                        });
+
+                    }, ...args);
+
+                } catch (e) {
+                    logger.error('Contract ' + address + ' method ' + method + ' falls with error: ' + e);
+                    cb(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Call contract method with deploying new state
+     * @param address
+     * @param method
+     * @param cb
+     * @param args
+     */
+    callContractMethodDeploy(address, method, cb, ...args) {
+        if(method.indexOf('contract._') !== -1) {
+            throw 'Calling private contract method in deploy method not allowed';
+        }
+
+        this.getContractInstanceByAddress(address, function (err, instance) {
+            if(err) {
+                cb(err);
+            } else {
+                try {
+                    instance.vm.runContextMethodAsync(method, function (result) {
+                        instance.db.deploy(function () {
                             cb(null, result);
                         });
 
@@ -347,11 +389,9 @@ class EcmaContract {
     getContractInstanceByAddress(address, cb) {
         let that = this;
         if(typeof this._contractInstanceCache[address] !== 'undefined') {
-            console.log('CONTRACT FROM CACHE');
             cb(null, this._contractInstanceCache[address].instance);
         } else {
             this.contracts.get(address, function (err, contract) {
-                console.log('CONTRACT FROM DB');
                 if(err) {
                     cb(false);
                 } else {
