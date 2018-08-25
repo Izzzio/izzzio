@@ -67,7 +67,7 @@ class EcmaContract {
                         site: 'http://izzz.io',
                         icon: 'http://izzz.io/simpleToken.png',
                         decimals: 10,
-                        owner: false,
+                        owner: '3e761301cbdaf93c4f0188d11bd9b49411154b83e86c5ba54d3896d7f8fe8bc2',
                     };
                 }
 
@@ -76,12 +76,14 @@ class EcmaContract {
                 }
 
                 test(amount, sayIt) {
+                    assert.assert(this.contract.owner !== state.from, 'Restricted access');
                     this.wallets.setBalance('000', '20');
                     this.wallets.setBalance('001', '0');
 
-                    this.wallets.transfer('000', '001', amount);
+                    this.wallets.transfer('000', '001', state.block.index);
 
                     console.log(sayIt);
+                    console.log(state);
                     return 123;
                 }
 
@@ -91,11 +93,8 @@ class EcmaContract {
                  * @param amount
                  */
                 mint(to, amount) {
-                    if(typeof this.walletsBalance[to] === 'undefined') {
-                        this.walletsBalance[to] = 0;
-                    }
-
-                    this.walletsBalance[to] += amount;
+                    assert.assert(this.contract.owner !== state.from, 'Restricted access');
+                    this.wallets.deposit(to, amount);
                 }
 
                 /**
@@ -108,32 +107,12 @@ class EcmaContract {
                 }
 
                 /**
-                 * Internal transfer func
-                 * @param from
-                 * @param to
-                 * @param amount
-                 * @private
-                 */
-                _transfer(from, to, amount) {
-                    //Check balance
-                    assert.defined(this.walletsBalance[from], 'Unknown wallet ' + from);
-                    assert.gt(this.walletsBalance[from], amount, 'Insufficient funds');
-
-                    if(typeof this.walletsBalance[to] === 'undefined') {
-                        this.walletsBalance[to] = 0;
-                    }
-
-                    this.walletsBalance[from] -= amount;
-                    this.walletsBalance[to] += amount;
-                }
-
-                /**
                  * Transfer method
                  * @param to
                  * @param amount
                  */
                 transfer(to, amount) {
-                    this._transfer(state.sender, to, amount);
+                    this.wallets.transfer(state.from, to, amount);
                 }
             }
 
@@ -151,9 +130,9 @@ class EcmaContract {
                     });*/
 
                     that.deployContractMethod(generatedBLock.index, 'test', [5, 'Hello world!'], {}, function (generatedBlock) {
-                        that.callContractMethodRollback(generatedBLock.index, 'balanceOf', function (err, val) {
+                        that.callContractMethodRollback(generatedBLock.index, 'balanceOf', {}, function (err, val) {
                             console.log('Balance of 001 ', val);
-                            that.callContractMethodRollback(generatedBLock.index, 'balanceOf', function (err, val) {
+                            that.callContractMethodRollback(generatedBLock.index, 'balanceOf', {}, function (err, val) {
                                 console.log('Balance of 000 ', val);
                                 process.exit();
                             }, '000');
@@ -315,10 +294,11 @@ class EcmaContract {
      * Call contract method without deploying. (Useful for testing and get contract information)
      * @param {string} address
      * @param {string} method
+     * @param {Object} state
      * @param {Function} cb
      * @param args
      */
-    callContractMethodRollback(address, method, cb, ...args) {
+    callContractMethodRollback(address, method, state, cb, ...args) {
         /* if(method.indexOf('contract._') !== -1) {
              throw 'Calling private contract method not allowed';
          }*/
@@ -328,6 +308,7 @@ class EcmaContract {
                 cb(err);
             } else {
                 try {
+                    instance.vm.setObjectGlobal('state', state);
                     instance.vm.runContextMethodAsync('contract.' + method, function (result) {
                         instance.db.rollback(function () {
                             cb(null, result);
@@ -347,10 +328,11 @@ class EcmaContract {
      * Call contract method with deploying new state
      * @param address
      * @param method
+     * @param state
      * @param cb
      * @param args
      */
-    callContractMethodDeploy(address, method, cb, ...args) {
+    callContractMethodDeploy(address, method, state, cb, ...args) {
         if(method.indexOf('contract._') !== -1) {
             throw 'Calling private contract method in deploy method not allowed';
         }
@@ -360,6 +342,7 @@ class EcmaContract {
                 cb(err);
             } else {
                 try {
+                    instance.vm.setObjectGlobal('state', state);
                     instance.vm.runContextMethodAsync('contract.' + method, function (result) {
                         instance.db.deploy(function () {
                             cb(null, result);
@@ -426,7 +409,10 @@ class EcmaContract {
     deployContract(code, cb) {
         let that = this;
         code = uglifyJs.minify(code).code;
-        let deployBlock = new EcmaContractDeployBlock(code, {randomSeed: random.int(0, 10000)});
+        let deployBlock = new EcmaContractDeployBlock(code, {
+            randomSeed: random.int(0, 10000),
+            from: this.blockchain.wallet.id
+        });
         deployBlock = this.blockchain.wallet.signBlock(deployBlock);
 
         this.blockchain.generateNextBlockAuto(deployBlock, function (generatedBlock) {
@@ -448,6 +434,7 @@ class EcmaContract {
      */
     deployContractMethod(address, method, args, state, cb) {
         let that = this;
+        state.from = this.blockchain.wallet.id;
         let callBlock = new EcmaContractCallBlock(address, method, args, state);
         callBlock = this.blockchain.wallet.signBlock(callBlock);
         this.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
@@ -560,9 +547,14 @@ class EcmaContract {
      */
     _handleContractCall(address, method, args, state, block, callback) {
         let that = this;
+
+        state.block = block;
+        state.randomSeed = block.index;
+
         let callstack = [];
         callstack.push(address);
         callstack.push(method);
+        callstack.push(state);
         callstack.push(function (err, result) {
             console.log('METHOD CALL', address, method, result);
             callback(true);

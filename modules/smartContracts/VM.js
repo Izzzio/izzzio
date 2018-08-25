@@ -119,7 +119,8 @@ class VM {
              * @return {number}
              */
             Math.random = function () {
-                let x = Math.sin(randomSeed++) * 12000;
+                let seed = typeof state.randomSeed !== 'undefined' ? state.randomSeed : randomSeed;
+                let x = Math.sin(seed++) * 12000;
                 return x - Math.floor(x);
             };
 
@@ -159,7 +160,7 @@ class VM {
      * Inject module
      * @param filePath
      */
-    injectSource(filePath){
+    injectSource(filePath) {
         this.injectScript(fs.readFileSync(filePath).toString());
     }
 
