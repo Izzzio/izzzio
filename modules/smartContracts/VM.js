@@ -17,7 +17,7 @@ class VM {
         this.script = '';
         this.state = undefined;
         this.context = undefined;
-        this.timeout =  (typeof options === 'undefined' || typeof options.timeLimit === 'undefined' ? 1000 : options.timeLimit);
+        this.timeout = (typeof options === 'undefined' || typeof options.timeLimit === 'undefined' ? 1000 : options.timeLimit);
     }
 
     /**
@@ -188,6 +188,7 @@ class VM {
             if(context.hasOwnProperty(a)) {
                 prevContext = vmContext;
                 vmContext = vmContext.getSync(context[a]);
+
             }
         }
 
