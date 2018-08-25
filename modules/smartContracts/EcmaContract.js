@@ -150,10 +150,10 @@ class EcmaContract {
 
                     });*/
 
-                    that.deployContractMethod(generatedBLock.index, 'contract.test', [5, 'Hello world!'], {}, function (generatedBlock) {
-                        that.callContractMethodRollback(generatedBLock.index, 'contract.balanceOf', function (err, val) {
+                    that.deployContractMethod(generatedBLock.index, 'test', [5, 'Hello world!'], {}, function (generatedBlock) {
+                        that.callContractMethodRollback(generatedBLock.index, 'balanceOf', function (err, val) {
                             console.log('Balance of 001 ', val);
-                            that.callContractMethodRollback(generatedBLock.index, 'contract.balanceOf', function (err, val) {
+                            that.callContractMethodRollback(generatedBLock.index, 'balanceOf', function (err, val) {
                                 console.log('Balance of 000 ', val);
                                 process.exit();
                             }, '000');
@@ -328,7 +328,7 @@ class EcmaContract {
                 cb(err);
             } else {
                 try {
-                    instance.vm.runContextMethodAsync(method, function (result) {
+                    instance.vm.runContextMethodAsync('contract.' + method, function (result) {
                         instance.db.rollback(function () {
                             cb(null, result);
                         });
@@ -360,7 +360,7 @@ class EcmaContract {
                 cb(err);
             } else {
                 try {
-                    instance.vm.runContextMethodAsync(method, function (result) {
+                    instance.vm.runContextMethodAsync('contract.' + method, function (result) {
                         instance.db.deploy(function () {
                             cb(null, result);
                         });
