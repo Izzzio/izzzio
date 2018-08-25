@@ -12,6 +12,7 @@ const random = require('../random');
 
 const BlockHandler = require('../blockHandler');
 const EcmaContractDeployBlock = require('./EcmaContractDeployBlock');
+const EcmaContractCallBlock = require('./EcmaContractCallBlock');
 const uglifyJs = require("uglify-es");
 
 
@@ -36,6 +37,10 @@ class EcmaContract {
         this.blockHandler = storj.get('blockHandler');
 
         this.blockHandler.registerBlockHandler(EcmaContractDeployBlock.blockType, function (blockData, block, callback) {
+            that.handleBlock(blockData, block, callback);
+        });
+
+        this.blockHandler.registerBlockHandler(EcmaContractCallBlock.blockType, function (blockData, block, callback) {
             that.handleBlock(blockData, block, callback);
         });
 
@@ -70,14 +75,13 @@ class EcmaContract {
                     this.wallets = new TokensRegister(this.contract.ticker);
                 }
 
-                test() {
+                test(amount, sayIt) {
                     this.wallets.setBalance('000', '20');
                     this.wallets.setBalance('001', '0');
 
+                    this.wallets.transfer('000', '001', amount);
 
-                    this.wallets.transfer('000', '001', '1');
-
-
+                    console.log(sayIt);
                     return 123;
                 }
 
@@ -100,10 +104,7 @@ class EcmaContract {
                  * @return {*}
                  */
                 balanceOf(address) {
-                    if(typeof this.walletsBalance[address] !== 'undefined') {
-                        return this.walletsBalance[address];
-                    }
-                    return 0;
+                    return this.wallets.balanceOf(address).toFixed();
                 }
 
                 /**
@@ -143,11 +144,24 @@ class EcmaContract {
         setTimeout(function () {
             that.deployContract(code, function (generatedBLock) {
                 setTimeout(function () {
-                    that.callContractMethodRollback(generatedBLock.index, 'contract.test', function (err, val) {
+                    /*that.callContractMethodRollback(generatedBLock.index, 'contract.test', function (err, val) {
                         console.log("RESULT", val);
                         process.exit();
 
-                    });
+                    });*/
+
+                    that.deployContractMethod(generatedBLock.index, 'contract.test', [5, 'Hello world!'], {}, function (generatedBlock) {
+                        that.callContractMethodRollback(generatedBLock.index, 'contract.balanceOf', function (err, val) {
+                            console.log('Balance of 001 ', val);
+                            that.callContractMethodRollback(generatedBLock.index, 'contract.balanceOf', function (err, val) {
+                                console.log('Balance of 000 ', val);
+                                process.exit();
+                            }, '000');
+
+                        }, '001');
+                        //console.log(generatedBlock);
+
+                    })
                 }, 1000);
             });
         }, 5000);
@@ -425,6 +439,26 @@ class EcmaContract {
     }
 
     /**
+     * Deploy call contract method
+     * @param {string} address
+     * @param {string} method
+     * @param {Object} args
+     * @param {Object} state
+     * @param {Function} cb
+     */
+    deployContractMethod(address, method, args, state, cb) {
+        let that = this;
+        let callBlock = new EcmaContractCallBlock(address, method, args, state);
+        callBlock = this.blockchain.wallet.signBlock(callBlock);
+        this.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
+            that.blockchain.addBlock(generatedBlock, function () {
+                that.blockchain.broadcastLastBlock();
+                cb(generatedBlock);
+            })
+        });
+    }
+
+    /**
      * Creates or return cached contract instance
      * @param address
      * @param code
@@ -515,6 +549,34 @@ class EcmaContract {
     }
 
     /**
+     * Handling contract call method
+     * @param {string} address
+     * @param {string} method
+     * @param {Object} args
+     * @param {Object} state
+     * @param {Block} block
+     * @param {Function} callback
+     * @private
+     */
+    _handleContractCall(address, method, args, state, block, callback) {
+        let that = this;
+        let callstack = [];
+        callstack.push(address);
+        callstack.push(method);
+        callstack.push(function (err, result) {
+            console.log('METHOD CALL', address, method, result);
+            callback(true);
+        });
+        for (let a in args) {
+            if(args.hasOwnProperty(a)) {
+                callstack.push(args[a]);
+            }
+        }
+        this.callContractMethodDeploy.apply(this, callstack);
+
+    }
+
+    /**
      * Handle Ecma blocks
      * @param {EcmaContractDeployBlock} blockData
      * @param {Block} block
@@ -523,10 +585,11 @@ class EcmaContract {
     handleBlock(blockData, block, callback) {
         let that = this;
 
+        let verifyBlock = {};
 
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
-                let verifyBlock = new EcmaContractDeployBlock(blockData.ecmaCode, blockData.state);
+                verifyBlock = new EcmaContractDeployBlock(blockData.ecmaCode, blockData.state);
 
                 if(verifyBlock.data !== blockData.data) {
                     logger.error('Contract invalid data in block ' + block.index);
@@ -542,32 +605,27 @@ class EcmaContract {
 
                 this._handleContractDeploy(block.index, blockData.ecmaCode, blockData.state, callback);
                 break;
-            case '':
+            case EcmaContractCallBlock.blockType:
+                verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state);
+                if(verifyBlock.data !== blockData.data) {
+                    logger.error('Contract invalid data in block ' + block.index);
+                    callback(true);
+                    return
+                }
+
+                if(!this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey)) {
+                    logger.error('Contract invalid sign in block ' + block.index);
+                    callback(true);
+                    return
+                }
+
+                this._handleContractCall(blockData.address, blockData.method, blockData.args, blockData.state, block, callback);
+
                 break;
             default:
                 logger.error('Unexpected block type ' + block.index);
                 callback();
         }
-
-        return;
-
-        let contract = this.getOrCreateContractInstance('000', '', {randomSeed: 1});
-
-        console.log(contract);
-
-        that.callContractMethodRollback('000', 'contract.balanceOf', function (err, value) {
-            console.log(value);
-            that.callContractMethodRollback('000', 'contract.mint', function (err, value) {
-                that.callContractMethodRollback('000', 'contract._transfer', function (err, value) {
-                    that.callContractMethodRollback('000', 'contract.balanceOf', function (err, value) {
-                        console.log(value);
-                        callback();
-                    }, '001');
-                }, '000', '001', 100);
-            }, '000', 1000);
-        }, '000');
-
-
     }
 }
 

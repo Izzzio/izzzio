@@ -83,8 +83,6 @@ class TransactionalKeyValue {
     deploy(callback = ()=>{}){
         let that = this;
 
-        console.log(that.transactions);
-
         function delPromised(key) {
             return new Promise(function (resolve) {
                 that.db.del(key, function () {
