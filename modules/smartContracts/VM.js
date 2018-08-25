@@ -5,17 +5,19 @@
 
 let ivm = require('isolated-vm');
 
-
+/**
+ * Smart contract isolated virtual machine
+ */
 class VM {
 
     constructor(options) {
         this.ramLimit = (typeof options === 'undefined' || typeof options.ramLimit === 'undefined' ? 32 : options.ramLimit);
         this.ivm = ivm;
-        this.isolate = new ivm.Isolate({memoryLimit: this.ramLimi});
+        this.isolate = new ivm.Isolate({memoryLimit: this.ramLimit});
         this.script = '';
         this.state = undefined;
         this.context = undefined;
-        this.timeout = 1000;
+        this.timeout =  (typeof options === 'undefined' || typeof options.timeLimit === 'undefined' ? 1000 : options.timeLimit);
     }
 
     /**
@@ -57,6 +59,11 @@ class VM {
         jail.setSync('_ivm', ivm);
         jail.setSync('global', jail.derefInto());
         jail.setSync('console', this.objToReference(console));
+        jail.setSync('system', this.objToReference({
+            processMessages: function () {
+                return true;
+            }
+        }));
         jail.setSync('_randomSeed', randomSeed);
 
         let bootstrap = this.isolate.compileScriptSync('new ' + function () {
@@ -100,6 +107,11 @@ class VM {
             global.console = decodeReferences(console);
 
             /**
+             * VM interaction and system methods
+             */
+            global.system = decodeReferences(system);
+
+            /**
              * State safe random method
              * @return {number}
              */
@@ -114,6 +126,7 @@ class VM {
              */
             global.registerContract = function registerContract(contract) {
                 global.contract = new contract();
+                global.Contract = contract;
             };
 
             /**
@@ -135,10 +148,9 @@ class VM {
      * Compile and run script init with state
      * @param script
      * @param state
-     * @param options
      * @return {*}
      */
-    compileScript(script, state, options) {
+    compileScript(script, state) {
 
         let contractInit = '';
         /*if(typeof  state.contractClass !== 'undefined') {
@@ -182,6 +194,20 @@ class VM {
         return vmContext.applySync(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout});
     }
 
+    runContextMethodAsync(context, cb, ...args) {
+        let vmContext = this.context.global;
+        let prevContext = vmContext;
+        context = context.split('.');
+        for (let a in context) {
+            if(context.hasOwnProperty(a)) {
+                prevContext = vmContext;
+                vmContext = vmContext.getSync(context[a]);
+            }
+        }
+
+        return vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout});
+    }
+
     /**
      * Setup execution time limit
      * @param limit
@@ -219,6 +245,14 @@ class VM {
         this.context.global.setSync(name, this.objToReference(object));
         return this.runContextMethod("_registerGlobalObjFromExternal", name);
     }
+
+    destroy() {
+        this.compiledScript.release();
+        this.isolate.dispose();
+        delete this.compiledScript;
+        delete this.context;
+        delete this;
+    }
 }
 
 /*
@@ -226,6 +260,11 @@ let vm = new VM();
 vm.compileScript('new ' + function () {
 
     class Contract {
+
+        static get CONSTANTS() {
+            return {a: 3};
+        }
+
         constructor() {
             console.log("CONSTRUCT");
             this.a = 100;
@@ -236,8 +275,15 @@ vm.compileScript('new ' + function () {
             return a + b + this.a;
         }
 
-        fall(){
-            while(true){}
+        fall() {
+            while (true) {
+                if(global.externalVal) {
+                    console.log(global.externalVal);
+                    break;
+                }else{
+                    system.processMessages();
+                }
+            }
         }
     }
 
@@ -250,9 +296,22 @@ let result = vm.execute();
 vm.setObjectGlobal('test', {a: 123});
 
 console.log(vm.runContextMethod("contract.test", 2, 2));
-console.log(vm.getContextProperty("contract.a"));
-console.log(vm.runContextMethod("contract.fall"));*/
-//console.log(vm.runMethod("contract.test", 3, 4));
+//console.log(vm.runContextMethod("Contract.heyHo"));
+console.log(vm.getContextProperty("Contract.CONSTANTS"));
+console.log(vm.getContextProperty("contract.PARAMS"));
+
+vm.setTimingLimits(10000);
+console.log(vm.runContextMethodAsync("contract.fall"));
+setTimeout(function () {
+    vm.setObjectGlobal('externalVal', {status: true});
+}, 1000);
+*/
+
+//vm.destroy();
+
+
+//
+//console.log(vm.runMethod("contract.test", 3, 4))
 
 /*
 let result = isolate.compileScriptSync('sum2(1,2)').runSync(context);

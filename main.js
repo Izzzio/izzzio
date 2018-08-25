@@ -109,7 +109,12 @@ const config = {
     transactionIndexEnable: false,          // активировать построение индекса
 
     //Application
-    appEntry: false       //Точка входа в "приложение". False - если не требуется
+    appEntry: false,       //Точка входа в "приложение". False - если не требуется
+
+    //SmartContracts
+    ecmaContract: {
+        enabled: false
+    }
 };
 
 //*********************************************************************

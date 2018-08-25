@@ -50,9 +50,9 @@ function Blockchain(config) {
     const NodeMetaInfo = require('./modules/NodeMetaInfo');
 
     const StarwaveProtocol = require('./modules/starwaveProtocol');
-
     let starwave = new StarwaveProtocol(config, blockchainObject);
 
+    const EcmaContract = require('./modules/smartContracts/EcmaContract');
 
     const basic = auth.basic({
             realm: "RPC Auth"
@@ -1140,7 +1140,7 @@ function Blockchain(config) {
         createWalletIfNotExsists();
 
         if(config.appEntry) {
-            console.log("Info: Loading DApp...\n");
+            logger.info("Info: Loading DApp...\n");
             try {
                 /**
                  * @var {DApp} clientApplication
@@ -1149,7 +1149,7 @@ function Blockchain(config) {
                 clientApplication.init();
                 storj.put("dapp", clientApplication);
             } catch (e) {
-                console.log("Error: DApp fatal:\n");
+                logger.error("DApp fatal:\n");
                 console.log(e);
                 process.exit(1);
             }
@@ -1611,15 +1611,25 @@ function Blockchain(config) {
         routes: routes,
         messagesHandlers: messagesHandlers
     };
+
+    //Init2
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
-    starwave.blockchain = blockchainObject;
 
+
+    //Message dispatcher
     blockchainObject.messagesDispatcher = new MessagesDispatcher(config, blockchainObject);
 
+    //StarWave messaging protocol
+    starwave.blockchain = blockchainObject;
+
+    //EcmaContract Smartcontracts
+    if(typeof config.ecmaContract !== 'undefined' && config.ecmaContract.enabled) {
+        blockchainObject.ecmaContract = new EcmaContract();
+        storj.put('ecmaContract', blockchainObject.ecmaContract);
+    }
+
     storj.put('blockchainObject', blockchainObject);
-
-
     return blockchainObject;
 }
 
