@@ -29,6 +29,7 @@ class EcmaContract {
         this._contractInstanceCache = {};
         this._contractInstanceCacheLifetime = typeof this.config.ecmaContract === 'undefined' || typeof this.config.ecmaContract.contractInstanceCacheLifetime === 'undefined' ? 60000 : this.config.ecmaContract.contractInstanceCacheLifetime;
 
+        this._dbInstances = [];
         /**
          * @var {BlockHandler} this.blockHandler
          */
@@ -46,171 +47,7 @@ class EcmaContract {
         logger.info('Initialized');
 
 
-        setTimeout(function () {
-            that.deployContract('', function (generatedBLock) {
-                //console.log(generatedBLock);
-                //console.log(generatedBLock);
-
-                setTimeout(function () {
-                    that.getContractProperty(generatedBLock.index, 'contract.contract', function (err, val) {
-                        console.log(val);
-                        process.exit();
-                    });
-                }, 1000);
-            });
-        }, 5000);
-    }
-
-    /**
-     * Get blockchain object
-     * @return {blockchain}
-     */
-    get blockchain() {
-        return storj.get('blockchainObject')
-    }
-
-    /**
-     * Create contract instance by code
-     * @param address
-     * @param code
-     * @param state
-     * @return {{vm: VM, db: KeyValueInstancer}}
-     */
-    createContractInstance(address, code, state) {
-        let vm = new VM({ramLimit: this.config.ecmaContract.ramLimit});
-        let db = new KeyValueInstancer(this.db, address);
-        try {
-            vm.compileScript(code, state);
-            vm.setObjectGlobal('state', state);
-            this._setupVmFunctions(vm);
-            vm.execute();
-        } catch (e) {
-            vm.destroy();
-            logger.error('Contract ' + address + ' deployed with error. ' + e);
-            throw e;
-        }
-
-        let contractInfo = {};
-        try {
-            contractInfo = vm.getContextProperty('contract.contract')
-        } catch (e) {
-        }
-
-
-        return {vm: vm, db: db, info: contractInfo};
-    }
-
-    /**
-     * SetUp Virtual Machine functions
-     * @param vm
-     * @private
-     */
-    _setupVmFunctions(vm) {
-        vm.setObjectGlobal('assert', {
-            assert: function (assertion, message) {
-                if(!assertion) {
-                    if(typeof message !== 'undefined') {
-                        throw message;
-                    }
-                    throw 'Assertion fails'
-                }
-            },
-            defined: function (assertion, message) {
-                if(!assertion) {
-                    if(typeof message !== 'undefined') {
-                        throw message;
-                    }
-                    throw 'Assertion not defined'
-                }
-            },
-            gt: function (a, b, message) {
-                this.assert(a > b, message);
-            },
-            lt: function (a, b, message) {
-                this.assert(a < b, message);
-            },
-        });
-    }
-
-    /**
-     * Call contract method without deploying. (Useful for testing and get contract information)
-     * @param {string} address
-     * @param {string} method
-     * @param {Function} cb
-     * @param args
-     */
-    callContractMethodRollback(address, method, cb, ...args) {
-        /* if(method.indexOf('contract._') !== -1) {
-             throw 'Calling private contract method not allowed';
-         }*/
-
-        this.getContractInstanceByAddress(address, function (err, instance) {
-            if(err) {
-                cb(err);
-            } else {
-                try {
-                    let result = instance.vm.runContextMethod(method, ...args);
-                    instance.db.rollback(function () {
-                        cb(null, result);
-                    });
-
-                } catch (e) {
-                    logger.error('Contract ' + address + ' method ' + method + ' falls with error: ' + e);
-                    cb(e);
-                }
-            }
-        });
-    }
-
-    /**
-     * Get contract property by address
-     * @param address
-     * @param property
-     * @param cb
-     */
-    getContractProperty(address, property, cb) {
-        this.getContractInstanceByAddress(address, function (err, instance) {
-            if(err) {
-                cb(err);
-            } else {
-                try {
-                    cb(null, instance.vm.getContextProperty(property));
-                } catch (e) {
-                    cb(e);
-                }
-            }
-        });
-    }
-
-    /**
-     * Get instance by address
-     * @param {string} address
-     * @param {Function} cb
-     */
-    getContractInstanceByAddress(address, cb) {
-        let that = this;
-        if(typeof this._contractInstanceCache[address] !== 'undefined') {
-            console.log('CONTRACT FROM CACHE');
-            cb(null, this._contractInstanceCache[address].instance);
-        } else {
-            this.contracts.get(address, function (err, contract) {
-                console.log('CONTRACT FROM DB');
-                if(err) {
-                    cb(false);
-                } else {
-                    contract = JSON.parse(contract);
-                    let instance = that.getOrCreateContractInstance(address, contract.code, contract.state);
-                    cb(null, instance)
-                }
-            })
-        }
-
-    }
-
-    deployContract(code, cb) {
-        let that = this;
-        //TODO: write other code
-        code = 'new ' + function () {
+        let code = 'new ' + function () {
             class SimpleToken {
 
                 /**
@@ -231,6 +68,13 @@ class EcmaContract {
 
                 constructor() {
                     this.walletsBalance = {};
+                    //this.db = db.get('tokens');
+                    this.db = new global.db('test');
+                }
+
+                test() {
+                    this.db.put('key', 'Hello world!');
+                    return this.db.get('key');
                 }
 
                 /**
@@ -291,8 +135,243 @@ class EcmaContract {
             global.registerContract(SimpleToken);
         };
 
-        code = uglifyJs.minify(code).code;
 
+        setTimeout(function () {
+            that.deployContract(code, function (generatedBLock) {
+                setTimeout(function () {
+                    that.callContractMethodRollback(generatedBLock.index, 'contract.test', function (err, val) {
+                        console.log("RESULT", val);
+                        that.db.deploy(function () {
+                            process.exit();
+                        });
+
+                    });
+                }, 1000);
+            });
+        }, 5000);
+    }
+
+    /**
+     * Get blockchain object
+     * @return {blockchain}
+     */
+    get blockchain() {
+        return storj.get('blockchainObject')
+    }
+
+    /**
+     * Create contract instance by code
+     * @param address
+     * @param code
+     * @param state
+     * @return {{vm: VM, db: KeyValueInstancer}}
+     */
+    createContractInstance(address, code, state) {
+        let vm = new VM({ramLimit: this.config.ecmaContract.ramLimit});
+        let db = new KeyValueInstancer(this.db, address);
+        try {
+            vm.setTimingLimits(10000);
+            vm.compileScript(code, state);
+            vm.setObjectGlobal('state', state);
+            this._setupVmFunctions(vm, db);
+            vm.execute();
+        } catch (e) {
+            vm.destroy();
+            logger.error('Contract ' + address + ' deployed with error. ' + e);
+            throw e;
+        }
+
+        let contractInfo = {};
+        try {
+            contractInfo = vm.getContextProperty('contract.contract')
+        } catch (e) {
+        }
+
+
+        return {vm: vm, db: db, info: contractInfo};
+    }
+
+    /**
+     * SetUp Virtual Machine functions
+     * @param {VM} vm
+     * @param {KeyValueInstancer} db
+     * @private
+     */
+    _setupVmFunctions(vm, db) {
+        let that = this;
+        vm.setObjectGlobal('assert', {
+            assert: function (assertion, message) {
+                if(!assertion) {
+                    if(typeof message !== 'undefined') {
+                        throw message;
+                    }
+                    throw 'Assertion fails'
+                }
+            },
+            defined: function (assertion, message) {
+                if(!assertion) {
+                    if(typeof message !== 'undefined') {
+                        throw message;
+                    }
+                    throw 'Assertion not defined'
+                }
+            },
+            gt: function (a, b, message) {
+                this.assert(a > b, message);
+            },
+            lt: function (a, b, message) {
+                this.assert(a < b, message);
+            },
+        });
+        vm.setObjectGlobal('_db', {
+            create: function (dbName) {
+                let newDb = new KeyValueInstancer(db, dbName);
+                return that._dbInstances.push(newDb) - 1;
+            },
+            getName: function (handleId) {
+                console.log(that._dbInstances);
+                return that._dbInstances[handleId].namespace;
+            },
+            _get: function (handleId, key) {
+                vm.setObjectGlobal('_execResult', {status: 0});
+                that._dbInstances[handleId].get(key, function (err, val) {
+                    if(!err) {
+                        vm.setObjectGlobal('_execResult', {status: 1, result: val});
+                    } else {
+                        vm.setObjectGlobal('_execResult', {status: 1, result: false});
+                    }
+                });
+
+                return true;
+            },
+            _put: function (handleId, key, value) {
+                vm.setObjectGlobal('_execResult', {status: 0});
+                that._dbInstances[handleId].put(key, value, function (err) {
+                    vm.setObjectGlobal('_execResult', {status: 1, result: err});
+                });
+                return true;
+            }
+        });
+
+        vm.injectScript('new ' + function () {
+            global.db = function (dbName) {
+                let that = this;
+
+                function waitForReturn() {
+                    while (true) {
+                        if(global._execResult.status !== 0) {
+                            return global._execResult.result
+                        } else {
+                            system.processMessages();
+                        }
+                    }
+                }
+
+                this.handler = global._db.create(dbName);
+                this.dbName = dbName;
+                this.get = function (key) {
+                    global._db._get(that.handler, key);
+                    return waitForReturn();
+                };
+                this.put = function (key, value) {
+                    global._db._put(that.handler, key, value);
+                    return waitForReturn();
+                };
+                return this;
+            };
+
+        });
+
+        //process.exit();
+    }
+
+    /**
+     * Call contract method without deploying. (Useful for testing and get contract information)
+     * @param {string} address
+     * @param {string} method
+     * @param {Function} cb
+     * @param args
+     */
+    callContractMethodRollback(address, method, cb, ...args) {
+        /* if(method.indexOf('contract._') !== -1) {
+             throw 'Calling private contract method not allowed';
+         }*/
+
+        this.getContractInstanceByAddress(address, function (err, instance) {
+            if(err) {
+                cb(err);
+            } else {
+                try {
+                    //let result = instance.vm.runContextMethod(method, ...args);
+                    instance.vm.runContextMethodAsync(method, function (result) {
+                        console.log(result);
+                        instance.db.rollback(function () {
+                            cb(null, result);
+                        });
+
+                    }, ...args);
+
+                } catch (e) {
+                    logger.error('Contract ' + address + ' method ' + method + ' falls with error: ' + e);
+                    cb(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Get contract property by address
+     * @param address
+     * @param property
+     * @param cb
+     */
+    getContractProperty(address, property, cb) {
+        this.getContractInstanceByAddress(address, function (err, instance) {
+            if(err) {
+                cb(err);
+            } else {
+                try {
+                    cb(null, instance.vm.getContextProperty(property));
+                } catch (e) {
+                    cb(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Get instance by address
+     * @param {string} address
+     * @param {Function} cb
+     */
+    getContractInstanceByAddress(address, cb) {
+        let that = this;
+        if(typeof this._contractInstanceCache[address] !== 'undefined') {
+            console.log('CONTRACT FROM CACHE');
+            cb(null, this._contractInstanceCache[address].instance);
+        } else {
+            this.contracts.get(address, function (err, contract) {
+                console.log('CONTRACT FROM DB');
+                if(err) {
+                    cb(false);
+                } else {
+                    contract = JSON.parse(contract);
+                    let instance = that.getOrCreateContractInstance(address, contract.code, contract.state);
+                    cb(null, instance)
+                }
+            })
+        }
+
+    }
+
+    /**
+     * Deploy contract with current wallet
+     * @param {string} code
+     * @param {Function} cb
+     */
+    deployContract(code, cb) {
+        let that = this;
+        code = uglifyJs.minify(code).code;
         let deployBlock = new EcmaContractDeployBlock(code, {randomSeed: random.int(0, 10000)});
         deployBlock = this.blockchain.wallet.signBlock(deployBlock);
 
@@ -404,8 +483,23 @@ class EcmaContract {
     handleBlock(blockData, block, callback) {
         let that = this;
 
+
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
+                let verifyBlock = new EcmaContractDeployBlock(blockData.ecmaCode, blockData.state);
+
+                if(verifyBlock.data !== blockData.data) {
+                    logger.error('Contract invalid data in block ' + block.index);
+                    callback(true);
+                    return
+                }
+
+                if(!this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey)) {
+                    logger.error('Contract invalid sign in block ' + block.index);
+                    callback(true);
+                    return
+                }
+
                 this._handleContractDeploy(block.index, blockData.ecmaCode, blockData.state, callback);
                 break;
             case '':

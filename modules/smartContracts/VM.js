@@ -37,7 +37,7 @@ class VM {
                     };
                 } else {
                     if(typeof obj[a] === 'object') {
-                        newObj[a] = {ref: objToReference(obj[a]), ref_type: 'object'};
+                        newObj[a] = {ref: this.objToReference(obj[a]), ref_type: 'object'};
                     } else {
                         newObj[a] = obj[a];
                     }
@@ -95,6 +95,8 @@ class VM {
                 return newObj;
             }
 
+            global.decodeReferences = decodeReferences;
+
             //Initialize
             let ivm = _ivm;
             _ivm = undefined;
@@ -142,6 +144,14 @@ class VM {
         bootstrap.runSync(context);
 
         return context;
+    }
+
+    /**
+     * Inject and run code
+     * @param {string} code
+     */
+    injectScript(code) {
+        this.isolate.compileScriptSync(code).runSync(this.context);
     }
 
     /**
@@ -195,6 +205,7 @@ class VM {
         return vmContext.applySync(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout});
     }
 
+
     runContextMethodAsync(context, cb, ...args) {
         let vmContext = this.context.global;
         let prevContext = vmContext;
@@ -206,7 +217,7 @@ class VM {
             }
         }
 
-        return vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout});
+        vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout}).then(cb);
     }
 
     /**
@@ -247,6 +258,10 @@ class VM {
         return this.runContextMethod("_registerGlobalObjFromExternal", name);
     }
 
+    setObjectGlobalSecret(name, object) {
+        this.context.global.setSync(name, this.objToReference(object));
+    }
+
     destroy() {
         this.compiledScript.release();
         this.isolate.dispose();
@@ -277,11 +292,12 @@ vm.compileScript('new ' + function () {
         }
 
         fall() {
+            console.log(global.test.a());
             while (true) {
                 if(global.externalVal) {
                     console.log(global.externalVal);
                     break;
-                }else{
+                } else {
                     system.processMessages();
                 }
             }
@@ -294,18 +310,22 @@ vm.compileScript('new ' + function () {
 let result = vm.execute();
 //console.log(result);
 
-vm.setObjectGlobal('test', {a: 123});
+vm.setObjectGlobal('test', {
+    a: function () {
+        setTimeout(function () {
+            vm.setObjectGlobal('externalVal', {status: true});
+        }, 5000);
+        return 'hello';
+    }
+});
 
 console.log(vm.runContextMethod("contract.test", 2, 2));
 //console.log(vm.runContextMethod("Contract.heyHo"));
 console.log(vm.getContextProperty("Contract.CONSTANTS"));
 console.log(vm.getContextProperty("contract.PARAMS"));
 
-vm.setTimingLimits(10000);
+vm.setTimingLimits(100000);
 console.log(vm.runContextMethodAsync("contract.fall"));
-setTimeout(function () {
-    vm.setObjectGlobal('externalVal', {status: true});
-}, 1000);
 */
 
 //vm.destroy();
