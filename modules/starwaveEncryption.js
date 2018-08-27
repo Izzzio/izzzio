@@ -1,5 +1,5 @@
 /**
- * Encription protocol for starwave
+ * Encryption protocol for starwave
  *
  *
  *
@@ -8,7 +8,7 @@
 
 const crypto = require("crypto");
 
-class StarwaveEncryptedTunnel {
+class StarwaveEncryption {
     /*constructor(bits = 2048){
         //diffiehellman object
         this.keyObject = crypto.createDiffieHellman(bits);
@@ -47,12 +47,14 @@ class StarwaveEncryptedTunnel {
 
 }
 
+module.export = StarwaveEncryption;
+/*
 console.log('start');
-let st1 = new StarwaveEncryptedTunnel();
+let st1 = new StarwaveEncryption();
 console.log(st1);
 console.log(st1.public.toString('hex'));
 console.log('');
-let st2 = new StarwaveEncryptedTunnel();
+let st2 = new StarwaveEncryption();
 console.log(st2);
 console.log('');
 
@@ -62,8 +64,13 @@ let s2 = st2.createSecret(st1.public);
 console.log('secrets');
 console.log(s1);
 console.log(s2);
+console.log('messages');
+let d1 = st1.cipherData('hello',s1);
+console.log(d1);
+let d2 = st1.decipherData(d1,s2);
+console.log(d2);
 
 
 
-/*console.log('secret keys');
-let sk1 = st.createSecret(k2.public)*/
+/!*console.log('secret keys');
+let sk1 = st.createSecret(k2.public)*!/*/
