@@ -233,9 +233,15 @@ class starwaveProtocol {
         if(message.type === this.blockchain.MessageType.SW_BROADCAST) {
             if(this.manageIncomingMessage(message) === 1) {
                 //значит, сообщение пришло в конечную точку и
+                //
+                //разбираемся с зашифрованным сообщением
+                //
+                //
+                //
                 /**
                  * Проходимся по обработчикам входящих сообщений
                  */
+
                 for (let a in messagesHandlers) {
                     if(messagesHandlers.hasOwnProperty(a)) {
                         message._socket = ws;
