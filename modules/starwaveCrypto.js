@@ -4,6 +4,7 @@
  * encrypted - means that message is encrypted
  * publicKey - public key of the sender which wants to make crypted tunnel
  *
+ * Using secp521r1 curve and aes256 algorithm as default
  **/
 'use strict';
 
