@@ -10,7 +10,6 @@
 
 const crypto = require("crypto");
 
-let blockchain = null;
 class StarwaveCrypto {
     /*constructor(bits = 2048){
         //diffiehellman object
@@ -49,7 +48,7 @@ class StarwaveCrypto {
         return data;
     }
 
-    decipherMessage(message, messageBus){
+    decipherMessage(message){
         let decryptedData;
 
         //if message didn't encrypted, return data
@@ -58,33 +57,33 @@ class StarwaveCrypto {
         }
 
         //if we have secret key associated with this socket than we have th e tunnel
-        if (socket.secretKey){
-            decryptedData = this.decipherData(message.data, socket.secretKey);
+        if (this.starwave.blockchain.secretKeys[message.sender]){
+            decryptedData = this.decipherData(message.data, this.starwave.blockchain.secretKeys[message.sender]);
             message.data = decryptedData;
             delete message.encrypted;
         }
         return decryptedData;
     }
 
-    cipherMessage(message, messageBus){
+    cipherMessage(message){
         let cryptedData;
         //should be assotiated secret key and check that message has not been already encrypted
-        if (socket.secretKey && !message.encrypted){
-            cryptedData = this.cipherData(message.data, socket.secretKey);
+        if (this.starwave.blockchain.secretKeys[message.reciver] && !message.encrypted){
+            cryptedData = this.cipherData(message.data, this.starwave.blockchain.secretKeys[message.reciver]);
             message.encrypted = true;
             message.data = cryptedData;
         }
         return cryptedData;
     }
 
-    handleIncomingMessage(message, socket){
+    handleIncomingMessage(message){
         //watch if the message has Public key field then the message is only for sending the key
         if (message.publicKey) {
-            //if we don't have secret key then we save sender public and create secret andsend our public to make connection
-            if (!socket.secretKey){
+            //if we don't have secret key then we save sender publickey and create secret and send our public to make connection
+            if (!this.starwave.blockchain.secretKeys[message.sender]){
                 this.makeConnection(message.sender);
             }
-            socket.secretKey = this.createSecret(message.publicKey);
+            this.starwave.blockchain.secretKeys[message.sender] = this.createSecret(message.publicKey);
             delete message.publicKey;
             return 0;
         }
@@ -96,13 +95,31 @@ class StarwaveCrypto {
         let message = this.starwave.createMessage('',messageBus,this.starwave.config.recieverAddress,'DH-CONNECTION');
         message.publicKey = this.public;
         this.starwave.sendMessage(message);
+        return message;
     }
 
-   // sendMessage
+    sendMessage(message){
+        //check if we have secret key for reciver
+        let sk = this.starwave.blockchain.secretKeys[message.reciver]; //secret key
+        if (sk){
+            if (this.cipherMessage(message)){
+                this.starwave.sendMessage(message);
+                return 0;
+            }else{
+                console.log("Error: Can't cipher message");
+                return 2;
+            }
+        }
+        else
+        {
+            console.log(`Error: there is no secret key for ${message.reciver}`)
+            return 1;
+        }
+    }
 
 }
 
-module.export = StarwaveCrypto;
+module.exports = StarwaveCrypto;
 /*
 console.log('start');
 let st1 = new StarwaveCrypto();

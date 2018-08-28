@@ -24,6 +24,7 @@ const LATENCY_TIME = 2 * 1000; //отклонение на устаревани�
 const storj = require('./instanceStorage');
 const moment = require('moment');
 const getid = require('./getid');
+const StarwaveCrypto = require('./starwaveCrypto');
 
 class starwaveProtocol {
 
@@ -37,6 +38,7 @@ class starwaveProtocol {
          */
         this._messageMutex = {};
         storj.put('starwaveProtocol', this);
+        this.starwaveCrypto = new StarwaveCrypto(this);
     }
 
     /**
@@ -235,6 +237,7 @@ class starwaveProtocol {
                 //значит, сообщение пришло в конечную точку и
                 //
                 //разбираемся с зашифрованным сообщением
+                this.starwaveCrypto.handleIncomingMessage(message);
                 //
                 //
                 //

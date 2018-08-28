@@ -66,6 +66,7 @@ function Blockchain(config) {
     );
 
     const routes = {};
+    const secretKeys = {};
 
     if(config.rpcPassword.length !== 0) {
         app.use(auth.connect(basic));
@@ -1617,6 +1618,8 @@ function Blockchain(config) {
         MessageType: MessageType,
         routes: routes,
         messagesHandlers: messagesHandlers,
+        secretKeys: secretKeys,
+
     };
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
