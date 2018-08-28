@@ -182,29 +182,3 @@ class StarwaveCrypto {
 }
 
 module.exports = StarwaveCrypto;
-/*
-console.log('start');
-let st1 = new StarwaveCrypto();
-console.log(st1);
-console.log(st1.public.toString('hex'));
-console.log('');
-let st2 = new StarwaveCrypto();
-console.log(st2);
-console.log('');
-
-let s1 = st1.createSecret(st2.public);
-let s2 = st2.createSecret(st1.public);
-
-console.log('secrets');
-console.log(s1);
-console.log(s2);
-console.log('messages');
-let d1 = st1.cipherData('hello',s1);
-console.log(d1);
-let d2 = st1.decipherData(d1,s2);
-console.log(d2);
-
-
-
-/!*console.log('secret keys');
-let sk1 = st.createSecret(k2.public)*!/*/
