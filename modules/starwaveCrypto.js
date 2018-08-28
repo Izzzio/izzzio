@@ -10,6 +10,7 @@
 
 
 const crypto = require("crypto");
+const logger =new (require('./logger'))('StarwaveCrypto');
 
 class StarwaveCrypto {
     /*constructor(bits = 2048){
@@ -44,7 +45,7 @@ class StarwaveCrypto {
         try {
             secret = this.keyObject.computeSecret(externalPublic, 'hex', 'hex');
         } catch (err) {
-            console.log('Can not create secret key ' + err); //if externalPublic is wrong
+            logger.error('Can not create secret key ' + err); //if externalPublic is wrong
         }
         return secret;
     };
@@ -96,7 +97,7 @@ class StarwaveCrypto {
             try{
                 decryptedData = JSON.parse(decryptedData)
             } catch (e) {
-                console.log("An error occurred while parsing decrypted text: " + e);
+                logger.error("An error occurred while parsing decrypted text: " + e);
             }
             message.data = decryptedData;
             delete message.encrypted;
@@ -168,13 +169,13 @@ class StarwaveCrypto {
                 this.starwave.sendMessage(message);
                 return message;
             }else{
-                console.log("Error: Can't cipher message");
+                logger.error("Can't cipher message");
                 return 2;
             }
         }
         else
         {
-            console.log(`Error: there is no secret key for address: ${message.reciver}`)
+            logger.error(`There is no secret key for address: ${message.reciver}`)
             return 1;
         }
     }
