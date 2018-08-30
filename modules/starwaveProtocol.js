@@ -24,6 +24,7 @@ const LATENCY_TIME = 2 * 1000; //отклонение на устаревани�
 const storj = require('./instanceStorage');
 const moment = require('moment');
 const getid = require('./getid');
+const StarwaveCrypto = require('./starwaveCrypto');
 
 class starwaveProtocol {
 
@@ -37,6 +38,7 @@ class starwaveProtocol {
          */
         this._messageMutex = {};
         storj.put('starwaveProtocol', this);
+        this.starwaveCrypto = new StarwaveCrypto(this);
     }
 
     /**
@@ -233,9 +235,12 @@ class starwaveProtocol {
         if(message.type === this.blockchain.MessageType.SW_BROADCAST) {
             if(this.manageIncomingMessage(message) === 1) {
                 //значит, сообщение пришло в конечную точку и
+                //сначала дешифруем, если нужно
+                this.starwaveCrypto.handleIncomingMessage(message);
                 /**
                  * Проходимся по обработчикам входящих сообщений
                  */
+
                 for (let a in messagesHandlers) {
                     if(messagesHandlers.hasOwnProperty(a)) {
                         message._socket = ws;
