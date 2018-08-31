@@ -4,7 +4,7 @@
  * encrypted - means that message is encrypted
  * publicKey - public key of the sender which wants to make crypted tunnel
  *
- * Using secp521r1 curve and aes256 algorithm as default
+ * Using secp256k1 curve and aes256 algorithm as default
  **/
 'use strict';
 
@@ -19,8 +19,8 @@ class StarwaveCrypto {
         this.public = this.generateKeys();
     };*/
 
-    constructor(starwave, curve = 'secp521r1'){
-        // EDCA object
+    constructor(starwave, curve = 'secp256k1'){
+        // ECDH object
         this.keyObject = crypto.createECDH(curve);
         this.public = this.generateKeys();
         this.starwave = starwave;
