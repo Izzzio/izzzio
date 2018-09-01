@@ -14,9 +14,7 @@
      * @constructor
      */
     environment.TokensRegister = function (name) {
-        let that = this;
         this.db = new KeyValue(name);
-
 
         /**
          * Get balance of address

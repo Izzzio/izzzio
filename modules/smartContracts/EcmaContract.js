@@ -53,7 +53,7 @@ class EcmaContract {
 
 
         let code = 'new ' + function () {
-            class SimpleToken {
+            class SimpleToken extends TokenContract {
 
                 /**
                  * Token contract values
@@ -66,52 +66,27 @@ class EcmaContract {
                         ticker: 'ST',
                         site: 'http://izzz.io',
                         icon: 'http://izzz.io/simpleToken.png',
-                        decimals: 10,
+                        decimals: 70,
                         owner: 'c0116b4f723e01a44d933c5fa9fef9586a532d5547eee0a76a7c1a62d5bc32ed',
                     };
                 }
 
-                constructor() {
-                    this.wallets = new TokensRegister(this.contract.ticker);
-                }
-
-                test(amount, sayIt) {
-                    this.wallets.setBalance('123', '10000');
-                    console.log(this.wallets.totalSupply().toFixed());
-                    this.wallets.transfer('123', '321', '10');
-                    console.log(this.wallets.totalSupply().toFixed());
-                    this.wallets.burn('321', '10');
-                    console.log(this.wallets.totalSupply().toFixed());
-                    return 123;
-                }
-
                 /**
-                 * Mint tokens
-                 * @param to
-                 * @param amount
+                 * Initialize emission
                  */
-                mint(to, amount) {
-                    assert.assert(this.contract.owner !== state.from, 'Restricted access');
-                    this.wallets.deposit(to, amount);
+                init() {
+                    super.init('0.0000000000000000000000000100000000000000000000000000000000000000000001');
                 }
 
-                /**
-                 * Get balance of wallet
-                 * @param address
-                 * @return {*}
-                 */
-                balanceOf(address) {
-                    return this.wallets.balanceOf(address).toFixed();
+                test() {
+                    this.assertOwnership();
+
+                    console.log(this.totalSupply().toFixed(this.contract.decimals));
+                   /* this.burn('1000');
+                    console.log(this.balanceOf('321').toFixed(this.contract.decimals));
+                    console.log(this.totalSupply().toFixed(this.contract.decimals));*/
                 }
 
-                /**
-                 * Transfer method
-                 * @param to
-                 * @param amount
-                 */
-                transfer(to, amount) {
-                    this.wallets.transfer(state.from, to, amount);
-                }
             }
 
             global.registerContract(SimpleToken);
@@ -148,9 +123,10 @@ class EcmaContract {
      * @param address
      * @param code
      * @param state
+     * @param cb Initalized callback
      * @return {{vm: VM, db: KeyValueInstancer}}
      */
-    createContractInstance(address, code, state) {
+    createContractInstance(address, code, state, cb) {
         let vm = new VM({ramLimit: this.config.ecmaContract.ramLimit});
         let db = new TransactionalKeyValue('contractsRuntime/' + address);//new KeyValueInstancer(this.db, address);
         try {
@@ -159,6 +135,11 @@ class EcmaContract {
             vm.setObjectGlobal('state', state);
             this._setupVmFunctions(vm, db);
             vm.execute();
+            vm.runContextMethodAsync('contract.init', function () {
+                if(typeof cb === 'function') {
+                    cb(vm);
+                }
+            });
         } catch (e) {
             vm.destroy();
             logger.error('Contract ' + address + ' deployed with error. ' + e);
@@ -210,6 +191,12 @@ class EcmaContract {
             lt: function (a, b, message) {
                 this.assert(a < b, message);
             },
+            true: function (assertion, msg) {
+                this.assert(assertion, msg);
+            },
+            false: function (assertion, msg) {
+                this.true(!assertion, msg);
+            }
         });
 
         /**
@@ -277,6 +264,8 @@ class EcmaContract {
         });
         vm.injectSource(__dirname + '/modules/BigNumber.js');
         vm.injectSource(__dirname + '/modules/TokensRegister.js');
+        vm.injectSource(__dirname + '/modules/Contract.js');
+        vm.injectSource(__dirname + '/modules/TokenContract.js');
     }
 
     /**
@@ -382,8 +371,10 @@ class EcmaContract {
                     cb(false);
                 } else {
                     contract = JSON.parse(contract);
-                    let instance = that.getOrCreateContractInstance(address, contract.code, contract.state);
-                    cb(null, instance)
+                    let instance = that.getOrCreateContractInstance(address, contract.code, contract.state, function () {
+                        cb(null, instance);
+                    });
+
                 }
             })
         }
@@ -407,7 +398,7 @@ class EcmaContract {
         this.blockchain.generateNextBlockAuto(deployBlock, function (generatedBlock) {
             that.blockchain.addBlock(generatedBlock, function () {
                 that.blockchain.broadcastLastBlock();
-                cb({block:generatedBlock, address: generatedBlock.index});
+                cb({block: generatedBlock, address: generatedBlock.index});
             })
         });
 
@@ -439,12 +430,13 @@ class EcmaContract {
      * @param address
      * @param code
      * @param state
+     * @param cb Initialized callback
      * @return {*}
      */
-    getOrCreateContractInstance(address, code, state) {
+    getOrCreateContractInstance(address, code, state, cb) {
         let that = this;
         if(typeof this._contractInstanceCache[address] === 'undefined') {
-            let instance = {instance: this.createContractInstance(address, code, state)};
+            let instance = {instance: this.createContractInstance(address, code, state, cb)};
             instance.timer = setTimeout(function () {
                 if(!that._contractInstanceCache[address]) {
                     return;
@@ -527,13 +519,15 @@ class EcmaContract {
                 }
                 let contractInstance = {};
                 try {
-                    contractInstance = that.getOrCreateContractInstance(address, code, state);
+                    contractInstance = that.getOrCreateContractInstance(address, code, state, function () {
+                        callback(null, contractInstance);
+                    });
                 } catch (e) {
                     logger.error('Contract deploy handling error ' + e);
                     callback(true);
                     return;
                 }
-                callback(null, contractInstance);
+
             })
 
         }
