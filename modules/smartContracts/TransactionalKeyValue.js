@@ -9,7 +9,7 @@ const KeyValue = require('../keyvalue');
  * Transactional key-value DB
  */
 class TransactionalKeyValue {
-    constructor(name){
+    constructor(name) {
         /**
          * Содержит в себе транзакции, готовые к записи
          * @type {{}}
@@ -28,7 +28,8 @@ class TransactionalKeyValue {
      * @param {string} key
      * @param {Function} callback
      */
-    get(key, callback = ()=>{}){
+    get(key, callback = () => {
+    }) {
         if(typeof this.transactions[key] !== 'undefined') {
             if(this.transactions[key] !== null) {
                 callback(null, this.transactions[key]);
@@ -52,7 +53,8 @@ class TransactionalKeyValue {
      * @param {string} value
      * @param {Function} callback
      */
-    put(key, value, callback = ()=>{}){
+    put(key, value, callback = () => {
+    }) {
         this.transactions[key] = String(value);
         callback(null);
     }
@@ -62,7 +64,8 @@ class TransactionalKeyValue {
      * @param key
      * @param callback
      */
-    del(key, callback = ()=>{}){
+    del(key, callback = () => {
+    }) {
         this.transactions[key] = null;
         callback(null);
     }
@@ -71,7 +74,8 @@ class TransactionalKeyValue {
      * Сброс очереди транзакций
      * @param callback
      */
-    rollback(callback = ()=>{}){
+    rollback(callback = () => {
+    }) {
         this.transactions = {};
         callback(null);
     }
@@ -80,7 +84,8 @@ class TransactionalKeyValue {
      * Запись данных транзакций в БД
      * @param callback
      */
-    deploy(callback = ()=>{}){
+    deploy(callback = () => {
+    }) {
         let that = this;
 
         function delPromised(key) {
@@ -117,6 +122,26 @@ class TransactionalKeyValue {
         }
 
         deployAll();
+    }
+
+    /**
+     * Save DB. Saves only deployed data
+     * @param cb
+     */
+    save(cb) {
+        return this.db.save(cb);
+    }
+
+    /**
+     * Clear DB
+     * @param cb
+     */
+    clear(cb) {
+        return this.db.clear(cb);
+    }
+
+    close(cb){
+        return this.db.close(cb);
     }
 }
 

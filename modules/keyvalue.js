@@ -184,7 +184,7 @@ class KeyValue {
             case STORAGE_TYPE.LEVELDB:
                 try {
                     that.levelup.close(function () {
-                        fs.removeSync(that.config.workDir + '/wallets');
+                        fs.removeSync(that.config.workDir + '/' + that.name);
                         that.levelup = levelup(leveldown(that.config.workDir + '/' + that.name));
                         if(typeof callback !== 'undefined') {
                             callback();
