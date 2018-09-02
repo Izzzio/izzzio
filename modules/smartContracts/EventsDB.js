@@ -153,9 +153,10 @@ class EventsDB {
                             })
                         }));
                     }
-                    cb(null);
+
                 }
 
+                cb(null);
             }
         });
     }
@@ -260,8 +261,9 @@ class EventsDB {
                     })();
                 }
 
-                cb();
+
             }
+            cb();
         })();
 
     }
