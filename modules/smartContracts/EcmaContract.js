@@ -107,6 +107,7 @@ class EcmaContract {
                  * Initialize emission
                  */
                 init() {
+                    console.log(new Date());
                     super.init('1000.0000000000000000000000000100000000000000000000000000000000000000000001');
                 }
 
@@ -154,27 +155,20 @@ class EcmaContract {
 
 
         setTimeout(function () {
-            that.blockHandler.playBlockchain(0, function () {
-                console.log('PLAYED');
+            that.deployContract(code, function (deployedContract) {
+                setTimeout(function () {
+                    that.deployContract(code, function (deployedContract2) {
+                        that.deployContract(code, function (deployedContract3) {
+
+
+                            that.deployContractMethod(deployedContract3.address, 'test', [], {}, function (generatedBlock) {
+                                process.exit();
+                            });
+                        });
+                    });
+                }, 5000);
             });
         }, 5000);
-
-
-        /*setTimeout(function () {
-             that.deployContract(code, function (deployedContract) {
-                 setTimeout(function () {
-                     that.deployContract(code, function (deployedContract2) {
-                         that.deployContract(code, function (deployedContract3) {
-
-
-                             that.deployContractMethod(deployedContract3.address, 'test', [], {}, function (generatedBlock) {
-                                 //process.exit();
-                             });
-                         });
-                     });
-                 }, 5000);
-             });
-         }, 5000);*/
     }
 
     /**
@@ -197,11 +191,12 @@ class EcmaContract {
         let vm = new VM({ramLimit: this.config.ecmaContract.ramLimit});
         let db = new TransactionalKeyValue(this.config.workDir + '/contractsRuntime/' + address);//new KeyValueInstancer(this.db, address);
         try {
-            vm.setTimingLimits(10000000);
+            vm.setTimingLimits(10000);
             vm.compileScript(code, state);
             vm.setObjectGlobal('state', state);
             this._setupVmFunctions(vm, db);
             vm.execute();
+            vm.runContextMethod("updateDateMock");
             vm.runContextMethodAsync('contract.init', function (err) {
                 if(err) {
                     throw 'Contract initialization error ' + err;
@@ -518,8 +513,6 @@ class EcmaContract {
                  */
                 isChild: function () {
                     return !!this.caller();
-
-
                 },
                 /**
                  * Is deploying now or method call
@@ -543,6 +536,14 @@ class EcmaContract {
 
         });
 
+        vm.injectSource(__dirname + '/modules/mockdate.js');
+        vm.injectScript('new ' + function () {
+            let _MockDate = MockDate;
+            global.updateDateMock = function () {
+                _MockDate.set(new Date(state.block.timestamp));
+            };
+            MockDate = undefined;
+        });
 
         vm.injectSource(__dirname + '/modules/BigNumber.js');
         vm.injectSource(__dirname + '/modules/TokensRegister.js');
@@ -570,6 +571,7 @@ class EcmaContract {
             } else {
                 try {
                     instance.vm.setObjectGlobal('state', state);
+                    instance.vm.runContextMethod("updateDateMock");
                     instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
                         if(err) {
                             logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
@@ -610,6 +612,7 @@ class EcmaContract {
             } else {
                 try {
                     instance.vm.setObjectGlobal('state', state);
+                    instance.vm.runContextMethod("updateDateMock");
                     instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
                         if(err) {
                             logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
@@ -651,6 +654,7 @@ class EcmaContract {
                 try {
                     that._instanceCallstack.push(instance);
                     instance.vm.setObjectGlobal('state', state);
+                    instance.vm.runContextMethod("updateDateMock");
                     instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
                         if(err) {
                             logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
@@ -860,9 +864,11 @@ class EcmaContract {
         };
 
         if(typeof this._contractInstanceCache[address] === 'undefined') {
-            let instance = {instance: this.createContractInstance(address, code, state, function (instance) {
+            let instance = {
+                instance: this.createContractInstance(address, code, state, function (instance) {
                     cb(instance);
-                })};
+                })
+            };
 
 
             instance.timer = setTimeout(function () {
