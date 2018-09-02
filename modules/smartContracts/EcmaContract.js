@@ -389,7 +389,7 @@ class EcmaContract {
 
         vm.setObjectGlobal('_contracts', {
             /**
-             * Calls method from another contract with data deploying TODO: If parent contract failed after this call we need to rollback called contract state
+             * Calls method from another contract with data deploying
              * @param contract
              * @param method
              * @param args
