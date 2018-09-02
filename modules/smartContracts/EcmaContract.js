@@ -27,7 +27,7 @@ class EcmaContract {
         this.db = new TransactionalKeyValue('EcmaContracts');
         this.contracts = this.db.db;
         this.config = storj.get('config');
-        //this.blockchain = storj.get('blockchainObject');
+
         this._contractInstanceCache = {};
         this._contractInstanceCacheLifetime = typeof this.config.ecmaContract === 'undefined' || typeof this.config.ecmaContract.contractInstanceCacheLifetime === 'undefined' ? 60000 : this.config.ecmaContract.contractInstanceCacheLifetime;
 
@@ -38,10 +38,7 @@ class EcmaContract {
          */
         this.events = new EventsDB();
         this.events.initialize(function () {
-            /*that.events.event('123','Hello', ["0.0000000000000000000000000100000000000000000000000000000000000000000001"], {index:3, timestamp:101010, hash:'hash'}, function (err) {
-                console.log('Inserted', err);
-                process.exit();
-            })*/
+
         });
 
         /**
@@ -72,103 +69,8 @@ class EcmaContract {
             });
         });
 
-        /*this.blockHandler.registerBlockHandler('Document', function (blockData, block, callback) {
-            that.handleBlock(blockData, block, callback)
-        });*/
-
 
         logger.info('Initialized');
-
-        /*this.events.registerEventHandler('11', 'TEST', function (contract, event, args, cb) {
-            console.log(contract, event, args);
-            cb();
-        });*/
-
-        let code = 'new ' + function () {
-            class SimpleToken extends TokenContract {
-
-                /**
-                 * Token contract values
-                 * @return {{type: string, name: string, ticker: string, site: string, icon: string, decimals: number, owner: boolean}}
-                 */
-                get contract() {
-                    return {
-                        type: 'token',
-                        name: 'SimpleToken',
-                        ticker: 'ST',
-                        site: 'http://izzz.io',
-                        icon: 'http://izzz.io/simpleToken.png',
-                        decimals: 70,
-                        owner: 'c0116b4f723e01a44d933c5fa9fef9586a532d5547eee0a76a7c1a62d5bc32ed',
-                    };
-                }
-
-                /**
-                 * Initialize emission
-                 */
-                init() {
-                    console.log(new Date());
-                    super.init('1000.0000000000000000000000000100000000000000000000000000000000000000000001');
-                }
-
-                test() {
-                    Events.emit('TEST', []);
-                    this.assertOwnership();
-                    /* this.transfer(state.from, '1000');
-                     this.transfer(state.from, '0.0000001');
-
-                     console.log(this.totalSupply().toFixed(this.contract.decimals));
-                     console.log(this.balanceOf(state.from));*/
-                    console.log('External Call', contracts.callMethodDeploy('12', 'test3', [3, 4]));
-
-                    /* this.burn('1000');
-                     console.log(this.balanceOf('321').toFixed(this.contract.decimals));
-                     console.log(this.totalSupply().toFixed(this.contract.decimals));*/
-                }
-
-                test2(a, b) {
-                    if(contracts.isChild()) {
-                        console.log('I AM CALLED FROM ', contracts.caller(), contracts.callingIndex());
-                    }
-
-                    Events.emit('TEST', []);
-                    //assert.true(false);
-                    /* console.log('Test2 emitted', a, b);
-                     console.log('A+B', a + b);*/
-                    return 'hello';
-                }
-
-                test3(a, b) {
-                    if(contracts.isChild()) {
-                        console.log('I AM CALLED FROM ', contracts.caller(), contracts.callingIndex());
-                    }
-
-                    Events.emit('TEST', []);
-                    console.log('External Call', contracts.callMethodDeploy('11', 'test2', [3, 4]));
-                    return 'world';
-                }
-
-            }
-
-            global.registerContract(SimpleToken);
-        };
-
-
-        setTimeout(function () {
-            that.deployContract(code, function (deployedContract) {
-                setTimeout(function () {
-                    that.deployContract(code, function (deployedContract2) {
-                        that.deployContract(code, function (deployedContract3) {
-
-
-                            that.deployContractMethod(deployedContract3.address, 'test', [], {}, function (generatedBlock) {
-                                process.exit();
-                            });
-                        });
-                    });
-                }, 5000);
-            });
-        }, 5000);
     }
 
     /**
@@ -364,9 +266,10 @@ class EcmaContract {
         vm.setObjectGlobal('_events', {
             /**
              *
-             * @param event
-             * @param args
-             * @param {Block} block
+             * @param {string} event
+             * @param {array}  args
+             * @param {Block}  block
+             * @param {string} address
              * @private
              */
             _emit: function (event, args, block, address) {
@@ -386,6 +289,12 @@ class EcmaContract {
             let _events = global._events;
             global._events = undefined;
             global.Events = {
+                /**
+                 * Emits event
+                 * @param {string} event
+                 * @param {array} args
+                 * @return {*}
+                 */
                 emit: function (event, args) {
                     assert.true(Array.isArray(args), 'Event arguments must be an array');
                     assert.true(args.length <= 10, 'Event can take 10 arguments maximum');
@@ -400,10 +309,10 @@ class EcmaContract {
         vm.setObjectGlobal('_contracts', {
             /**
              * Calls method from another contract with data deploying
-             * @param contract
-             * @param method
-             * @param args
-             * @param state
+             * @param {string} contract Contract address
+             * @param {string} method   Method name
+             * @param {array}  args     Call arguments
+             * @param {object} state    Current state
              * @private
              */
             _callMethodDeploy: function (contract, method, args, state) {
@@ -428,10 +337,10 @@ class EcmaContract {
             },
             /**
              * Calling another deployed contract method without deploy
-             * @param contract
-             * @param method
-             * @param args
-             * @param state
+             * @param {string} contract Contract address
+             * @param {string} method   Method name
+             * @param {array}  args     Call arguments
+             * @param {object} state    Current state
              * @private
              */
             _callMethodRollback: function (contract, method, args, state) {
@@ -460,9 +369,9 @@ class EcmaContract {
             global.contracts = {
                 /**
                  * Call another contract method with deploy
-                 * @param contract
-                 * @param method
-                 * @param args
+                 * @param {string} contract Contract address
+                 * @param {string} method   Method name
+                 * @param {array}  args     Arguments array
                  * @return {*}
                  */
                 callMethodDeploy: function (contract, method, args) {
@@ -497,14 +406,13 @@ class EcmaContract {
                     return waitForReturn();
                 },
                 /**
-                 * Get called address
+                 * Get parent caller address
                  * @return {*}
                  */
                 caller: function () {
                     if(typeof state.calledFrom !== 'undefined') {
                         return state.calledFrom;
                     }
-
                     return false;
                 },
                 /**
@@ -515,7 +423,7 @@ class EcmaContract {
                     return !!this.caller();
                 },
                 /**
-                 * Is deploying now or method call
+                 * Is deploying now or just method call
                  * @return {boolean}
                  */
                 isDeploy() {
@@ -561,9 +469,6 @@ class EcmaContract {
      * @param args
      */
     callContractMethodRollback(address, method, state, cb, ...args) {
-        /* if(method.indexOf('contract._') !== -1) {
-             throw 'Calling private contract method not allowed';
-         }*/
 
         this.getContractInstanceByAddress(address, function (err, instance) {
             if(err) {
@@ -664,10 +569,6 @@ class EcmaContract {
 
                         cb(null, result);
 
-                        /*instance.db.deploy(function () {
-                            cb(null, result);
-                        });*/
-
                     }, ...args);
 
                 } catch (err) {
@@ -684,7 +585,6 @@ class EcmaContract {
      * @param cb
      */
     rollbackAndClearContractsChain(state, cb) {
-
         let that = this;
         (async function () {
             for (let a in that._instanceCallstack) {
@@ -731,7 +631,6 @@ class EcmaContract {
                     })()
                 }
             }
-
             that._instanceCallstack = [];
             cb(null);
         })();
@@ -918,8 +817,6 @@ class EcmaContract {
         }
         db.clear(function () {
             db.close(function () {
-                //console.log('Cleared DB');
-                //process.exit();
                 cb();
             });
         })
@@ -970,16 +867,9 @@ class EcmaContract {
                 addNewContract();
             } else {
                 let oldContract = JSON.parse(contract);
-                //console.log(oldContract);
                 that.destroyContractByAddress(address, function () {
                     addNewContract();
                 });
-
-                /* that.destroyContractInstance(that.getOrCreateContractInstance(address, oldContract.code, oldContract.state), function () {
-                     //Handle contract deploying
-                     addNewContract();
-                 });*/
-
             }
         });
 
@@ -1010,7 +900,7 @@ class EcmaContract {
 
             if(err) {
                 that.rollbackAndClearContractsChain(state, function () {
-                    //throw 'Contracts calling chain falls with error: ' + err;
+
                     logger.error('Contracts calling chain falls with error: ' + err);
                     callback(err);
                 });
