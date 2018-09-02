@@ -108,6 +108,10 @@ class EcmaContract {
                     cb(vm);
                 }
             });
+
+
+            state.deploy = false;
+
         } catch (e) {
             vm.destroy();
             logger.error('Contract ' + address + ' deployed with error. ' + e);
@@ -428,7 +432,7 @@ class EcmaContract {
                  * @return {boolean}
                  */
                 isDeploy() {
-                    return typeof state !== 'undefined' && state;
+                    return typeof state !== 'undefined' && state.deploy;
                 },
                 /**
                  * Get index of contract calling chain
@@ -844,7 +848,6 @@ class EcmaContract {
         function addNewContract() {
             state.block = block;
             state.contractAddress = address;
-            state.deploy = true;
             let contract = {code: code, state: state};
             that.contracts.put(address, JSON.stringify(contract), function (err) {
                 if(err) {
@@ -854,6 +857,7 @@ class EcmaContract {
                 }
                 let contractInstance = {};
                 try {
+                    state.deploy = true;
                     contractInstance = that.getOrCreateContractInstance(address, code, state, function () {
                         that.deployAndClearContractsChain(state, function () {
                             contractInstance.db.deploy(function () {
