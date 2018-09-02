@@ -2,6 +2,10 @@
  iZ³ | Izzzio blockchain - https://izzz.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
+
+/**
+ * Basic token contract
+ */
 class TokenContract extends Contract {
 
     /**
@@ -10,10 +14,16 @@ class TokenContract extends Contract {
      * @param {Boolean} mintable  Can mintable by owner in feature?
      */
     init(initialEmission, mintable = false) {
+
+        this.TransferEvent = new Event('Transfer', 'string', 'string', 'number');
+        this.MintEvent = new Event('Mint', 'string', 'number');
+        this.BurnEvent = new Event('Burn', 'string', 'number');
+
         this.mintable = mintable;
         this.wallets = new TokensRegister(this.contract.ticker);
         if(Number(initialEmission) > 0) {
             this.wallets.mint(this.contract.owner, initialEmission);
+            this.MintEvent.emit(this.contract.owner, new BigNumber(initialEmission));
         }
     }
 
@@ -42,6 +52,7 @@ class TokenContract extends Contract {
      */
     transfer(to, amount) {
         this.wallets.transfer(state.from, to, amount);
+        this.TransferEvent.emit(state.from, to, new BigNumber(amount));
     }
 
     /**
@@ -50,6 +61,7 @@ class TokenContract extends Contract {
      */
     burn(amount) {
         this.wallets.burn(state.from, amount);
+        this.BurnEvent.emit(state.from, new BigNumber(amount));
     }
 
     /**
@@ -60,5 +72,6 @@ class TokenContract extends Contract {
         this.assertOwnership('Minting available only for contract owner');
         assert.true(this.mintable, 'Token is not mintable');
         this.wallets.mint(state.from, amount);
+        this.MintEvent.emit(state.from, new BigNumber(amount));
     }
 }

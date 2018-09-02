@@ -9,6 +9,7 @@ const KeyValueInstancer = require('./KeyValueInstancer');
 const storj = require('../instanceStorage');
 const logger = new (require('../logger'))('ECMAContract');
 const random = require('../random');
+const EventsDB = require('./EventsDB');
 
 const BlockHandler = require('../blockHandler');
 const EcmaContractDeployBlock = require('./EcmaContractDeployBlock');
@@ -31,17 +32,33 @@ class EcmaContract {
         this._contractInstanceCacheLifetime = typeof this.config.ecmaContract === 'undefined' || typeof this.config.ecmaContract.contractInstanceCacheLifetime === 'undefined' ? 60000 : this.config.ecmaContract.contractInstanceCacheLifetime;
 
         this._dbInstances = [];
+
+        /**
+         * Events indenxing
+         */
+        this.events = new EventsDB();
+        this.events.initialize(function () {
+            /*that.events.event('123','Hello', ["0.0000000000000000000000000100000000000000000000000000000000000000000001"], {index:3, timestamp:101010, hash:'hash'}, function (err) {
+                console.log('Inserted', err);
+                process.exit();
+            })*/
+        });
+
         /**
          * @var {BlockHandler} this.blockHandler
          */
         this.blockHandler = storj.get('blockHandler');
 
         this.blockHandler.registerBlockHandler(EcmaContractDeployBlock.blockType, function (blockData, block, callback) {
-            that.handleBlock(blockData, block, callback);
+            that.events.handleBlockReplay(block.index, function () {
+                that.handleBlock(blockData, block, callback);
+            });
         });
 
         this.blockHandler.registerBlockHandler(EcmaContractCallBlock.blockType, function (blockData, block, callback) {
-            that.handleBlock(blockData, block, callback);
+            that.events.handleBlockReplay(block.index, function () {
+                that.handleBlock(blockData, block, callback);
+            });
         });
 
         /*this.blockHandler.registerBlockHandler('Document', function (blockData, block, callback) {
@@ -75,16 +92,19 @@ class EcmaContract {
                  * Initialize emission
                  */
                 init() {
-                    super.init('0.0000000000000000000000000100000000000000000000000000000000000000000001');
+                    super.init('1000.0000000000000000000000000100000000000000000000000000000000000000000001');
                 }
 
                 test() {
                     this.assertOwnership();
+                    this.transfer(state.from, '1000');
 
                     console.log(this.totalSupply().toFixed(this.contract.decimals));
-                   /* this.burn('1000');
-                    console.log(this.balanceOf('321').toFixed(this.contract.decimals));
-                    console.log(this.totalSupply().toFixed(this.contract.decimals));*/
+                    console.log(this.balanceOf(state.from));
+
+                    /* this.burn('1000');
+                     console.log(this.balanceOf('321').toFixed(this.contract.decimals));
+                     console.log(this.totalSupply().toFixed(this.contract.decimals));*/
                 }
 
             }
@@ -104,7 +124,7 @@ class EcmaContract {
 
                     that.deployContractMethod(deployedContract.address, 'test', [], {}, function (generatedBlock) {
                         process.exit();
-                    })
+                    });
                 }, 1000);
             });
         }, 5000);
@@ -128,14 +148,17 @@ class EcmaContract {
      */
     createContractInstance(address, code, state, cb) {
         let vm = new VM({ramLimit: this.config.ecmaContract.ramLimit});
-        let db = new TransactionalKeyValue('contractsRuntime/' + address);//new KeyValueInstancer(this.db, address);
+        let db = new TransactionalKeyValue(this.config.workDir + '/contractsRuntime/' + address);//new KeyValueInstancer(this.db, address);
         try {
             vm.setTimingLimits(10000);
             vm.compileScript(code, state);
             vm.setObjectGlobal('state', state);
             this._setupVmFunctions(vm, db);
             vm.execute();
-            vm.runContextMethodAsync('contract.init', function () {
+            vm.runContextMethodAsync('contract.init', function (err) {
+                if(err) {
+                    throw 'Contract initialization error ' + err;
+                }
                 if(typeof cb === 'function') {
                     cb(vm);
                 }
@@ -164,6 +187,36 @@ class EcmaContract {
      */
     _setupVmFunctions(vm, db) {
         let that = this;
+
+        /**
+         * Return async result to sync VM
+         */
+        function vmSync() {
+            vm.setObjectGlobal('_execResult', {status: 0});
+            return {
+                return: function (result) {
+                    vm.setObjectGlobal('_execResult', {status: 1, result: result});
+                }
+            };
+        }
+
+        vm.injectScript('new ' + function () {
+            /**
+             * Wait for async operation ends
+             * @return {*}
+             */
+            global.waitForReturn = function waitForReturn() {
+                while (true) {
+
+                    if(global._execResult.status !== 0) {
+                        global._execResult.status = 0;
+                        return global._execResult.result
+                    } else {
+                        system.processMessages();
+                    }
+                }
+            };
+        });
 
         /**
          * Assertions
@@ -208,45 +261,35 @@ class EcmaContract {
                 return that._dbInstances.push(newDb) - 1;
             },
             getName: function (handleId) {
-                console.log(that._dbInstances);
                 return that._dbInstances[handleId].namespace;
             },
             _get: function (handleId, key) {
-                vm.setObjectGlobal('_execResult', {status: 0});
+                let sync = vmSync();
                 that._dbInstances[handleId].get(key, function (err, val) {
                     if(!err) {
-                        vm.setObjectGlobal('_execResult', {status: 1, result: val});
+                        sync.return(val);
                     } else {
-                        vm.setObjectGlobal('_execResult', {status: 1, result: false});
+                        sync.return(false);
                     }
                 });
 
                 return true;
             },
             _put: function (handleId, key, value) {
-                vm.setObjectGlobal('_execResult', {status: 0});
+                let sync = vmSync();
                 that._dbInstances[handleId].put(key, value, function (err) {
-                    vm.setObjectGlobal('_execResult', {status: 1, result: err});
+                    sync.return(err);
                 });
                 return true;
             }
         });
         //Inject DB module
         vm.injectScript('new ' + function () {
+            let waitForReturn = global.waitForReturn;
             let _db = global._db;
             global._db = undefined;
             global.KeyValue = function (dbName) {
                 let that = this;
-
-                function waitForReturn() {
-                    while (true) {
-                        if(global._execResult.status !== 0) {
-                            return global._execResult.result
-                        } else {
-                            system.processMessages();
-                        }
-                    }
-                }
 
                 this.handler = _db.create(dbName);
                 this.dbName = dbName;
@@ -262,10 +305,52 @@ class EcmaContract {
             };
 
         });
+
+        /**
+         * Contract events
+         */
+        vm.setObjectGlobal('_events', {
+            /**
+             *
+             * @param event
+             * @param args
+             * @param {Block} block
+             * @private
+             */
+            _emit: function (event, args, block, address) {
+                let sync = vmSync();
+                that.events.event(address, event, args, block, function (err) {
+                    if(err) {
+                        sync.return(false);
+                        throw 'Event handling error ' + err;
+                    }
+
+                    sync.return(true);
+                });
+            }
+        });
+        vm.injectScript('new ' + function () {
+            let waitForReturn = global.waitForReturn;
+            let _events = global._events;
+            global._events = undefined;
+            global.Events = {
+                emit: function (event, args) {
+                    assert.true(Array.isArray(args), 'Event arguments must be an array');
+                    assert.true(args.length <= 10, 'Event can take 10 arguments maximum');
+                    assert.true(typeof  event === 'string', 'Event name must be a string');
+                    _events._emit(event, args, state.block, state.contractAddress);
+                    return waitForReturn();
+                }
+            };
+
+        });
+
+
         vm.injectSource(__dirname + '/modules/BigNumber.js');
         vm.injectSource(__dirname + '/modules/TokensRegister.js');
         vm.injectSource(__dirname + '/modules/Contract.js');
         vm.injectSource(__dirname + '/modules/TokenContract.js');
+        vm.injectSource(__dirname + '/modules/Event.js');
     }
 
     /**
@@ -287,16 +372,21 @@ class EcmaContract {
             } else {
                 try {
                     instance.vm.setObjectGlobal('state', state);
-                    instance.vm.runContextMethodAsync('contract.' + method, function (result) {
+                    instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
+                        if(err) {
+                            logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                            cb(err);
+                            return;
+                        }
                         instance.db.rollback(function () {
                             cb(null, result);
                         });
 
                     }, ...args);
 
-                } catch (e) {
-                    logger.error('Contract ' + address + ' method ' + method + ' falls with error: ' + e);
-                    cb(e);
+                } catch (err) {
+                    logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                    cb(err);
                 }
             }
         });
@@ -321,16 +411,21 @@ class EcmaContract {
             } else {
                 try {
                     instance.vm.setObjectGlobal('state', state);
-                    instance.vm.runContextMethodAsync('contract.' + method, function (result) {
+                    instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
+                        if(err) {
+                            logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                            cb(err);
+                            return;
+                        }
                         instance.db.deploy(function () {
                             cb(null, result);
                         });
 
                     }, ...args);
 
-                } catch (e) {
-                    logger.error('Contract ' + address + ' method ' + method + ' falls with error: ' + e);
-                    cb(e);
+                } catch (err) {
+                    logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                    cb(err);
                 }
             }
         });
@@ -415,6 +510,8 @@ class EcmaContract {
     deployContractMethod(address, method, args, state, cb) {
         let that = this;
         state.from = this.blockchain.wallet.id;
+        state.contractAddress = address;
+
         let callBlock = new EcmaContractCallBlock(address, method, args, state);
         callBlock = this.blockchain.wallet.signBlock(callBlock);
         this.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
@@ -504,13 +601,16 @@ class EcmaContract {
      * @param {string} address
      * @param {string} code
      * @param {Object} state
+     * @param {Object} block
      * @param {Function} callback
      * @private
      */
-    _handleContractDeploy(address, code, state, callback) {
+    _handleContractDeploy(address, code, state, block, callback) {
         let that = this;
 
         function addNewContract() {
+            state.block = block;
+            state.contractAddress = address;
             let contract = {code: code, state: state};
             that.contracts.put(address, JSON.stringify(contract), function (err) {
                 if(err) {
@@ -567,6 +667,7 @@ class EcmaContract {
 
         state.block = block;
         state.randomSeed = block.index;
+        state.contractAddress = address;
 
         let callstack = [];
         callstack.push(address);
@@ -611,7 +712,7 @@ class EcmaContract {
                     return
                 }
 
-                this._handleContractDeploy(block.index, blockData.ecmaCode, blockData.state, callback);
+                this._handleContractDeploy(block.index, blockData.ecmaCode, blockData.state, block, callback);
                 break;
             case EcmaContractCallBlock.blockType:
                 verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state);

@@ -215,7 +215,13 @@ class VM {
         return vmContext.applySync(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout});
     }
 
-
+    /**
+     * Run method async from context in internal method context
+     * @param {string} context
+     * @param {Function} cb
+     * @param args
+     * @return {*}
+     */
     runContextMethodAsync(context, cb, ...args) {
         let vmContext = this.context.global;
         let prevContext = vmContext;
@@ -227,7 +233,11 @@ class VM {
             }
         }
 
-        vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout}).then(cb);
+        vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout}).then(function (result) {
+            cb(null, result);
+        }).catch(function (reason) {
+            cb(reason);
+        });
     }
 
     /**
