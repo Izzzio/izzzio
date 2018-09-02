@@ -5,6 +5,7 @@
 
 const storj = require('../modules/instanceStorage');
 const MessagesDispatcher = require('../modules/messagesDispatcher');
+const EcmaContract = require('../modules/smartContracts/EcmaContract');
 
 let that;
 
@@ -19,6 +20,8 @@ class DApp {
          * @var {starwaveProtocol} this.starwave
          */
         this.starwave = storj.get('starwaveProtocol');
+
+        this.ecmaContract = storj.get('ecmaContract');
 
 
         that = this;
@@ -91,6 +94,17 @@ class DApp {
                     getCurrent: that.getCurrentWallet
                 }
             }
+        };
+
+        /**
+         * Smart contracts functions
+         * @type {{ecmaContract: EcmaContract}}
+         */
+        this.contracts = {
+            /**
+             * @type EcmaContract
+             */
+            ecmaContract: that.ecmaContract
         };
 
         /**

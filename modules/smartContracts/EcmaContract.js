@@ -36,7 +36,7 @@ class EcmaContract {
         /**
          * Events indenxing
          */
-        this.events = new EventsDB();
+        this.events = new EventsDB('EcmaContracts');
         this.events.initialize(function () {
 
         });
@@ -54,22 +54,23 @@ class EcmaContract {
         this.blockHandler = storj.get('blockHandler');
 
         this.blockHandler.registerBlockHandler(EcmaContractDeployBlock.blockType, function (blockData, block, callback) {
-            that.events.handleBlockReplay(block.index, function () {
-                that.handleBlock(blockData, block, () => {
+            that.events._handleBlockReplay(block.index, function () {
+                that._handleBlock(blockData, block, () => {
                     callback();
                 });
             });
         });
 
         this.blockHandler.registerBlockHandler(EcmaContractCallBlock.blockType, function (blockData, block, callback) {
-            that.events.handleBlockReplay(block.index, function () {
-                that.handleBlock(blockData, block, () => {
+            that.events._handleBlockReplay(block.index, function () {
+                that._handleBlock(blockData, block, () => {
                     callback();
                 });
             });
         });
 
 
+        storj.put('ecmaContract', this);
         logger.info('Initialized');
     }
 
@@ -448,7 +449,11 @@ class EcmaContract {
         vm.injectScript('new ' + function () {
             let _MockDate = MockDate;
             global.updateDateMock = function () {
-                _MockDate.set(new Date(state.block.timestamp));
+                if(typeof state.block !== 'undefined' && typeof state.block.timestamp !== undefined) {
+                    _MockDate.set(new Date(state.block.timestamp));
+                } else {
+                    _MockDate.set(new Date(0));
+                }
             };
             MockDate = undefined;
         });
@@ -850,7 +855,12 @@ class EcmaContract {
                 let contractInstance = {};
                 try {
                     contractInstance = that.getOrCreateContractInstance(address, code, state, function () {
-                        callback(null, contractInstance);
+                        that.deployAndClearContractsChain(state, function () {
+                            contractInstance.db.deploy(function () {
+                                callback(null, contractInstance);
+                            });
+                        });
+
                     });
                 } catch (e) {
                     logger.error('Contract deploy handling error ' + e);
@@ -925,8 +935,9 @@ class EcmaContract {
      * @param {EcmaContractDeployBlock} blockData
      * @param {Block} block
      * @param {Function} callback
+     * @private
      */
-    handleBlock(blockData, block, callback) {
+    _handleBlock(blockData, block, callback) {
         let that = this;
         let verifyBlock = {};
 

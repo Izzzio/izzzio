@@ -34,7 +34,7 @@ class TokenContract extends Contract {
      * @return {*}
      */
     balanceOf(address) {
-        return this.wallets.balanceOf(address);
+        return this.wallets.balanceOf(address).toFixed();
     }
 
 
@@ -43,7 +43,7 @@ class TokenContract extends Contract {
      * @return {*|BigNumber}
      */
     totalSupply() {
-        return this.wallets.totalSupply();
+        return this.wallets.totalSupply().toFixed();
     }
 
     /**

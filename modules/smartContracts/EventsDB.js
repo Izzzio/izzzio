@@ -10,9 +10,13 @@ const storj = require('../instanceStorage');
 const utils = require('../utils');
 const BigNumber = require('bignumber.js');
 
+/**
+ * Events index database
+ */
 class EventsDB {
     constructor() {
         this.config = storj.get('config');
+
         this.path = this.config.workDir + '/contractsRuntime/EventsDB.db';
         this.db = null;
         this._eventHandler = {};
@@ -77,9 +81,10 @@ class EventsDB {
      * Handle block replayed
      * @param blockIndex
      * @param cb
+     * @private
      */
-    handleBlockReplay(blockIndex, cb) {
-        this.db.run('DELETE FROM `events` WHERE block = ' + blockIndex, function (err) {
+    _handleBlockReplay(blockIndex, cb) {
+        this.db.run('DELETE FROM `events` WHERE block >= ' + blockIndex, function (err) {
             cb(err);
         });
     }
@@ -95,8 +100,8 @@ class EventsDB {
      */
     event(contract, event, params, block, cb) {
         let that = this;
-        this.insertEvent(contract, event, params, block, function (err) {
-            /* that.handleEvent(contract, event, params, function () {
+        this._insertEvent(contract, event, params, block, function (err) {
+            /* that._handleEvent(contract, event, params, function () {
                  cb(err);
              })*/
             cb(err);
@@ -148,7 +153,7 @@ class EventsDB {
                 for (let a in values) {
                     if(values.hasOwnProperty(a)) {
                         await (new Promise(function (resolve) {
-                            that.handleEvent(contract, values[a].event, dbRowToParamsArray(values[a]), function () {
+                            that._handleEvent(contract, values[a].event, dbRowToParamsArray(values[a]), function () {
                                 resolve();
                             })
                         }));
@@ -168,8 +173,9 @@ class EventsDB {
      * @param params
      * @param block
      * @param cb
+     * @private
      */
-    insertEvent(contract, event, params, block, cb) {
+    _insertEvent(contract, event, params, block, cb) {
         for (let i = params.length + 1; i <= 10; i++) {
             params.push(null);
         }
@@ -236,8 +242,9 @@ class EventsDB {
      * @param event
      * @param args
      * @param cb
+     * @private
      */
-    handleEvent(contract, event, args, cb) {
+    _handleEvent(contract, event, args, cb) {
         let that = this;
         let handle = contract + '_' + event;
         if(typeof this._eventHandler[handle] === 'undefined') {
@@ -270,9 +277,10 @@ class EventsDB {
 
     /**
      * Register event handler
-     * @param contract
-     * @param event
-     * @param handler
+     * CALLBACK REQUIRED
+     * @param {string} contract Contract address
+     * @param {string} event    Event
+     * @param {(function(string, string, array, Function))} handler Handler callback. Calling callback required
      * @return {string}
      */
     registerEventHandler(contract, event, handler) {
