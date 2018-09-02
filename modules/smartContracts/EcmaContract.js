@@ -75,6 +75,10 @@ class EcmaContract {
 
         logger.info('Initialized');
 
+        this.events.registerEventHandler('11', 'TEST', function (contract, event, args, cb) {
+            console.log(contract, event, args);
+            cb();
+        });
 
         let code = 'new ' + function () {
             class SimpleToken extends TokenContract {
@@ -103,6 +107,7 @@ class EcmaContract {
                 }
 
                 test() {
+                    Events.emit('TEST', []);
                     this.assertOwnership();
                     /* this.transfer(state.from, '1000');
                      this.transfer(state.from, '0.0000001');
@@ -118,9 +123,10 @@ class EcmaContract {
 
                 test2(a, b) {
                     if(contracts.isChild()) {
-                        console.log('I AM CALLED FROM ', contracts.caller());
+                        console.log('I AM CALLED FROM ', contracts.caller(), contracts.callingIndex());
                     }
 
+                    Events.emit('TEST', []);
                     //assert.true(false);
                     /* console.log('Test2 emitted', a, b);
                      console.log('A+B', a + b);*/
@@ -129,8 +135,10 @@ class EcmaContract {
 
                 test3(a, b) {
                     if(contracts.isChild()) {
-                        console.log('I AM CALLED FROM ', contracts.caller());
+                        console.log('I AM CALLED FROM ', contracts.caller(), contracts.callingIndex());
                     }
+
+                    Events.emit('TEST', []);
                     console.log('External Call', contracts.callMethodDeploy('11', 'test2', [3, 4]));
                     return 'world';
                 }
@@ -402,7 +410,7 @@ class EcmaContract {
                 state.contractAddress = contract;
                 that.callContractMethodDeployWait(contract, method, state, function (err, result) {
                     if(err) {
-                        that.rollbackAndClearContractsChain(function () {
+                        that.rollbackAndClearContractsChain(state, function () {
                             sync.fails();
                             throw 'Contracts calling chain fails with error: ' + err;
                         });
@@ -459,6 +467,11 @@ class EcmaContract {
                     if(contract === state.contractAddress) {
                         throw 'You can\'t call method from himself';
                     }
+                    if(typeof state.callingIndex === 'undefined') {
+                        state.callingIndex = 0;
+                    } else {
+                        state.callingIndex++;
+                    }
                     _contracts._callMethodDeploy(contract, method, args, state);
                     let result = waitForReturn();
                     if(result === null) {
@@ -500,6 +513,24 @@ class EcmaContract {
                     return !!this.caller();
 
 
+                },
+                /**
+                 * Is deploying now or method call
+                 * @return {boolean}
+                 */
+                isDeploy() {
+                    return typeof state !== 'undefined' && state;
+                },
+                /**
+                 * Get index of contract calling chain
+                 * @return {number}
+                 */
+                callingIndex() {
+                    if(typeof state.callingIndex === 'undefined') {
+                        return 0
+                    } else {
+                        return state.callingIndex;
+                    }
                 }
             };
 
@@ -638,9 +669,10 @@ class EcmaContract {
 
     /**
      * Откат всей цепочки вызовов (например в случае падения исходного контракта)
+     * @param state
      * @param cb
      */
-    rollbackAndClearContractsChain(cb) {
+    rollbackAndClearContractsChain(state, cb) {
 
         let that = this;
         (async function () {
@@ -650,7 +682,7 @@ class EcmaContract {
                         return new Promise(function (resolve) {
                             // try { //If instance destroyed early
                             //console.log(that._instanceCallstack[a].vm.state);
-                            that.events.rollback(that._instanceCallstack[a].vm.state.contractAddress, that._instanceCallstack[a].vm.state.block.index, function () {
+                            that.events.rollback(that._instanceCallstack[a].vm.state.contractAddress, state.block.index, function () {
                                 that._instanceCallstack[a].db.rollback(function () {
                                     resolve();
                                 });
@@ -672,9 +704,10 @@ class EcmaContract {
 
     /**
      * Запись всей цепочки вызовов в случае удачного завершения
+     * @param state
      * @param cb
      */
-    deployAndClearContractsChain(cb) {
+    deployAndClearContractsChain(state, cb) {
 
         let that = this;
         (async function () {
@@ -682,7 +715,7 @@ class EcmaContract {
                 if(that._instanceCallstack.hasOwnProperty(a)) {
                     await (function () {
                         return new Promise(function (resolve) {
-                            that.events.deploy(that._instanceCallstack[a].vm.state.contractAddress, that._instanceCallstack[a].vm.state.block.index, function () {
+                            that.events.deploy(that._instanceCallstack[a].vm.state.contractAddress, state.block.index, function () {
                                 that._instanceCallstack[a].db.deploy(function () {
                                     resolve();
                                 });
@@ -894,6 +927,7 @@ class EcmaContract {
         function addNewContract() {
             state.block = block;
             state.contractAddress = address;
+            state.deploy = true;
             let contract = {code: code, state: state};
             that.contracts.put(address, JSON.stringify(contract), function (err) {
                 if(err) {
@@ -958,13 +992,13 @@ class EcmaContract {
         callstack.push(state);
         callstack.push(function (err, result) {
             if(err) {
-                that.rollbackAndClearContractsChain(function () {
+                that.rollbackAndClearContractsChain(state, function () {
                     //throw 'Contracts calling chain falls with error: ' + err;
                     logger.error('Contracts calling chain falls with error: ' + err);
                     callback(err);
                 });
             } else {
-                that.deployAndClearContractsChain(function () {
+                that.deployAndClearContractsChain(state, function () {
                     callback(true);
                 });
             }

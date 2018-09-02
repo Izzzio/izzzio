@@ -14,14 +14,15 @@ class TokenContract extends Contract {
      * @param {Boolean} mintable  Can mintable by owner in feature?
      */
     init(initialEmission, mintable = false) {
-
+        super.init();
         this.TransferEvent = new Event('Transfer', 'string', 'string', 'number');
         this.MintEvent = new Event('Mint', 'string', 'number');
         this.BurnEvent = new Event('Burn', 'string', 'number');
 
         this.mintable = mintable;
         this.wallets = new TokensRegister(this.contract.ticker);
-        if(Number(initialEmission) > 0) {
+
+        if(Number(initialEmission) > 0 && contracts.isDeploy()) { //Calls on deploying
             this.wallets.mint(this.contract.owner, initialEmission);
             this.MintEvent.emit(this.contract.owner, new BigNumber(initialEmission));
         }

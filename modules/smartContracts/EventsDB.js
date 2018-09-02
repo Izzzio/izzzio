@@ -245,18 +245,20 @@ class EventsDB {
 
         (async function () {
             for (let a in that._eventHandler[handle]) {
-                await (function () {
-                    return new Promise(function (resolve) {
-                        try {
-                            that._eventHandler[handle][a].handle(contract, event, args, function () {
+                if(that._eventHandler[handle].hasOwnProperty(a)) {
+                    await (function () {
+                        return new Promise(function (resolve) {
+                            try {
+                                that._eventHandler[handle][a].handler(contract, event, args, function () {
+                                    resolve();
+                                });
+                            } catch (e) {
+                                logger.error('Contract event handler failed: ' + contract + ' ' + event + ' ' + e);
                                 resolve();
-                            });
-                        } catch (e) {
-                            logger.error('Contract event handler failed: ' + contract + ' ' + event + ' ' + e);
-                            resolve();
-                        }
-                    });
-                })();
+                            }
+                        });
+                    })();
+                }
 
                 cb();
             }
