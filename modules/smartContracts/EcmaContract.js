@@ -123,7 +123,11 @@ class EcmaContract {
                     });*/
 
                     that.deployContractMethod(deployedContract.address, 'test', [], {}, function (generatedBlock) {
-                        process.exit();
+                        that.events.getContractEventSum(deployedContract.address, 'Transfer', '3', {}, function (err, val) {
+                            console.log(err, val);
+                            process.exit();
+                        });
+
                     });
                 }, 1000);
             });

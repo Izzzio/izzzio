@@ -143,7 +143,7 @@ class EventsDB {
         options.toBlock = !options.toBlock ? 0xFFFFFFFFFF : options.toBlock;
 
         let statement = this.db.prepare("SELECT * FROM `events` WHERE block <= ? AND block >= ? AND event = ? AND contract = ?", [options.toBlock, options.fromBlock, event, contract], function () {
-            statement.run([], function (err, values) {
+            statement.all([], function (err, values) {
                 cb(err, values);
             })
         });
@@ -161,8 +161,8 @@ class EventsDB {
         options.fromBlock = !options.fromBlock ? 0 : options.fromBlock;
         options.toBlock = !options.toBlock ? 0xFFFFFFFFFF : options.toBlock;
 
-        let statement = this.db.prepare(`SELECT bsum(v${fieldNo}) FROM \`events\` WHERE block <= ? AND block >= ? AND event = ? AND contract = ?`, [options.toBlock, options.fromBlock, event, contract], function () {
-            statement.run([], function (err, values) {
+        let statement = this.db.prepare(`SELECT bsum(v${fieldNo}) as sum FROM \`events\` WHERE block <= ? AND block >= ? AND event = ? AND contract = ?`, [options.toBlock, options.fromBlock, event, contract], function () {
+            statement.all([], function (err, values) {
                 cb(err, values);
             })
         });
