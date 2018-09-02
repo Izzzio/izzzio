@@ -23,7 +23,7 @@ class ContractConnector {
      * @param cb
      */
     getProperty(property, cb) {
-        this.ecmaContract.getContractProperty(this.address, property, cb);
+        this.ecmaContract.getContractProperty(this.address, 'contract.' + property, cb);
     }
 
     /**
@@ -34,7 +34,7 @@ class ContractConnector {
     getPropertyPromise(property) {
         let that = this;
         return new Promise(function (resolve, reject) {
-            this.ecmaContract.getContractProperty(this.address, property, function (err, val) {
+            that.ecmaContract.getContractProperty(that.address, 'contract.' + property, function (err, val) {
                 if(!err) {
                     resolve(val);
                 } else {
@@ -45,7 +45,7 @@ class ContractConnector {
     }
 
     /**
-     * Register new method in ContractConnector. ContractConnector can calls only stateless methods
+     * Register new stateless method in ContractConnector
      * @param {string} method
      * @param {undefined|string} alias
      */
@@ -64,6 +64,23 @@ class ContractConnector {
             });
 
         }
+    }
+
+    /**
+     * Register new deploying method in ContractConnector. This call creates transaction
+     * @param method
+     * @param alias
+     */
+    registerDeployMethod(method, alias) {
+        let that = this;
+        alias = typeof alias === undefined ? method : alias;
+        this[alias] = function (...args) {
+            return new Promise(function (resolve, reject) {
+                that.ecmaContract.deployContractMethod(that.address, method, args, {}, function (generatedBlock) {
+                    resolve(generatedBlock);
+                })
+            });
+        };
     }
 }
 
