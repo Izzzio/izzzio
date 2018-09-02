@@ -16,6 +16,8 @@ class EventsDB {
         this.path = this.config.workDir + '/contractsRuntime/EventsDB.db';
         this.db = null;
         this._eventHandler = {};
+        this._transactions = {};
+
         storj.put('ContractEvents', this);
     }
 
@@ -84,6 +86,7 @@ class EventsDB {
 
     /**
      * Handle event emit
+     * TODO: Change to transactional variant
      * @param contract
      * @param event
      * @param {array} params
@@ -93,9 +96,67 @@ class EventsDB {
     event(contract, event, params, block, cb) {
         let that = this;
         this.insertEvent(contract, event, params, block, function (err) {
-            that.handleEvent(contract, event, params, function () {
+            /* that.handleEvent(contract, event, params, function () {
+                 cb(err);
+             })*/
+            cb(err);
+        });
+    }
+
+    /**
+     * Rollback block contract Events
+     * TODO: Change to transactional variant
+     * @param contract
+     * @param block
+     * @param cb
+     */
+    rollback(contract, block, cb) {
+        this.db.run('DELETE FROM `events` WHERE block = ' + block + ' AND contract = "' + contract + '"', function (err) {
+            cb(err);
+        });
+    }
+
+    /**
+     * Deploy block contract Events
+     * TODO: Change to transactional variant
+     * @param contract
+     * @param block
+     * @param cb
+     */
+    async deploy(contract, block, cb) {
+        let that = this;
+
+        function dbRowToParamsArray(row) {
+            let params = [];
+            params.push(row.v1);
+            params.push(row.v2);
+            params.push(row.v3);
+            params.push(row.v4);
+            params.push(row.v5);
+            params.push(row.v6);
+            params.push(row.v7);
+            params.push(row.v8);
+            params.push(row.v9);
+            params.push(row.v10);
+            return params;
+        }
+
+        this.db.all('SELECT * FROM `events` WHERE block = ' + block + ' AND contract = "' + contract + '"', async function (err, values) {
+            if(err) {
                 cb(err);
-            })
+            } else {
+                for (let a in values) {
+                    if(values.hasOwnProperty(a)) {
+                        await (new Promise(function (resolve) {
+                            that.handleEvent(contract, values[a].event, dbRowToParamsArray(values[a]), function () {
+                                resolve();
+                            })
+                        }));
+                    }
+                    cb(null);
+                }
+
+            }
         });
     }
 

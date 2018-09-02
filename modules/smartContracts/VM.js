@@ -19,6 +19,8 @@ class VM {
         this.state = undefined;
         this.context = undefined;
         this.timeout = (typeof options === 'undefined' || typeof options.timeLimit === 'undefined' ? 1000 : options.timeLimit);
+        this.busy = false;
+        this.waitingForResponse = false;
     }
 
     /**
@@ -191,7 +193,10 @@ class VM {
      * @return {*}
      */
     execute() {
-        return this.compiledScript.runSync(this.context, {timeout: this.timeout})
+        this.busy = true;
+        let result = this.compiledScript.runSync(this.context, {timeout: this.timeout})
+        this.busy = false;
+        return result;
     }
 
     /**
@@ -201,6 +206,7 @@ class VM {
      * @return {*}
      */
     runContextMethod(context, ...args) {
+        this.busy = true;
         let vmContext = this.context.global;
         let prevContext = vmContext;
         context = context.split('.');
@@ -211,8 +217,9 @@ class VM {
 
             }
         }
-
-        return vmContext.applySync(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout});
+        let result = vmContext.applySync(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout});
+        this.busy = false;
+        return result;
     }
 
     /**
@@ -223,6 +230,8 @@ class VM {
      * @return {*}
      */
     runContextMethodAsync(context, cb, ...args) {
+        let that = this;
+        this.busy = true;
         let vmContext = this.context.global;
         let prevContext = vmContext;
         context = context.split('.');
@@ -234,8 +243,10 @@ class VM {
         }
 
         vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout}).then(function (result) {
+            that.busy = false;
             cb(null, result);
         }).catch(function (reason) {
+            that.busy = false;
             cb(reason);
         });
     }
