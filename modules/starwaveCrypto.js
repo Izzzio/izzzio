@@ -4,7 +4,8 @@
  * encrypted - means that message is encrypted
  * publicKey - public key of the sender which wants to make crypted tunnel
  *
- * Using secp256k1 curve and aes256 algorithm as default
+ * Using secp256k1 curve as default
+ * uses crypto-js
  **/
 'use strict';
 
@@ -55,12 +56,8 @@ class StarwaveCrypto {
      * Encrypts data
      * @param data
      * @param secret
-     * @param algorithm
      */
     cipherData(data, secret){
-        //const cipher = crypto.createCipher(algorithm, secret);
-        //let encrypted = cipher.update(data,'utf8', 'hex');
-        //encrypted += cipher.final('hex');
         let encrypted = CryptoJS.AES.encrypt(data, secret).toString();
         let b64 = CryptoJS.enc.Base64.parse(encrypted);
         encrypted = b64.toString(CryptoJS.enc.Hex);
@@ -71,13 +68,18 @@ class StarwaveCrypto {
      * Decripts data
      * @param encryptedData
      * @param secret
-     * @param algorithm
      * @returns {*}
      */
-    decipherData(encryptedData, secret, algorithm = 'aes256'){
-        const decipher = crypto.createDecipher(algorithm, secret);
-        let data = decipher.update(encryptedData,'hex', 'utf8');
-        data += decipher.final('utf8');
+    decipherData(encryptedData, secret) {
+        let data;
+        try {
+            let b64 = CryptoJS.enc.Hex.parse(encryptedData);
+            let bytes = b64.toString(CryptoJS.enc.Base64);
+            data = CryptoJS.AES.decrypt(bytes, secret);
+            data = data.toString(CryptoJS.enc.Utf8);
+        } catch (e) {
+            console.log('Error decrypting data: ' + e)
+        }
         return data;
     }
 
@@ -93,7 +95,6 @@ class StarwaveCrypto {
         if (!message.encrypted){
             return decryptedData = message.data;
         }
-
         //if we have secret key associated with this socket than we have the tunnel
         if (this.starwave.blockchain.secretKeys[message.sender]){
             decryptedData = this.decipherData(message.data, this.starwave.blockchain.secretKeys[message.sender]);
