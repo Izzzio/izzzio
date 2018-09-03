@@ -302,8 +302,13 @@ class VM {
      * @param cb
      */
     waitForReady(cb) {
-        //  console.log(new Error().stack);
         let that = this;
+
+        if(!that.busy && !that.waitingForResponse) {
+            cb();
+            return;
+        }
+
         let interval = setInterval(function () {
             if(!that.busy && !that.waitingForResponse) {
                 clearInterval(interval);

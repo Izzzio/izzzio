@@ -481,6 +481,7 @@ class EcmaContract {
      * @param args
      */
     callContractMethodRollback(address, method, state, cb, ...args) {
+        let that = this;
 
         this.getContractInstanceByAddress(address, function (err, instance) {
             if(err) {
@@ -501,9 +502,12 @@ class EcmaContract {
                                 cb(err);
                                 return;
                             }
-                            instance.db.rollback(function () {
-                                cb(null, result);
+                            that.events.rollback(instance.vm.state.contractAddress, state.block.index, function () {
+                                instance.db.rollback(function () {
+                                    cb(null, result);
+                                });
                             });
+
 
                         }, ...args);
                     });
@@ -698,7 +702,10 @@ class EcmaContract {
     getContractInstanceByAddress(address, cb) {
         let that = this;
         if(typeof this._contractInstanceCache[address] !== 'undefined') {
-            cb(null, this._contractInstanceCache[address].instance);
+            let instance = that.getOrCreateContractInstance(address, '', {}, function () {
+                cb(null, instance);
+            });
+            // cb(null, this._contractInstanceCache[address].instance);
         } else {
             this.contracts.get(address, function (err, contract) {
                 if(err) {
@@ -802,21 +809,25 @@ class EcmaContract {
             };
 
 
-            instance.timer = setTimeout(function () {
+            let timer = setTimeout(function () {
                 destroyInstanceTimer(instance.instance);
             }, this._contractInstanceCacheLifetime);
 
 
             this._contractInstanceCache[address] = instance;
+            this._contractInstanceCache[address].timer = timer;
             return instance.instance;
 
         } else {
 
-            cb(that._contractInstanceCache[address].instance.vm);
             clearTimeout(this._contractInstanceCache[address].timer);
             this._contractInstanceCache[address].timer = setTimeout(function () {
                 destroyInstanceTimer(that._contractInstanceCache[address].instance);
             }, this._contractInstanceCacheLifetime);
+
+            process.nextTick(function () {
+                cb(that._contractInstanceCache[address].instance.vm);
+            });
 
             return this._contractInstanceCache[address].instance;
         }

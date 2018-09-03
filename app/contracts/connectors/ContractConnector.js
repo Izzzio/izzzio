@@ -3,6 +3,8 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
+const storj = require('../../../modules/instanceStorage');
+
 /**
  * Simplify interactions with contracts
  */
@@ -15,6 +17,8 @@ class ContractConnector {
     constructor(ecmaContract, address) {
         this.ecmaContract = ecmaContract;
         this.address = address;
+        this.blockchain = storj.get('blockchainObject');
+        this.state = {};
     }
 
     /**
@@ -45,6 +49,36 @@ class ContractConnector {
     }
 
     /**
+     * Change state params
+     * @param state
+     */
+    setState(state) {
+        this.state = state;
+    }
+
+    /**
+     * Get current state
+     * @return {{}|*}
+     * @private
+     */
+    _getState() {
+        let that = this;
+        let state = this.state;
+
+        state.from = !state.from ? that.blockchain.wallet.id : state.from;
+        state.contractAddress = !state.contractAddress ? that.address : state.contractAddress;
+        if(typeof  state.block === 'undefined') {
+            state.block = {};
+        }
+
+        state.block.index = !state.block.index ? that.blockchain.maxBlock : state.block.index;
+        state.block.timestamp = !state.block.timestamp ? Number(new Date()) : state.block.timestamp;
+        state.block.hash = !state.block.hash ? 'nohash' : state.block.hash;
+
+        return state;
+    }
+
+    /**
      * Register new stateless method in ContractConnector
      * @param {string} method
      * @param {undefined|string} alias
@@ -54,7 +88,7 @@ class ContractConnector {
         alias = typeof alias === undefined ? method : alias;
         this[alias] = function (...args) {
             return new Promise(function (resolve, reject) {
-                that.ecmaContract.callContractMethodRollback(that.address, method, {}, function (err, val) {
+                that.ecmaContract.callContractMethodRollback(that.address, method, that._getState(), function (err, val) {
                     if(err) {
                         reject(err);
                     } else {
@@ -76,7 +110,7 @@ class ContractConnector {
         alias = typeof alias === undefined ? method : alias;
         this[alias] = function (...args) {
             return new Promise(function (resolve, reject) {
-                that.ecmaContract.deployContractMethod(that.address, method, args, {}, function (generatedBlock) {
+                that.ecmaContract.deployContractMethod(that.address, method, args, that._getState(), function (generatedBlock) {
                     resolve(generatedBlock);
                 })
             });
