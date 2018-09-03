@@ -169,7 +169,10 @@ class EcmaContract {
                             return null;
                         }
                         global._execResult.status = 0;
-                        return global._execResult.result
+                        if(typeof global._execResult.result === 'undefined') {
+                            return waitForReturn();
+                        }
+                        return global._execResult.result;
                     } else {
                         system.processMessages();
                     }
@@ -484,19 +487,26 @@ class EcmaContract {
                 cb(err);
             } else {
                 try {
-                    instance.vm.setObjectGlobal('state', state);
-                    instance.vm.runContextMethod("updateDateMock");
-                    instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
-                        if(err) {
-                            logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                    instance.vm.waitForReady(function () {
+                        if(instance.vm.isBusy()) {
+                            logger.error('VM is busy');
                             cb(err);
                             return;
                         }
-                        instance.db.rollback(function () {
-                            cb(null, result);
-                        });
+                        instance.vm.setObjectGlobal('state', state);
+                        instance.vm.runContextMethod("updateDateMock");
+                        instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
+                            if(err) {
+                                logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                                cb(err);
+                                return;
+                            }
+                            instance.db.rollback(function () {
+                                cb(null, result);
+                            });
 
-                    }, ...args);
+                        }, ...args);
+                    });
 
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
@@ -525,20 +535,26 @@ class EcmaContract {
                 cb(err);
             } else {
                 try {
-                    instance.vm.setObjectGlobal('state', state);
-                    instance.vm.runContextMethod("updateDateMock");
-                    instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
-                        if(err) {
-                            logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                    instance.vm.waitForReady(function () {
+                        if(instance.vm.isBusy()) {
+                            logger.error('VM is busy');
                             cb(err);
                             return;
                         }
-                        instance.db.deploy(function () {
-                            cb(null, result);
-                        });
+                        instance.vm.setObjectGlobal('state', state);
+                        instance.vm.runContextMethod("updateDateMock");
+                        instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
+                            if(err) {
+                                logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                                cb(err);
+                                return;
+                            }
+                            instance.db.deploy(function () {
+                                cb(null, result);
+                            });
 
-                    }, ...args);
-
+                        }, ...args);
+                    });
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
                     cb(err);
@@ -567,18 +583,25 @@ class EcmaContract {
             } else {
                 try {
                     that._instanceCallstack.push(instance);
-                    instance.vm.setObjectGlobal('state', state);
-                    instance.vm.runContextMethod("updateDateMock");
-                    instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
-                        if(err) {
-                            logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                    instance.vm.waitForReady(function () {
+                        if(instance.vm.isBusy()) {
+                            logger.error('VM is busy');
                             cb(err);
                             return;
                         }
+                        instance.vm.setObjectGlobal('state', state);
+                        instance.vm.runContextMethod("updateDateMock");
+                        instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
+                            if(err) {
+                                logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                                cb(err);
+                                return;
+                            }
 
-                        cb(null, result);
+                            cb(null, result);
 
-                    }, ...args);
+                        }, ...args);
+                    });
 
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);

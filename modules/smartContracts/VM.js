@@ -194,7 +194,7 @@ class VM {
      */
     execute() {
         this.busy = true;
-        let result = this.compiledScript.runSync(this.context, {timeout: this.timeout})
+        let result = this.compiledScript.runSync(this.context, {timeout: this.timeout});
         this.busy = false;
         return result;
     }
@@ -285,6 +285,10 @@ class VM {
      * @return {*}
      */
     setObjectGlobal(name, object) {
+        if(name === 'state') {
+            //console.log('Set OBJ global', name, new Error().stack);
+            //console.trace()
+        }
         this.context.global.setSync(name, this.objToReference(object));
         return this.runContextMethod("_registerGlobalObjFromExternal", name);
     }
@@ -293,7 +297,31 @@ class VM {
         this.context.global.setSync(name, this.objToReference(object));
     }
 
+    /**
+     * Wait for VM ready
+     * @param cb
+     */
+    waitForReady(cb) {
+        //  console.log(new Error().stack);
+        let that = this;
+        let interval = setInterval(function () {
+            if(!that.busy && !that.waitingForResponse) {
+                clearInterval(interval);
+                cb();
+            }
+        }, 1);
+    }
+
+    /**
+     * Check busy
+     * @return {boolean}
+     */
+    isBusy() {
+        return this.busy || this.waitingForResponse
+    }
+
     destroy() {
+        console.log('DESTROY');
         this.compiledScript.release();
         this.isolate.dispose();
         delete this.compiledScript;
