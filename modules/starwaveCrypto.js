@@ -10,6 +10,7 @@
 
 
 const crypto = require("crypto");
+const CryptoJS = require('crypto-js');
 const logger =new (require('./logger'))('StarwaveCrypto');
 
 class StarwaveCrypto {
@@ -56,10 +57,13 @@ class StarwaveCrypto {
      * @param secret
      * @param algorithm
      */
-    cipherData(data, secret, algorithm = 'aes256'){
-        const cipher = crypto.createCipher(algorithm, secret);
-        let encrypted = cipher.update(data,'utf8', 'hex');
-        encrypted += cipher.final('hex');
+    cipherData(data, secret){
+        //const cipher = crypto.createCipher(algorithm, secret);
+        //let encrypted = cipher.update(data,'utf8', 'hex');
+        //encrypted += cipher.final('hex');
+        let encrypted = CryptoJS.AES.encrypt(data, secret).toString();
+        let b64 = CryptoJS.enc.Base64.parse(encrypted);
+        encrypted = b64.toString(CryptoJS.enc.Hex);
         return encrypted;
     }
 
