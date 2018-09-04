@@ -480,9 +480,17 @@ function Blockchain(config) {
                             }
                         }
 
+
+                        for (let a in service.addresses) {
+                            if(service.addresses.hasOwnProperty(a)) {
+                                service.addresses[a] = 'ws://' + service.addresses + ':' + service.port;
+                            }
+                        }
+
                         if(config.program.verbose) {
                             logger.info('UPnP: Detected new peers ' + JSON.stringify(service.addresses));
                         }
+
 
                         connectToPeers(service.addresses);
                     }).start();
