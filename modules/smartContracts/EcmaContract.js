@@ -1101,6 +1101,21 @@ class EcmaContract {
                 res.send({error: true, message: e.message, message2: JSON.stringify(e)});
             }
         });
+
+        app.post('/ecmacontract/deployContract', async function (req, res) {
+            try {
+                let src = req.body.source;
+                if(typeof src === 'undefined' || src.length === 0) {
+                    res.send({error: true, message: 'Empty source'});
+                    return;
+                }
+                that.deployContract(src, function (deployedContract) {
+                    res.send({result: deployedContract});
+                });
+            } catch (e) {
+                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+            }
+        });
     }
 
     /**
