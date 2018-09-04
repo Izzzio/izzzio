@@ -452,6 +452,8 @@ function Blockchain(config) {
         logger.init('Listening p2p port on: ' + config.p2pPort);
 
         if(config.upnp.enabled) {
+
+            //Node info broadcast
             upnpAdvertisment = new dnssd.Advertisement(dnssd.tcp(config.upnp.token), config.p2pPort, {
                 txt: {
                     GT: String(getGenesisBlock().timestamp),
@@ -461,41 +463,39 @@ function Blockchain(config) {
             });
             upnpAdvertisment.start();
 
-            setTimeout(function () {
-                upnpBrowser = dnssd.Browser(dnssd.tcp(config.upnp.token))
-                    .on('serviceUp', function (service) {
-                        if(service.txt) {
-                            if(service.txt.GT !== String(getGenesisBlock().timestamp)) {
-                                if(config.program.verbose) {
-                                    logger.info('UPnP: Detected service has invalid genesis timestamp ' + service.txt.GT);
-                                }
-                                return;
+            //Detecting other nodes
+            upnpBrowser = dnssd.Browser(dnssd.tcp(config.upnp.token))
+                .on('serviceUp', function (service) {
+                    if(service.txt) {
+                        if(service.txt.GT !== String(getGenesisBlock().timestamp)) {
+                            if(config.program.verbose) {
+                                logger.info('UPnP: Detected service has invalid genesis timestamp ' + service.txt.GT);
                             }
-
-                            if(service.txt.RA === config.recieverAddress) {
-                                if(config.program.verbose) {
-                                    logger.info('UPnP: Self detection');
-                                }
-                                return;
-                            }
+                            return;
                         }
 
-
-                        for (let a in service.addresses) {
-                            if(service.addresses.hasOwnProperty(a)) {
-                                service.addresses[a] = 'ws://' + service.addresses + ':' + service.port;
+                        if(service.txt.RA === config.recieverAddress) {
+                            if(config.program.verbose) {
+                                logger.info('UPnP: Self detection');
                             }
+                            return;
                         }
+                    }
 
-                        if(config.program.verbose) {
-                            logger.info('UPnP: Detected new peers ' + JSON.stringify(service.addresses));
+
+                    for (let a in service.addresses) {
+                        if(service.addresses.hasOwnProperty(a)) {
+                            service.addresses[a] = 'ws://' + service.addresses + ':' + service.port;
                         }
+                    }
+
+                    if(config.program.verbose) {
+                        logger.info('UPnP: Detected new peers ' + JSON.stringify(service.addresses));
+                    }
 
 
-                        connectToPeers(service.addresses);
-                    }).start();
-            }, 2000);
-
+                    connectToPeers(service.addresses);
+                }).start();
         }
 
     }
