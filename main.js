@@ -54,7 +54,10 @@ const config = {
     ],
     allowMultipleConnectionsFromIp: true,//False - если в сети много зацикливаний, True - если используется прокси для коннекта
     maxPeers: 80,                       //Рекомендуемое число 15-20
-
+    upnp: {                              //Автоматическое обнаружение узлов сети
+        enabled: true,                  //Включить автоматическое обнаружение нод в сети
+        token: 'iz3node'                //Токен по которому нода будет искать другие ноды (должен быть уникальным для каждой цепочки)
+    },
 
     //Blockchain
     blockAcceptCount: 20,               //Количеств блоков подтверждения транзакции
@@ -95,6 +98,8 @@ const config = {
     messagingMaxTTL: 3,                 //Максимальный предел скачков сообщения
     //maximumInputSize: 15 * 1024 * 1024, //Максимальный объем сообщения (здесь 15 мегабайт)
     maximumInputSize: 2 * 1024 * 1024,
+    allowMultipleSocketsOnBus: false, // разрешение на подключение сокетов с разными адресами на один адрес шины
+
 
     //Wallet
     walletFile: './wallet.json',         //Адрес файла кошелька
@@ -107,6 +112,7 @@ const config = {
     transactionIndexDB: 'transactions.db',  // база данных для индекса транзакций, false - для работы с ОЗУ (каждый раз индекс будет перестроен)
     transactionIndexPerf: true,             // режим высокой производительности индекса (требует много ОЗУ)
     transactionIndexEnable: false,          // активировать построение индекса
+
 
     //Application
     appEntry: false,       //Точка входа в "приложение". False - если не требуется

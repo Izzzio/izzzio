@@ -12,26 +12,44 @@
  */
 function Blockchain(config) {
 
-    const logger = new (require('./modules/logger'))();
 
+    /**
+     * Self
+     * @type {Blockchain}
+     */
     let blockchainObject = null;
 
-    const fs = require('fs-extra');
-    const getid = require('./modules/getid');
-
+    /**
+     * Genesis timestamp
+     */
     const genesisTiemstamp = config.genesisTiemstamp;
 
+    //Init first
+    const logger = new (require('./modules/logger'))();
+    const getid = require('./modules/getid');
+    const fs = require('fs-extra');
+
+    //Crypto
     const CryptoJS = require("crypto-js");
+
+    //Networking
     const express = require("express");
     const auth = require('http-auth');
     const bodyParser = require('body-parser');
     const WebSocket = require("ws");
+    const dnssd = require('dnssd');
+    let upnpAdvertisment, upnpBrowser;
+
+    //Storages
     const levelup = require('level');
+
+    //Utils
     const Sync = require('sync');
     const moment = require('moment');
     const url = require('url');
 
 
+    //Blockchain
     const Block = require('./modules/block');
     const Signable = require('./modules/blocks/signable');
     const Wallet = require('./modules/wallet');
@@ -41,14 +59,14 @@ function Blockchain(config) {
     const Frontend = require('./modules/frontend');
     const app = express();
 
+    //Instance storage
     const storj = require('./modules/instanceStorage');
     storj.put('app', app);
     storj.put('config', config);
 
+    //Subsystems
     const blockController = new (require('./modules/blockchain'))();
-
     const NodeMetaInfo = require('./modules/NodeMetaInfo');
-
     const StarwaveProtocol = require('./modules/starwaveProtocol');
     let starwave = new StarwaveProtocol(config, blockchainObject);
 
@@ -66,6 +84,7 @@ function Blockchain(config) {
     );
 
     const routes = {};
+    const secretKeys = {};
 
     if(config.rpcPassword.length !== 0) {
         app.use(auth.connect(basic));
@@ -433,6 +452,53 @@ function Blockchain(config) {
         });
         logger.init('Listening p2p port on: ' + config.p2pPort);
 
+        if(config.upnp.enabled) {
+
+            //Node info broadcast
+            upnpAdvertisment = new dnssd.Advertisement(dnssd.tcp(config.upnp.token), config.p2pPort, {
+                txt: {
+                    GT: String(getGenesisBlock().timestamp),
+                    RA: config.recieverAddress,
+                    type: 'Generic iZ3 Node'
+                }
+            });
+            upnpAdvertisment.start();
+
+            //Detecting other nodes
+            upnpBrowser = dnssd.Browser(dnssd.tcp(config.upnp.token))
+                .on('serviceUp', function (service) {
+                    if(service.txt) {
+                        if(service.txt.GT !== String(getGenesisBlock().timestamp)) {
+                            if(config.program.verbose) {
+                                logger.info('UPnP: Detected service has invalid genesis timestamp ' + service.txt.GT);
+                            }
+                            return;
+                        }
+
+                        if(service.txt.RA === config.recieverAddress) {
+                            if(config.program.verbose) {
+                                logger.info('UPnP: Self detection');
+                            }
+                            return;
+                        }
+                    }
+
+
+                    for (let a in service.addresses) {
+                        if(service.addresses.hasOwnProperty(a)) {
+                            service.addresses[a] = 'ws://' + service.addresses + ':' + service.port;
+                        }
+                    }
+
+                    if(config.program.verbose) {
+                        logger.info('UPnP: Detected new peers ' + JSON.stringify(service.addresses));
+                    }
+
+
+                    connectToPeers(service.addresses);
+                }).start();
+        }
+
     }
 
     let connections = 0;
@@ -497,6 +563,15 @@ function Blockchain(config) {
      */
     function initMessageHandler(ws) {
         ws.on('message', (data) => {
+
+            //prevent multiple sockets on one busaddress
+            if(!config.allowMultiplySocketsOnBus) {
+                if(starwave.preventMultipleSockets(ws) === 0) {
+                    data = null;
+                    return;
+                }
+            }
+
             if(data.length > config.maximumInputSize) {
                 if(config.program.verbose) {
                     logger.error('Input message exceeds maximum input size (' + data.length + ' > ' + config.maximumInputSize + ')');
@@ -511,8 +586,6 @@ function Blockchain(config) {
             } catch (e) {
                 logger.error('' + e)
             }
-
-            //console.log(message);
 
             switch (message.type) {
                 case MessageType.QUERY_LATEST:
@@ -609,6 +682,7 @@ function Blockchain(config) {
      */
     function registerMessageHandler(id, handler) {
         messagesHandlers.push({id: id, handle: handler});
+        messagesHandlers.sort((a, b) => a.id > b.id);
     }
 
     /**
@@ -1096,7 +1170,7 @@ function Blockchain(config) {
     const broadcast = function (message, excludeIp) {
         sockets.forEach(function (socket) {
             if(typeof excludeIp === 'undefined' || socket._socket.recieverAddress !== excludeIp) {
-                write(socket, message)
+                write(socket, message);
             } else {
 
             }
@@ -1502,6 +1576,11 @@ function Blockchain(config) {
                 storj.put('terminating', true);
                 storj.put('terminateAttempts', 0);
 
+                if(config.upnp.enabled) {
+                    upnpAdvertisment.stop();
+                    upnpBrowser.stop();
+                }
+
                 console.log('');
                 logger.info('Terminating...');
                 blockHandler.syncInProgress = true;
@@ -1609,7 +1688,9 @@ function Blockchain(config) {
         },
         MessageType: MessageType,
         routes: routes,
-        messagesHandlers: messagesHandlers
+        messagesHandlers: messagesHandlers,
+        secretKeys: secretKeys,
+
     };
 
     //Init2

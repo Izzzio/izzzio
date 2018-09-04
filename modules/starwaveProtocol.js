@@ -4,7 +4,6 @@
  */
 
 
-
 /**
  Starwave protocol
  Протокол использует объект BlockChain и его методы отправки сообщений: blockchain.broadcast, blockchain.write
@@ -25,6 +24,8 @@ const storj = require('./instanceStorage');
 const moment = require('moment');
 const getid = require('./getid');
 
+//const StarwaveCrypto = require('./starwaveCrypto');
+
 class starwaveProtocol {
 
     constructor(config, blockchain) {
@@ -37,6 +38,7 @@ class starwaveProtocol {
          */
         this._messageMutex = {};
         storj.put('starwaveProtocol', this);
+        //this.starwaveCrypto = new StarwaveCrypto(this);
     }
 
     /**
@@ -81,8 +83,12 @@ class starwaveProtocol {
             this.blockchain.registerMessageHandler(message, function (messageBody) {
                 if(messageBody.id === message || message.length === 0) {
                     if(typeof  messageBody.mutex !== 'undefined' && typeof that._messageMutex[messageBody.mutex] === 'undefined') {
-                        handler(messageBody);
-                        that.handleMessageMutex(messageBody);
+                        if(handler(messageBody)){
+                            that.handleMessageMutex(messageBody);
+                            return true;
+                        }else{
+                            return false;
+                        }
                     }
                 }
             });
@@ -233,9 +239,12 @@ class starwaveProtocol {
         if(message.type === this.blockchain.MessageType.SW_BROADCAST) {
             if(this.manageIncomingMessage(message) === 1) {
                 //значит, сообщение пришло в конечную точку и
+                //сначала дешифруем, если нужно
+                // this.starwaveCrypto.handleIncomingMessage(message);
                 /**
                  * Проходимся по обработчикам входящих сообщений
                  */
+
                 for (let a in messagesHandlers) {
                     if(messagesHandlers.hasOwnProperty(a)) {
                         message._socket = ws;
@@ -287,6 +296,42 @@ class starwaveProtocol {
     getAddress() {
         return this.blockchain.config.recieverAddress;
     };
+
+    /**
+     * close connection with socket if there are more then one url on that busaddress
+     * @param socket
+     * @returns {number} //status of the operation
+     */
+    preventMultipleSockets(socket) {
+        let busAddress;
+        if(socket.nodeMetaInfo) {
+            busAddress = socket.nodeMetaInfo.messageBusAddress;
+            if(busAddress === undefined) {
+                return 2; //socket without busAddress
+            }
+        } else {
+            return 3; //socket has no meta info
+        }
+        //if there are more than 1 socket on busaddress we close connection
+        const sockets = this.blockchain.getCurrentPeers(true);
+        let socketsOnBus = 0;
+        const socketsNumber = sockets.length;
+        for (let i = 0; i < socketsNumber; i++) {
+            if(sockets[i] && sockets[i].nodeMetaInfo) {
+                if(sockets[i].nodeMetaInfo.messageBusAddress === busAddress) {
+                    socketsOnBus++;
+                }
+            }
+        }
+        if(socketsOnBus > 1) {
+            socket.close();
+            return 0; //close connection
+        } else {
+            return 1; // no other connections
+        }
+    }
+
+
 }
 
 module.exports = starwaveProtocol;
