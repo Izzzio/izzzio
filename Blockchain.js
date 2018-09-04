@@ -1589,6 +1589,14 @@ function Blockchain(config) {
                 setTimeout(function () {
 
                     function terminate() {
+                        if(config.ecmaContract.enabled) {
+                            blockchainObject.ecmaContract.terminate(terminateBlockchain);
+                        } else {
+                            terminateBlockchain();
+                        }
+                    }
+
+                    function terminateBlockchain() {
                         logger.info('Saving blockchain DB');
                         blockchain.close(function () {
                             logger.info('Saving wallets cache');

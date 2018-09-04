@@ -27,6 +27,7 @@ class EcmaContract {
         this.db = new TransactionalKeyValue('EcmaContracts');
         this.contracts = this.db.db;
         this.config = storj.get('config');
+        this.ready = false;
 
         this._contractInstanceCache = {};
         this._contractInstanceCacheLifetime = typeof this.config.ecmaContract === 'undefined' || typeof this.config.ecmaContract.contractInstanceCacheLifetime === 'undefined' ? 60000 : this.config.ecmaContract.contractInstanceCacheLifetime;
@@ -36,9 +37,10 @@ class EcmaContract {
         /**
          * Events indenxing
          */
-        this.events = new EventsDB('EcmaContracts');
+        this.events = new EventsDB('/contractsRuntime/EventsDB.db');
         this.events.initialize(function () {
-
+            logger.info('Initialized');
+            that.ready = true;
         });
 
         /**
@@ -71,7 +73,7 @@ class EcmaContract {
 
 
         storj.put('ecmaContract', this);
-        logger.info('Initialized');
+        logger.info('Loading environment...');
     }
 
     /**
@@ -1019,6 +1021,25 @@ class EcmaContract {
                 logger.error('Unexpected block type ' + block.index);
                 callback();
         }
+    }
+
+    /**
+     * Termination handling
+     * @param cb
+     */
+    terminate(cb) {
+        logger.info('Terminating...');
+        let that = this;
+        this.events.flush(function (err) {
+            if(err) {
+                logger.error(err);
+            }
+            that.db.deploy(function () {
+                that.db.save(function () {
+                    cb();
+                });
+            });
+        })
     }
 }
 

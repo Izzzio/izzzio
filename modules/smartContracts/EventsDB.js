@@ -14,11 +14,15 @@ const BigNumber = require('bignumber.js');
  * Events index database
  */
 class EventsDB {
-    constructor() {
+    constructor(path) {
         this.config = storj.get('config');
 
-       // this.path = this.config.workDir + '/contractsRuntime/EventsDB.db';
-        this.path = ':memory:';
+        if(path === '' || path === ':memory:') {
+            this.path = path;
+        } else {
+            this.path = this.config.workDir + path; // '/contractsRuntime/EventsDB.db';
+        }
+
         this.db = null;
         this._eventHandler = {};
         this._transactions = {};
@@ -33,7 +37,7 @@ class EventsDB {
     initialize(cb) {
         let that = this;
 
-        this.db = new sqlite3.Database(this.path, function () {
+        this.db = new sqlite3.Database(''/*this.path*/, function () {
             /**
              * BigNumber sum
              */
@@ -53,29 +57,65 @@ class EventsDB {
                 });
             })();
 
-            //Create events table
-            that.db.exec("CREATE TABLE IF NOT EXISTS `events` (\n" +
-                "\t`id`\tINTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n" +
-                "\t`event`\tTEXT NOT NULL,\n" +
-                "\t`contract`\tTEXT NOT NULL,\n" +
-                "\t`timestamp`\tTEXT,\n" +
-                "\t`block`\tINTEGER,\n" +
-                "\t`hash`\tTEXT,\n" +
-                "\t`v1`\tTEXT,\n" +
-                "\t`v2`\tTEXT,\n" +
-                "\t`v3`\tTEXT,\n" +
-                "\t`v4`\tTEXT,\n" +
-                "\t`v5`\tTEXT,\n" +
-                "\t`v6`\tTEXT,\n" +
-                "\t`v7`\tTEXT,\n" +
-                "\t`v8`\tTEXT,\n" +
-                "\t`v9`\tTEXT,\n" +
-                "\t`v10`\tTEXT\n" +
-                ");", function (err) {
-                cb(err);
+            function contiune() {
+                //Create events table
+                that.db.exec("CREATE TABLE IF NOT EXISTS `events` (\n" +
+                    "\t`id`\tINTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n" +
+                    "\t`event`\tTEXT NOT NULL,\n" +
+                    "\t`contract`\tTEXT NOT NULL,\n" +
+                    "\t`timestamp`\tTEXT,\n" +
+                    "\t`block`\tINTEGER,\n" +
+                    "\t`hash`\tTEXT,\n" +
+                    "\t`v1`\tTEXT,\n" +
+                    "\t`v2`\tTEXT,\n" +
+                    "\t`v3`\tTEXT,\n" +
+                    "\t`v4`\tTEXT,\n" +
+                    "\t`v5`\tTEXT,\n" +
+                    "\t`v6`\tTEXT,\n" +
+                    "\t`v7`\tTEXT,\n" +
+                    "\t`v8`\tTEXT,\n" +
+                    "\t`v9`\tTEXT,\n" +
+                    "\t`v10`\tTEXT\n" +
+                    ");", function (err) {
+                    cb(err);
+                });
+            }
+
+            that.db.exec(`ATTACH DATABASE "${that.path}" AS flush_db; DROP TABLE IF EXISTS main.\`events\`; CREATE TABLE main.\`events\` AS SELECT * FROM flush_db.\`events\`; DETACH DATABASE flush_db;`, function (err) {
+
+                //If database loaded with error, DEATACH IT
+                if(err) {
+                    that.db.exec("DETACH DATABASE flush_db;", function (err) {
+                        contiune();
+                    });
+                } else {
+                    contiune();
+                }
             });
         });
 
+    }
+
+    /**
+     * Flush DB to disk
+     * @param {Function} cb
+     */
+    flush(cb) {
+        if(this.path === '' || this.path === ':memory:') {
+            cb(null);
+            return;
+        }
+        let that = this;
+        this.db.exec(`ATTACH DATABASE "${this.path}" AS flush_db; DROP TABLE IF EXISTS flush_db.\`events\`; CREATE TABLE flush_db.\`events\` AS SELECT * FROM main.\`events\`; DETACH DATABASE flush_db;`, function (err) {
+            //If database loaded with error, DEATACH IT
+            if(err) {
+                that.db.exec("DETACH DATABASE flush_db;", function (err2) {
+                    cb(err);
+                });
+            } else {
+                cb(err);
+            }
+        });
     }
 
     /**
