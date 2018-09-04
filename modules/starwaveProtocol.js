@@ -313,7 +313,7 @@ class starwaveProtocol {
             return 3; //socket has no meta info
         }
         //if there are more than 1 socket on busaddress we close connection
-        const sockets = this.getCurrentPeers(true);
+        const sockets = this.blockchain.getCurrentPeers(true);
         let socketsOnBus = 0;
         const socketsNumber = sockets.length;
         for (let i = 0; i < socketsNumber; i++) {
