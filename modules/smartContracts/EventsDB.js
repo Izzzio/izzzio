@@ -17,7 +17,8 @@ class EventsDB {
     constructor() {
         this.config = storj.get('config');
 
-        this.path = this.config.workDir + '/contractsRuntime/EventsDB.db';
+       // this.path = this.config.workDir + '/contractsRuntime/EventsDB.db';
+        this.path = ':memory:';
         this.db = null;
         this._eventHandler = {};
         this._transactions = {};
