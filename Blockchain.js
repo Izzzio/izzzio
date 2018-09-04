@@ -464,7 +464,7 @@ function Blockchain(config) {
             upnpBrowser = dnssd.Browser(dnssd.tcp(config.upnp.token))
                 .on('serviceUp', function (service) {
                     if(service.txt) {
-                        /*if(service.txt.GT !== String(getGenesisBlock().timestamp)) {
+                        if(service.txt.GT !== String(getGenesisBlock().timestamp)) {
                             if(config.program.verbose) {
                                 logger.info('UPnP: Detected service has invalid genesis timestamp ' + service.txt.GT);
                             }
@@ -476,7 +476,7 @@ function Blockchain(config) {
                                 logger.info('UPnP: Self detection');
                             }
                             return;
-                        }*/
+                        }
                     }
 
                     if(config.program.verbose) {
