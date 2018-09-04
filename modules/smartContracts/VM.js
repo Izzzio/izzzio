@@ -325,8 +325,10 @@ class VM {
         return this.busy || this.waitingForResponse
     }
 
+    /**
+     * Destroy VM
+     */
     destroy() {
-        console.log('DESTROY');
         this.compiledScript.release();
         this.isolate.dispose();
         delete this.compiledScript;
@@ -334,78 +336,5 @@ class VM {
         delete this;
     }
 }
-
-/*
-let vm = new VM();
-vm.compileScript('new ' + function () {
-
-    class Contract {
-
-        static get CONSTANTS() {
-            return {a: 3};
-        }
-
-        constructor() {
-            console.log("CONSTRUCT");
-            this.a = 100;
-        }
-
-        test(a, b) {
-            this.a = a;
-            return a + b + this.a;
-        }
-
-        fall() {
-            console.log(global.test.a());
-            while (true) {
-                if(global.externalVal) {
-                    console.log(global.externalVal);
-                    break;
-                } else {
-                    system.processMessages();
-                }
-            }
-        }
-    }
-
-    global.registerContract(Contract);
-
-}, {randomSeed: 1});
-let result = vm.execute();
-//console.log(result);
-
-vm.setObjectGlobal('test', {
-    a: function () {
-        setTimeout(function () {
-            vm.setObjectGlobal('externalVal', {status: true});
-        }, 5000);
-        return 'hello';
-    }
-});
-
-console.log(vm.runContextMethod("contract.test", 2, 2));
-//console.log(vm.runContextMethod("Contract.heyHo"));
-console.log(vm.getContextProperty("Contract.CONSTANTS"));
-console.log(vm.getContextProperty("contract.PARAMS"));
-
-vm.setTimingLimits(100000);
-console.log(vm.runContextMethodAsync("contract.fall"));
-*/
-
-//vm.destroy();
-
-
-//
-//console.log(vm.runMethod("contract.test", 3, 4))
-
-/*
-let result = isolate.compileScriptSync('sum2(1,2)').runSync(context);
-
-
-console.log(context.global.getSync("testFunc").applySync(undefined, [3, 4]));
-console.log(context.global.getSync("testFunc").applySync(undefined, [3, 4]));
-
-console.log(result);*/
-
 
 module.exports = VM;
