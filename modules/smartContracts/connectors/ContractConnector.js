@@ -3,7 +3,7 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-const storj = require('../../../modules/instanceStorage');
+const storj = require('../../instanceStorage');
 
 /**
  * Simplify interactions with contracts
@@ -84,8 +84,9 @@ class ContractConnector {
      * @param {undefined|string} alias
      */
     registerMethod(method, alias) {
+
         let that = this;
-        alias = typeof alias === undefined ? method : alias;
+        alias = (typeof alias === 'undefined' ? method : alias);
         this[alias] = function (...args) {
             return new Promise(function (resolve, reject) {
                 that.ecmaContract.callContractMethodRollback(that.address, method, that._getState(), function (err, val) {
@@ -107,7 +108,7 @@ class ContractConnector {
      */
     registerDeployMethod(method, alias) {
         let that = this;
-        alias = typeof alias === undefined ? method : alias;
+        alias = (typeof alias === 'undefined' ? method : alias);
         this[alias] = function (...args) {
             return new Promise(function (resolve, reject) {
                 that.ecmaContract.deployContractMethod(that.address, method, args, that._getState(), function (generatedBlock) {

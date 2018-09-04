@@ -15,7 +15,8 @@ const BlockHandler = require('../blockHandler');
 const EcmaContractDeployBlock = require('./EcmaContractDeployBlock');
 const EcmaContractCallBlock = require('./EcmaContractCallBlock');
 const uglifyJs = require("uglify-es");
-
+const utils = require('../utils');
+const ContractConnector = require('./connectors/ContractConnector');
 
 /**
  * EcmaScript Smart contracts handler
@@ -74,6 +75,8 @@ class EcmaContract {
 
         storj.put('ecmaContract', this);
         logger.info('Loading environment...');
+
+        this._registerRPCMethods();
     }
 
     /**
@@ -711,7 +714,7 @@ class EcmaContract {
         } else {
             this.contracts.get(address, function (err, contract) {
                 if(err) {
-                    cb(false);
+                    cb(true);
                 } else {
                     contract = JSON.parse(contract);
                     let instance = that.getOrCreateContractInstance(address, contract.code, contract.state, function () {
@@ -1021,6 +1024,83 @@ class EcmaContract {
                 logger.error('Unexpected block type ' + block.index);
                 callback();
         }
+    }
+
+    /**
+     * Register RPC methods and callbacks
+     * @private
+     */
+    _registerRPCMethods() {
+        let app = storj.get('httpServer');
+        let that = this;
+        if(!app) {
+            logger.error("Can't register RPC methods for EcmaContract");
+            return;
+        }
+
+
+        app.get('/ecmacontract/getInfo', async function (req, res) {
+            res.send({
+                ready: that.ready,
+            });
+
+        });
+
+        app.get('/ecmacontract/getContractInfo/:address', async function (req, res) {
+            that.getContractInstanceByAddress(req.params.address, async function (err, instance) {
+                if(err) {
+                    return res.send({error: true});
+                }
+                res.send({info: instance.info, initState: instance.vm.state, source: instance.vm.script});
+            });
+        });
+
+        app.get('/ecmacontract/getContractProperty/:address/:property', async function (req, res) {
+            let contract = new ContractConnector(that, req.params.address);
+            try {
+                res.send({result: await contract.getPropertyPromise(req.params.property)});
+            } catch (e) {
+                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+            }
+        });
+
+        app.post('/ecmacontract/getMethod/:address/:method', async function (req, res) {
+
+            req.body.args = req.body['args[]'];
+            if(typeof req.body.args === 'undefined') {
+                req.body.args = [];
+            }
+            if(!Array.isArray(req.body.args)) {
+                req.body.args = [req.body.args];
+            }
+
+            let contract = new ContractConnector(that, req.params.address);
+            contract.registerMethod(req.params.method);
+            try {
+                res.send({result: await contract[req.params.method](...req.body.args)});
+            } catch (e) {
+                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+            }
+        });
+
+        app.post('/ecmacontract/deployMethod/:address/:method', async function (req, res) {
+
+            req.body.args = req.body['args[]'];
+            if(typeof req.body.args === 'undefined') {
+                req.body.args = [];
+            }
+            if(!Array.isArray(req.body.args)) {
+                req.body.args = [req.body.args];
+            }
+
+            let contract = new ContractConnector(that, req.params.address);
+            contract.registerDeployMethod(req.params.method);
+            try {
+                res.send({result: await contract[req.params.method](...req.body.args)});
+            } catch (e) {
+                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+            }
+        });
     }
 
     /**
