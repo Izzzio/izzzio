@@ -17,6 +17,16 @@
         this.db = new KeyValue(name);
 
         /**
+         * Validate input number
+         * @param number
+         */
+        this.validateNumber = function (number) {
+            number = (new BigNumber(number));
+            assert.false(number.isNaN(), 'Invalid number');
+            assert.true(number.gt(0), 'Non-positive value')
+        };
+
+        /**
          * Get balance of address
          * @param address
          * @return {*}
@@ -84,6 +94,7 @@
          * @param balance
          */
         this.setBalance = function (address, balance) {
+            this.validateNumber(balance);
             return this._setBalance(address, balance, false);
         };
 
@@ -101,6 +112,8 @@
          * @param amount
          */
         this.withdraw = function (address, amount) {
+            this.validateNumber(amount);
+
             let balance = this.balanceOf(address);
             let minus = new BigNumber(amount);
 
@@ -126,6 +139,8 @@
          * @param amount
          */
         this.minus = function (address, amount) {
+            this.validateNumber(amount);
+
             return this.withdraw(address, amount)
         };
 
@@ -135,6 +150,8 @@
          * @param amount
          */
         this.deposit = function (address, amount) {
+            this.validateNumber(amount);
+
             let balance = this.balanceOf(address);
             let plus = new BigNumber(amount);
 
@@ -156,6 +173,8 @@
          * @return {*|BigNumber}
          */
         this.plus = function (address, amount) {
+            this.validateNumber(amount);
+
             return this.deposit(address, amount);
         };
 
@@ -167,6 +186,8 @@
          * @return {*}
          */
         this.transfer = function (from, to, amount) {
+            this.validateNumber(amount);
+
             this.withdraw(from, amount);
             this.deposit(to, amount);
             return this.balanceOf(to);
@@ -178,6 +199,8 @@
          * @param amount
          */
         this.burn = function (address, amount) {
+            this.validateNumber(amount);
+
             amount = new BigNumber(amount);
             this.withdraw(address, amount);
         };
@@ -188,6 +211,8 @@
          * @param amount
          */
         this.mint = function (address, amount) {
+            this.validateNumber(amount);
+
             amount = new BigNumber(amount);
             this.deposit(address, amount);
         };
