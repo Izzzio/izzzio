@@ -500,8 +500,8 @@ function Blockchain(config) {
         ws.on('message', (data) => {
 
             //prevent multiple sockets on one busaddress
-            if (!config.allowMultiplySocketsOnBus){
-                if (starwave.preventMultipleSockets(ws) === 0) {
+            if(!config.allowMultiplySocketsOnBus) {
+                if(starwave.preventMultipleSockets(ws) === 0) {
                     data = null;
                     return;
                 }
@@ -617,6 +617,7 @@ function Blockchain(config) {
      */
     function registerMessageHandler(id, handler) {
         messagesHandlers.push({id: id, handle: handler});
+        messagesHandlers.sort((a, b) => a.id > b.id);
     }
 
     /**
