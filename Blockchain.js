@@ -1576,7 +1576,7 @@ function Blockchain(config) {
                 storj.put('terminateAttempts', 0);
 
                 if(config.upnp.enabled) {
-                    upnpAdvertisment.start();
+                    upnpAdvertisment.stop();
                     upnpBrowser.stop();
                 }
 
