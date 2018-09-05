@@ -475,6 +475,7 @@ class EcmaContract {
         vm.injectSource(__dirname + '/modules/Contract.js');
         vm.injectSource(__dirname + '/modules/TokenContract.js');
         vm.injectSource(__dirname + '/modules/Event.js');
+        vm.injectSource(__dirname + '/modules/BlockchainArray.js');
     }
 
     /**
