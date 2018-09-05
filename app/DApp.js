@@ -104,7 +104,11 @@ class DApp {
             /**
              * @type EcmaContract
              */
-            ecmaContract: that.ecmaContract
+            ecmaContract: that.ecmaContract,
+            /**
+             * @type EcmaContract
+             */
+            ecma: that.ecmaContract
         };
 
         /**
