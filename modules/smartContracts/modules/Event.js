@@ -22,7 +22,7 @@ class Event {
             throw 'Event can take only 10 arguments';
         }
 
-        if(types.length === 1) {
+        if(types.length === 1 && Array.isArray(types[0])) {
             types = types[0];
         }
 
@@ -59,7 +59,7 @@ class Event {
      * @return {*}
      */
     emit(...args) {
-        if(args.length === 1) {
+        if(args.length === 1 && Array.isArray(args[0])) {
             args = args[0];
         }
         for (let a in args) {
