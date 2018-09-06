@@ -84,6 +84,7 @@ function Blockchain(config) {
 
     const routes = {};
     const secretKeys = {};
+    const blockchainInfo = {};
 
     if(config.rpcPassword.length !== 0) {
         app.use(auth.connect(basic));
@@ -1689,7 +1690,7 @@ function Blockchain(config) {
         routes: routes,
         messagesHandlers: messagesHandlers,
         secretKeys: secretKeys,
-
+        blockchainInfo: blockchainInfo, //информация о подключенных цепочках(ключ: адрес шины, значение - объект с информацией)
     };
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
