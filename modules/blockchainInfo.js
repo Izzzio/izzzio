@@ -37,20 +37,15 @@ class BlockchainInfo{
         //получаем длину всей цепочки
         let infoObject = [];
         infoObject['lastKnownBlock']={};
+        blockchain.getLatestBlock((val)=> blockInfo = val);
+        infoObject['lastKnownBlock'].blockchainLength = blockInfo.index + 1;
+        infoObject['lastKnownBlock'].timestamp = blockInfo.timestamp;
+        infoObject['lastKnownBlock'].hash = blockInfo.hash;
 
-        blockchain.blockchain.get('maxBlock' ,(err, value) =>
-        {
-            if (err) {
-                logger.error('Database failure. Repair or resync database!');
-                return;
-            }
-            infoObject['lastKnownBlock'].blockchainLength = Number(value);
-            blockchain.getLatestBlock((val)=> infoObject['lastKnownBlock'].timeStamp = val);
-        });
         //hash should be added
 
         return infoObject;
-
+    //todo add genesis asking
     }
 }
 
