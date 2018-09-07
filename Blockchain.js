@@ -72,7 +72,7 @@ function Blockchain(config) {
     const BlockchainInfo = require('./modules/blockchainInfo');
     const blockchainInfo  = new BlockchainInfo(blockchainObject);
 
-    let lastBlockInfo = blockchainInfo.getOurBlockchainInfo()['lastBlockInfo']; //информация о последнем запрошенном блоке
+    let lastBlockInfo = {}; //информация о последнем запрошенном блоке
 
     const basic = auth.basic({
             realm: "RPC Auth"
@@ -361,6 +361,7 @@ function Blockchain(config) {
                     transactor.changeMaxBlock(maxBlock);
                     blockHandler.enableLogging = false;
                     wallet.enableLogging = false;
+                    lastBlockInfo = blockchainInfo.getOurBlockchainInfo()['lastBlockInfo'];
 
                     if(config.program.fastLoad) {
                         blockHandler.enableLogging = true;
@@ -592,7 +593,7 @@ function Blockchain(config) {
 
             //проверяем сообщения, содержащие информацию о блокчейне
             if(message.id === blockchainInfo.BLOCKCHAIN_INFO){
-                if (message.data === ''){//если пустая дата, значит, просятприслать информацию о нас
+                if (message.data === ''){//если пустая дата, значит, просят прислать информацию о нас
                     blockchainInfo.sendOurInfo(ws, write);
                     return;
                 } else {
@@ -608,6 +609,7 @@ function Blockchain(config) {
                     //если хэши не совпадают, значит, отключаемся
                     if (info['genesisHash'] !== getGenesisBlock().hash){
                         ws.haveBlockchainInfo = false; //тормозим обработку сообщений
+                        clearInterval(ws.blockchainInfoTimerID); //выключаем опросник
                         ws.close();
                         message = null;
                         return;
@@ -616,8 +618,8 @@ function Blockchain(config) {
                         //проверяем актуальность нашей инфы по длине цепочки(если больше у другой ноды, то обновляем инфу)
                         if (lastBlockInfo.blockchainLength < info['lastBlockInfo'].blockchainLength){
                             lastBlockInfo = info['lastBlockInfo'];
-                            return;
                         }
+                        return;
                     }
                 }
             }
@@ -626,7 +628,6 @@ function Blockchain(config) {
             if (!ws.haveBlockchainInfo){
                 return;
             }
-
 
             switch (message.type) {
                 case MessageType.QUERY_LATEST:
@@ -1736,10 +1737,11 @@ function Blockchain(config) {
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
     starwave.blockchain = blockchainObject;
-
+    blockchainInfo.blockchain = blockchainObject;
     blockchainObject.messagesDispatcher = new MessagesDispatcher(config, blockchainObject);
 
     storj.put('blockchainObject', blockchainObject);
+
 
 
     return blockchainObject;

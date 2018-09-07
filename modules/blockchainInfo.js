@@ -41,7 +41,7 @@ class BlockchainInfo{
      */
     getOurBlockchainInfo(blockchain = this.blockchain){
         //получаем длину всей цепочки
-        let infoObject = [];
+        let infoObject = {};
         infoObject['lastBlockInfo']={};
         let blockInfo = {};
         blockchain.getLatestBlock((val)=> blockInfo = val);
