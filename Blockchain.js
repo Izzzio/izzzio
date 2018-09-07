@@ -69,7 +69,10 @@ function Blockchain(config) {
     const NodeMetaInfo = require('./modules/NodeMetaInfo');
     const StarwaveProtocol = require('./modules/starwaveProtocol');
     let starwave = new StarwaveProtocol(config, blockchainObject);
+    const BlockchainInfo = require('./modules/blockchainInfo');
+    const blockchainInfo  = new BlockchainInfo(blockchainObject);
 
+    let lastBlockInfo = blockchainInfo.getOurBlockchainInfo()['lastBlockInfo']; //информация о последнем запрошенном блоке
 
     const basic = auth.basic({
             realm: "RPC Auth"
@@ -84,7 +87,6 @@ function Blockchain(config) {
 
     const routes = {};
     const secretKeys = {};
-    const blockchainInfo = {};
 
     if(config.rpcPassword.length !== 0) {
         app.use(auth.connect(basic));
@@ -545,6 +547,7 @@ function Blockchain(config) {
 
         p2pErrorHandler(ws);
         sockets.push(ws);
+        blockchainInfo.onConnection(ws,write);
         initMessageHandler(ws);
         write(ws, metaMsg());         //посылаем метаинформацию
         write(ws, queryChainLengthMsg());
@@ -586,6 +589,43 @@ function Blockchain(config) {
             } catch (e) {
                 logger.error('' + e)
             }
+
+            //проверяем сообщения, содержащие информацию о блокчейне
+            if(message.id === blockchainInfo.BLOCKCHAIN_INFO){
+                if (message.data === ''){//если пустая дата, значит, просятприслать информацию о нас
+                    blockchainInfo.sendOurInfo(ws, write);
+                    return;
+                } else {
+                    //сообщение не пустое, значит, в нем должна содержаться информация о блокчейне подключенной ноды
+                    let info;
+                    try {
+                        info = JSON.parse(message.data);
+                    } catch (e) {
+                        logger.error('' + e);
+                        ws.haveBlockchainInfo = false; //тормозим обработку сообщений
+                        return;
+                    }
+                    //если хэши не совпадают, значит, отключаемся
+                    if (info['genesisHash'] !== getGenesisBlock().hash){
+                        ws.haveBlockchainInfo = false; //тормозим обработку сообщений
+                        ws.close();
+                        message = null;
+                        return;
+                    } else {
+                        ws.haveBlockchainInfo = true; //разрешаем дальнейшую обработку сообщенй
+                        //если таймстэмп запрошенного последнего блока больше текущего сохраненного, то меняем его
+
+                    }
+
+                }
+
+            }
+
+            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне
+            if (!ws.haveBlockchainInfo){
+                return;
+            }
+
 
             switch (message.type) {
                 case MessageType.QUERY_LATEST:
@@ -1690,7 +1730,7 @@ function Blockchain(config) {
         routes: routes,
         messagesHandlers: messagesHandlers,
         secretKeys: secretKeys,
-        blockchainInfo: blockchainInfo, //информация о подключенных цепочках(ключ: адрес шины, значение - объект с информацией)
+        lastBlockInfo: lastBlockInfo,
     };
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
