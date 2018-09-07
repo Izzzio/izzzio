@@ -613,15 +613,16 @@ function Blockchain(config) {
                         return;
                     } else {
                         ws.haveBlockchainInfo = true; //разрешаем дальнейшую обработку сообщенй
-                        //если таймстэмп запрошенного последнего блока больше текущего сохраненного, то меняем его
-
+                        //проверяем актуальность нашей инфы по длине цепочки(если больше у другой ноды, то обновляем инфу)
+                        if (lastBlockInfo.blockchainLength < info['lastBlockInfo'].blockchainLength){
+                            lastBlockInfo = info['lastBlockInfo'];
+                            return;
+                        }
                     }
-
                 }
-
             }
 
-            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне
+            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
             if (!ws.haveBlockchainInfo){
                 return;
             }
