@@ -300,7 +300,6 @@ function Blockchain(config) {
 
     }
 
-
     /**
      * Добавляет блок в конец цепочки
      * @param block
@@ -596,37 +595,6 @@ function Blockchain(config) {
             if (blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)){
                 return;
             }
-            /*if(message.id === blockchainInfo.BLOCKCHAIN_INFO){
-                if (message.data === ''){//если пустая дата, значит, просят прислать информацию о нас
-                    blockchainInfo.sendOurInfo(ws, write);
-                    return;
-                } else {
-                    //сообщение не пустое, значит, в нем должна содержаться информация о блокчейне подключенной ноды
-                    let info;
-                    try {
-                        info = JSON.parse(message.data);
-                    } catch (e) {
-                        logger.error('' + e);
-                        ws.haveBlockchainInfo = false; //тормозим обработку сообщений
-                        return;
-                    }
-                    //если хэши не совпадают, значит, отключаемся
-                    if (info['genesisHash'] !== getGenesisBlock().hash){
-                        ws.haveBlockchainInfo = false; //тормозим обработку сообщений
-                        clearInterval(ws.blockchainInfoTimerID); //выключаем опросник
-                        ws.close();
-                        message = null;
-                        return;
-                    } else {
-                        ws.haveBlockchainInfo = true; //разрешаем дальнейшую обработку сообщенй
-                        //проверяем актуальность нашей инфы по длине цепочки(если больше у другой ноды, то обновляем инфу)
-                        if (lastBlockInfo.blockchainLength < info['lastBlockInfo'].blockchainLength){
-                            lastBlockInfo = info['lastBlockInfo'];
-                        }
-                        return;
-                    }
-                }
-            }*/
 
             //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
             if (!ws.haveBlockchainInfo){
