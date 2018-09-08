@@ -2,6 +2,7 @@
  * Module for asking and checking info about blockchain on connection
  *
  */
+'use strict';
 
 const logger = new (require('./logger'))('BlockchainInfo');
 
@@ -64,7 +65,7 @@ class BlockchainInfo{
         try {
             data = JSON.stringify(info);
         } catch (e) {
-            logger.Error('Error creating JSON data' + e);
+            logger.error('Error creating JSON data' + e);
             return;
         }
         let message = {
@@ -73,6 +74,52 @@ class BlockchainInfo{
         };
         sendFunction(ws,message);
         return message;
+    }
+
+    /**
+     * обработчик входящих сообщений с информацией о блокчейне
+     * @param message
+     * @param ws
+     * @param lastBlockInfo
+     * @param sendFunction
+     * @returns {boolean}
+     */
+    handleIncomingMessage(message, ws, lastBlockInfo, sendFunction){
+        //проверяем сообщения, содержащие информацию о блокчейне
+        if(message.id === this.BLOCKCHAIN_INFO){
+            if (message.data === ''){//если пустая дата, значит, просят прислать информацию о нас
+                this.sendOurInfo(ws, sendFunction);
+                return true;
+            } else {
+                //сообщение не пустое, значит, в нем должна содержаться информация о блокчейне подключенной ноды
+                let info;
+                try {
+                    info = JSON.parse(message.data);
+                } catch (e) {
+                    logger.error('' + e);
+                    ws.haveBlockchainInfo = false; //тормозим обработку сообщений
+                    return true;
+                }
+                //если хэши не совпадают, значит, отключаемся
+                if (info['genesisHash'] !== this.blockchain.getGenesisBlock().hash){
+                    logger.info('Genesis hashes are not equal. Socket will be disconnected.');
+                    ws.haveBlockchainInfo = false; //тормозим обработку сообщений
+                    clearInterval(ws.blockchainInfoTimerID); //выключаем опросник
+                    ws.close();
+                    message = null;
+                    return true;
+                } else {
+                    ws.haveBlockchainInfo = true; //разрешаем дальнейшую обработку сообщенй
+                    //проверяем актуальность нашей инфы по длине цепочки(если больше у другой ноды, то обновляем инфу)
+                    if (lastBlockInfo.blockchainLength < info['lastBlockInfo'].blockchainLength){
+                        lastBlockInfo = info['lastBlockInfo'];
+                    }
+                    return true;
+                }
+            }
+        } else {
+            return false;
+        }
     }
 }
 

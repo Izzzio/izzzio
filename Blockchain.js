@@ -361,7 +361,7 @@ function Blockchain(config) {
                     transactor.changeMaxBlock(maxBlock);
                     blockHandler.enableLogging = false;
                     wallet.enableLogging = false;
-                    lastBlockInfo = blockchainInfo.getOurBlockchainInfo()['lastBlockInfo'];
+
 
                     if(config.program.fastLoad) {
                         blockHandler.enableLogging = true;
@@ -592,7 +592,11 @@ function Blockchain(config) {
             }
 
             //проверяем сообщения, содержащие информацию о блокчейне
-            if(message.id === blockchainInfo.BLOCKCHAIN_INFO){
+
+            if (blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)){
+                return;
+            }
+            /*if(message.id === blockchainInfo.BLOCKCHAIN_INFO){
                 if (message.data === ''){//если пустая дата, значит, просят прислать информацию о нас
                     blockchainInfo.sendOurInfo(ws, write);
                     return;
@@ -622,7 +626,7 @@ function Blockchain(config) {
                         return;
                     }
                 }
-            }
+            }*/
 
             //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
             if (!ws.haveBlockchainInfo){
@@ -1597,7 +1601,7 @@ function Blockchain(config) {
                     }
                 }, config.blocksSavingInterval);
             }
-
+            lastBlockInfo = blockchainInfo.getOurBlockchainInfo()['lastBlockInfo'];
             transactor.startWatch(5000);
 
             process.on('SIGINT', () => {
