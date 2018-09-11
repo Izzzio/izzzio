@@ -122,11 +122,14 @@ const config = {
 //*********************************************************************
 const fs = require('fs-extra');
 const Blockchain = require('./Blockchain');
+const path = require('path');
 Array.prototype.remove = function (from, to) {
     let rest = this.slice((to || from) + 1 || this.length);
     this.length = from < 0 ? this.length + from : from;
     return this.push.apply(this, rest);
 };
+
+global.PATH = {}; //object for saving paths
 
 try {
     let loadedConfig = JSON.parse(fs.readFileSync(program.config));
@@ -135,6 +138,8 @@ try {
             config[i] = loadedConfig[i];
         }
     }
+
+    global.PATH.configPath = process.cwd(); //setup config path to global var(undefined if no config)
     /*   try {
            fs.writeFileSync('config.json', JSON.stringify(config));
        } catch (e) {
@@ -143,7 +148,6 @@ try {
 } catch (e) {
     console.log('Info: No configure found. Using standard configuration.');
 }
-
 
 config.program = program;
 
@@ -211,6 +215,35 @@ if(program.generateWallets) {
     process.exit();
 }
 
+global.PATH.mainPath = __dirname;
+//check how appEntry is written
+if (global.PATH.configPath) {
+    if (config.appEntry) {
+        //try to find app file near the config
+        let fullPathToAppEntry = '';
+        let existenceFlag = false;
+        //ref path in config
+        try {
+            fullPathToAppEntry = global.PATH.mainPath + path.sep + config.appEntry;
+            fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
+            existenceFlag = true;
+        } catch (err) {
+
+        }
+        //if only filename written
+        if (!existenceFlag) {
+            try {
+                let fullPathToAppEntry = global.PATH.configPath + path.sep + config.appEntry;
+                fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
+                config.appEntry = fullPathToAppEntry;
+            } catch (err) {
+                console.log('There is wrong filename in appEntry in config.');
+                config.appEntry = false;
+            }
+        }
+
+    }
+}
 
 const blockchain = new Blockchain(config);
 blockchain.start();
