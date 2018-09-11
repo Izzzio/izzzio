@@ -12,8 +12,8 @@ const random = require('../random');
 const EventsDB = require('./EventsDB');
 
 const BlockHandler = require('../blockHandler');
-const EcmaContractDeployBlock = require('./EcmaContractDeployBlock');
-const EcmaContractCallBlock = require('./EcmaContractCallBlock');
+const EcmaContractDeployBlock = require('./blocks/EcmaContractDeployBlock');
+const EcmaContractCallBlock = require('./blocks/EcmaContractCallBlock');
 const uglifyJs = require("uglify-es");
 const utils = require('../utils');
 const ContractConnector = require('./connectors/ContractConnector');
@@ -457,7 +457,7 @@ class EcmaContract {
 
         });
 
-        vm.injectSource(__dirname + '/modules/mockdate.js');
+        vm.injectSource(__dirname + '/internalModules/mockdate.js');
         vm.injectScript('new ' + function () {
             let _MockDate = MockDate;
             global.updateDateMock = function () {
@@ -470,12 +470,12 @@ class EcmaContract {
             MockDate = undefined;
         });
 
-        vm.injectSource(__dirname + '/modules/BigNumber.js');
-        vm.injectSource(__dirname + '/modules/TokensRegister.js');
-        vm.injectSource(__dirname + '/modules/Contract.js');
-        vm.injectSource(__dirname + '/modules/TokenContract.js');
-        vm.injectSource(__dirname + '/modules/Event.js');
-        vm.injectSource(__dirname + '/modules/BlockchainArray.js');
+        vm.injectSource(__dirname + '/internalModules/BigNumber.js');
+        vm.injectSource(__dirname + '/internalModules/TokensRegister.js');
+        vm.injectSource(__dirname + '/internalModules/Contract.js');
+        vm.injectSource(__dirname + '/internalModules/TokenContract.js');
+        vm.injectSource(__dirname + '/internalModules/Event.js');
+        vm.injectSource(__dirname + '/internalModules/BlockchainArray.js');
     }
 
     /**

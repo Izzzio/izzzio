@@ -4,7 +4,7 @@
  */
 
 
-const Signable = require('../blocks/signable');
+const Signable = require('../../blocks/signable');
 const CryptoJS = require("crypto-js");
 let type = 'EcmaContractDeploy';
 
