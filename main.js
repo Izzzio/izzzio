@@ -139,7 +139,7 @@ try {
         }
     }
 
-    global.PATH.configPath = process.cwd(); //setup config path to global var(undefined if no config)
+    global.PATH.configDir = process.cwd(); //setup config path to global var(undefined if no config)
     /*   try {
            fs.writeFileSync('config.json', JSON.stringify(config));
        } catch (e) {
@@ -215,16 +215,16 @@ if(program.generateWallets) {
     process.exit();
 }
 
-global.PATH.mainPath = __dirname;
+global.PATH.mainDir = __dirname;
 //check how appEntry is written
-if (global.PATH.configPath) {
+if (global.PATH.configDir) {
     if (config.appEntry) {
         //try to find app file near the config
         let fullPathToAppEntry = '';
         let existenceFlag = false;
         //ref path in config
         try {
-            fullPathToAppEntry = global.PATH.mainPath + path.sep + config.appEntry;
+            fullPathToAppEntry = global.PATH.mainDir + path.sep + config.appEntry;
             fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
             existenceFlag = true;
         } catch (err) {
@@ -233,7 +233,7 @@ if (global.PATH.configPath) {
         //if only filename written
         if (!existenceFlag) {
             try {
-                let fullPathToAppEntry = global.PATH.configPath + path.sep + config.appEntry;
+                let fullPathToAppEntry = global.PATH.configDir + path.sep + config.appEntry;
                 fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
                 config.appEntry = fullPathToAppEntry;
             } catch (err) {
