@@ -73,13 +73,13 @@ class NodeRPC
      * @throws ReturnException
      * @throws RpcCallException
      */
-    private function request($method, $params = [], $paramStr = '')
+    protected function request($method, $params = [], $paramStr = '')
     {
-        if (empty(self::METHODS[$method])) {
+        if (empty(static::METHODS[$method])) {
             throw new InvalidMethodException('Invalid method ' . $method);
         }
 
-        $responseBody = self::curlRequest(self::METHODS[$method]['httpMethod'], $this->_baseUrl . $method . $paramStr, $params, $this->_password);
+        $responseBody = static::curlRequest(static::METHODS[$method]['httpMethod'], $this->_baseUrl . $method . $paramStr, $params, $this->_password);
         if (in_array(strtolower($responseBody), ['true', 'false'])) {
             if (strtolower($responseBody) === 'true') {
                 return ['status' => 'ok'];
@@ -299,8 +299,8 @@ class NodeRPC
         $txs = $this->request('getWalletTransactions', [], '/' . urldecode($id));
 
         return [
-            'income'  => self::indexTxsToStandartFormat($txs['income']),
-            'outcome' => self::indexTxsToStandartFormat($txs['outcome']),
+            'income'  => static::indexTxsToStandartFormat($txs['income']),
+            'outcome' => static::indexTxsToStandartFormat($txs['outcome']),
         ];
     }
 
@@ -316,7 +316,7 @@ class NodeRPC
     {
         $txs = $this->request('getTransactionsByBlockIndex', [], '/' . urldecode($id));
 
-        return self::indexTxsToStandartFormat($txs);
+        return static::indexTxsToStandartFormat($txs);
     }
 
     /**
@@ -330,7 +330,7 @@ class NodeRPC
     {
         $tx = $this->request('getTransactionByHash', [], '/' . urldecode($hash));
 
-        return self::indexTxsToStandartFormat([$tx])[0];
+        return static::indexTxsToStandartFormat([$tx])[0];
     }
 
 
@@ -364,7 +364,7 @@ class NodeRPC
      */
     public static function getTinyAddress($wallet)
     {
-        return self::TINY_ADDRESS_PREFIX . $wallet['block'];
+        return static::TINY_ADDRESS_PREFIX . $wallet['block'];
     }
 
     /**
@@ -374,9 +374,9 @@ class NodeRPC
      */
     public static function mil2IZ($amount)
     {
-        $scale = strlen(substr(self::MIL_TO_IZ, 1));
+        $scale = strlen(substr(static::MIL_TO_IZ, 1));
 
-        return bcdiv($amount, self::MIL_TO_IZ, $scale);
+        return bcdiv($amount, static::MIL_TO_IZ, $scale);
     }
 
     /**
@@ -386,7 +386,7 @@ class NodeRPC
      */
     public static function IZ2Mil($amount)
     {
-        return round($amount * self::MIL_TO_IZ);
+        return round($amount * static::MIL_TO_IZ);
     }
 
 }

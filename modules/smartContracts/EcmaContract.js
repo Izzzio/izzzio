@@ -1040,14 +1040,14 @@ class EcmaContract {
         }
 
 
-        app.get('/ecmacontract/getInfo', async function (req, res) {
+        app.get('/contracts/ecma/getInfo', async function (req, res) {
             res.send({
                 ready: that.ready,
             });
 
         });
 
-        app.get('/ecmacontract/getContractInfo/:address', async function (req, res) {
+        app.get('/contracts/ecma/getContractInfo/:address', async function (req, res) {
             that.getContractInstanceByAddress(req.params.address, async function (err, instance) {
                 if(err) {
                     return res.send({error: true});
@@ -1056,7 +1056,7 @@ class EcmaContract {
             });
         });
 
-        app.get('/ecmacontract/getContractProperty/:address/:property', async function (req, res) {
+        app.get('/contracts/ecma/getContractProperty/:address/:property', async function (req, res) {
             let contract = new ContractConnector(that, req.params.address);
             try {
                 res.send({result: await contract.getPropertyPromise(req.params.property)});
@@ -1065,15 +1065,24 @@ class EcmaContract {
             }
         });
 
-        app.post('/ecmacontract/getMethod/:address/:method', async function (req, res) {
+        app.post('/contracts/ecma/callMethod/:address/:method', async function (req, res) {
 
-            req.body.args = req.body['args[]'];
-            if(typeof req.body.args === 'undefined') {
-                req.body.args = [];
+
+
+            if(typeof req.body.argsEncoded !== 'undefined') {
+                req.body.args = JSON.parse(req.body.argsEncoded);
+            } else {
+                req.body.args = req.body['args[]'];
+                if(typeof req.body.args === 'undefined') {
+                    req.body.args = [];
+                }
             }
+
             if(!Array.isArray(req.body.args)) {
                 req.body.args = [req.body.args];
             }
+
+
 
             let contract = new ContractConnector(that, req.params.address);
             contract.registerMethod(req.params.method);
@@ -1084,12 +1093,18 @@ class EcmaContract {
             }
         });
 
-        app.post('/ecmacontract/deployMethod/:address/:method', async function (req, res) {
+        app.post('/contracts/ecma/deployMethod/:address/:method', async function (req, res) {
 
-            req.body.args = req.body['args[]'];
-            if(typeof req.body.args === 'undefined') {
-                req.body.args = [];
+            if(typeof req.body.argsEncoded !== 'undefined') {
+                req.body.args = JSON.parse(req.body.argsEncoded);
+            } else {
+                req.body.args = req.body['args[]'];
+                if(typeof req.body.args === 'undefined') {
+                    req.body.args = [];
+                }
             }
+
+
             if(!Array.isArray(req.body.args)) {
                 req.body.args = [req.body.args];
             }
@@ -1103,7 +1118,7 @@ class EcmaContract {
             }
         });
 
-        app.post('/ecmacontract/deployContract', async function (req, res) {
+        app.post('/contracts/ecma/deployContract', async function (req, res) {
             try {
                 let src = req.body.source;
                 if(typeof src === 'undefined' || src.length === 0) {
