@@ -70,7 +70,7 @@ function Blockchain(config) {
     const StarwaveProtocol = require('./modules/starwaveProtocol');
     let starwave = new StarwaveProtocol(config, blockchainObject);
     const BlockchainInfo = require('./modules/blockchainInfo');
-    const blockchainInfo  = new BlockchainInfo(blockchainObject);
+    const blockchainInfo = new BlockchainInfo(blockchainObject);
 
     let lastBlockInfo = {}; //информация о последнем запрошенном блоке
 
@@ -547,17 +547,15 @@ function Blockchain(config) {
 
         p2pErrorHandler(ws);
         sockets.push(ws);
-        blockchainInfo.onConnection(ws,write);
+        if(config.checkExternalConnectionData) {
+            blockchainInfo.onConnection(ws, write);
+        }
         initMessageHandler(ws);
         write(ws, metaMsg());         //посылаем метаинформацию
         write(ws, queryChainLengthMsg());
         write(ws, queryChainLengthMsg());
         sendAllBlockchain(ws, maxBlock - 1);
 
-        /*write(ws, createMessage({
-            address: config.recieverAddress,
-            version: '1.0'
-        }, config.recieverAddress, config.recieverAddress, 'VITAMIN_META', lastMsgIndex, config.TTL + 1));*/
     }
 
     /**
@@ -592,12 +590,12 @@ function Blockchain(config) {
 
             //проверяем сообщения, содержащие информацию о блокчейне
 
-            if (blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)){
+            if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
                 return;
             }
 
             //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
-            if (!ws.haveBlockchainInfo){
+            if(!ws.haveBlockchainInfo) {
                 return;
             }
 
@@ -1713,7 +1711,6 @@ function Blockchain(config) {
     blockchainObject.messagesDispatcher = new MessagesDispatcher(config, blockchainObject);
 
     storj.put('blockchainObject', blockchainObject);
-
 
 
     return blockchainObject;

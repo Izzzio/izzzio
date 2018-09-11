@@ -6,12 +6,12 @@
 
 const logger = new (require('./logger'))('BlockchainInfo');
 
-class BlockchainInfo{
+class BlockchainInfo {
     /**
      * начальная инициализация и установка параметров
      * @param blockchain
      */
-    constructor(blockchain){
+    constructor(blockchain) {
         this.blockchain = blockchain;
         this.BLOCKCHAIN_INFO = 'BLOCKCHAIN_INFO'; //ид для сообщений запроса информации о блокчейне
         this.ASKING_TIMEOUT = 10000; //таймаут опроса последнего известного блока
@@ -24,13 +24,13 @@ class BlockchainInfo{
      * @param timeout
      * @returns {number | *}
      */
-    onConnection(ws, sendFunction, timeout = this.ASKING_TIMEOUT){
-        let message = {data:'', id: this.BLOCKCHAIN_INFO};//поле данных пустое, значит, это запрос данных от другой ноды
+    onConnection(ws, sendFunction, timeout = this.ASKING_TIMEOUT) {
+        let message = {data: '', id: this.BLOCKCHAIN_INFO};//поле данных пустое, значит, это запрос данных от другой ноды
         //посылаем запрос на информацию о блокчейне сокета
-        sendFunction(ws,message);
+        sendFunction(ws, message);
         //устанавливаем интервал опроса информации о последнем блоке
         //привязываем инфо объект к сокету
-        ws.blockchainInfoTimerID = setInterval(()=>{
+        ws.blockchainInfoTimerID = setInterval(() => {
             sendFunction(ws, message);
         }, timeout);
         return ws.blockchainInfoTimerID;
@@ -40,12 +40,12 @@ class BlockchainInfo{
      * получаем извлекаем всю информацию о себе
      * @param blockchain
      */
-    getOurBlockchainInfo(blockchain = this.blockchain){
+    getOurBlockchainInfo(blockchain = this.blockchain) {
         //получаем длину всей цепочки
         let infoObject = {};
-        infoObject['lastBlockInfo']={};
+        infoObject['lastBlockInfo'] = {};
         let blockInfo = {};
-        blockchain.getLatestBlock((val)=> blockInfo = val);
+        blockchain.getLatestBlock((val) => blockInfo = val);
         infoObject['lastBlockInfo'].blockchainLength = blockInfo.index + 1;
         infoObject['lastBlockInfo'].timestamp = blockInfo.timestamp;
         infoObject['lastBlockInfo'].hash = blockInfo.hash;
@@ -60,7 +60,7 @@ class BlockchainInfo{
      * @param info посылаемая информация
      * @returns {*} //undefined в случае ошибки и сообщение в случае отправки
      */
-    sendOurInfo(ws, sendFunction, info = this.getOurBlockchainInfo()){
+    sendOurInfo(ws, sendFunction, info = this.getOurBlockchainInfo()) {
         let data;
         try {
             data = JSON.stringify(info);
@@ -69,10 +69,10 @@ class BlockchainInfo{
             return;
         }
         let message = {
-            data:data,
+            data: data,
             id: this.BLOCKCHAIN_INFO,
         };
-        sendFunction(ws,message);
+        sendFunction(ws, message);
         return message;
     }
 
@@ -84,10 +84,10 @@ class BlockchainInfo{
      * @param sendFunction
      * @returns {boolean}
      */
-    handleIncomingMessage(message, ws, lastBlockInfo, sendFunction){
+    handleIncomingMessage(message, ws, lastBlockInfo, sendFunction) {
         //проверяем сообщения, содержащие информацию о блокчейне
-        if(message.id === this.BLOCKCHAIN_INFO){
-            if (message.data === ''){//если пустая дата, значит, просят прислать информацию о нас
+        if(message.id === this.BLOCKCHAIN_INFO) {
+            if(message.data === '') {//если пустая дата, значит, просят прислать информацию о нас
                 this.sendOurInfo(ws, sendFunction);
                 return true;
             } else {
@@ -101,7 +101,7 @@ class BlockchainInfo{
                     return true;
                 }
                 //если хэши не совпадают, значит, отключаемся
-                if (info['genesisHash'] !== this.blockchain.getGenesisBlock().hash){
+                if(info['genesisHash'] !== this.blockchain.getGenesisBlock().hash) {
                     logger.info('Genesis hashes are not equal. Socket will be disconnected.');
                     ws.haveBlockchainInfo = false; //тормозим обработку сообщений
                     clearInterval(ws.blockchainInfoTimerID); //выключаем опросник
@@ -111,7 +111,7 @@ class BlockchainInfo{
                 } else {
                     ws.haveBlockchainInfo = true; //разрешаем дальнейшую обработку сообщенй
                     //проверяем актуальность нашей инфы по длине цепочки(если больше у другой ноды, то обновляем инфу)
-                    if (lastBlockInfo.blockchainLength < info['lastBlockInfo'].blockchainLength){
+                    if(lastBlockInfo.blockchainLength < info['lastBlockInfo'].blockchainLength) {
                         lastBlockInfo = info['lastBlockInfo'];
                     }
                     return true;
