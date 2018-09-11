@@ -1066,9 +1066,7 @@ class EcmaContract {
         });
 
         app.post('/contracts/ecma/callMethod/:address/:method', async function (req, res) {
-
-
-
+            
             if(typeof req.body.argsEncoded !== 'undefined') {
                 req.body.args = JSON.parse(req.body.argsEncoded);
             } else {
@@ -1081,8 +1079,6 @@ class EcmaContract {
             if(!Array.isArray(req.body.args)) {
                 req.body.args = [req.body.args];
             }
-
-
 
             let contract = new ContractConnector(that, req.params.address);
             contract.registerMethod(req.params.method);
@@ -1103,8 +1099,6 @@ class EcmaContract {
                     req.body.args = [];
                 }
             }
-
-
             if(!Array.isArray(req.body.args)) {
                 req.body.args = [req.body.args];
             }
