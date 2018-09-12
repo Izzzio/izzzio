@@ -5,6 +5,7 @@
 
 'use strict';
 
+const logger = new (require('./modules/logger'))();
 const version = require('./package.json').version;
 let program = require('commander');
 program
@@ -146,7 +147,7 @@ try {
            console.log('Info: Can\'t save config');
        }*/
 } catch (e) {
-    console.log('Info: No configure found. Using standard configuration.');
+    logger.info('No configure found. Using standard configuration.');
 }
 
 config.program = program;
@@ -157,11 +158,11 @@ if(config.program.splash) {
 
 
 if(program.clear) {
-    console.log('Info: Clear up.');
+    logger.info('Clear up.');
     fs.removeSync('wallets');
     fs.removeSync('blocks');
     fs.removeSync(config.walletFile);
-    console.log('Info: End');
+    logger.info('End');
 }
 
 if(program.newChain) {
@@ -188,14 +189,14 @@ if(program.workDir) {
 if(program.clearDb) {
     fs.removeSync(config.workDir + '/wallets');
     fs.removeSync(config.workDir + '/blocks');
-    console.log('Info: DB cleared');
+    logger.info('DB cleared');
 }
 
 
 if(program.generateWallets) {
     const Wallet = require('./modules/wallet');
 
-    console.log('Info: Generating wallets from keyring ' + program.generateWallets);
+    logger.info('Generating wallets from keyring ' + program.generateWallets);
 
     fs.ensureDirSync(config.workDir + '/keyringWallets');
 
@@ -211,7 +212,7 @@ if(program.generateWallets) {
         }
     }
 
-    console.log('Info: Wallets created');
+    logger.info('Wallets created');
     process.exit();
 }
 
@@ -237,7 +238,7 @@ if (global.PATH.configDir) {
                 fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
                 config.appEntry = fullPathToAppEntry;
             } catch (err) {
-                console.log('There is wrong filename in appEntry in config.');
+                logger.warning('There is wrong filename in appEntry in config. appEntry will be set to "false"');
                 config.appEntry = false;
             }
         }
@@ -250,7 +251,7 @@ blockchain.start();
 
 if(!program.fallOnErrors) {
     process.on('uncaughtException', function (err) {
-        console.log('Uncaught exception: ' + err);
+        logger.error('Uncaught exception: ' + err);
     });
 }
 
