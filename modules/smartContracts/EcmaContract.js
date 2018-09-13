@@ -3,6 +3,7 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
+const CryptoJS = require("crypto-js");
 const VM = require('./VM');
 const TransactionalKeyValue = require('./TransactionalKeyValue');
 const KeyValueInstancer = require('./KeyValueInstancer');
@@ -11,11 +12,9 @@ const logger = new (require('../logger'))('ECMAContract');
 const random = require('../random');
 const EventsDB = require('./EventsDB');
 
-const BlockHandler = require('../blockHandler');
 const EcmaContractDeployBlock = require('./blocks/EcmaContractDeployBlock');
 const EcmaContractCallBlock = require('./blocks/EcmaContractCallBlock');
 const uglifyJs = require("uglify-es");
-const utils = require('../utils');
 const ContractConnector = require('./connectors/ContractConnector');
 
 /**
@@ -96,7 +95,10 @@ class EcmaContract {
      * @return {{vm: VM, db: KeyValueInstancer}}
      */
     createContractInstance(address, code, state, cb) {
-        let vm = new VM({ramLimit: this.config.ecmaContract.ramLimit, logging: this.config.ecmaContract.allowDebugMessages});
+        let vm = new VM({
+            ramLimit: this.config.ecmaContract.ramLimit,
+            logging: this.config.ecmaContract.allowDebugMessages
+        });
         let db = new TransactionalKeyValue(this.config.workDir + '/contractsRuntime/' + address);
         try {
             vm.setTimingLimits(10000);
@@ -152,10 +154,12 @@ class EcmaContract {
                 return: function (result) {
                     vm.setObjectGlobal('_execResult', {status: 1, result: result});
                     vm.waitingForResponse = false;
+                    return result;
                 },
                 fails: function () {
                     vm.setObjectGlobal('_execResult', {status: 2});
                     vm.waitingForResponse = false;
+                    return false;
                 }
             };
         }
@@ -218,6 +222,58 @@ class EcmaContract {
                 this.true(!assertion, msg);
             }
         });
+
+        /**
+         * Crypto functions
+         */
+        vm.setObjectGlobal('crypto', {
+            sha256: function (data) {
+                return CryptoJS.SHA256(toString(data)).toString();
+            },
+            md5: function (data) {
+                return CryptoJS.MD5(toString(data)).toString();
+            },
+            verifySign: function (data, sign, publicKey) {
+                return that.blockchain.wallet.verifyData(data, sign, publicKey);
+            },
+            signData: function (data, privateKey) {
+                return that.blockchain.wallet.signData(data, privateKey);
+            }
+        });
+
+        /**
+         * Contract Key-Value DB
+         */
+        vm.setObjectGlobal('_blocks', {
+            getById: function (id, state) {
+                let sync = vmSync();
+                if(state.block.index <= id) {
+                    return sync.return(false);
+                }
+
+                that.blockchain.getBlockById(id, function (err, block) {
+                    if(err) {
+                        sync.return(false);
+                    } else {
+                        sync.return(block);
+                    }
+                })
+            }
+        });
+        //Inject blocks module
+        vm.injectScript('new ' + function () {
+            let waitForReturn = global.waitForReturn;
+            let _blocks = global._blocks;
+            global._blocks = undefined;
+            global.blocks = {
+                getById: function (id) {
+                    _blocks.getById(id, global.state);
+                    return waitForReturn();
+                }
+            };
+
+        });
+
 
         /**
          * Contract Key-Value DB

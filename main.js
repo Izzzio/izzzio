@@ -120,8 +120,10 @@ const config = {
 
     //SmartContracts
     ecmaContract: {
-        enabled: false,
-        allowDebugMessages: true
+        enabled: true,
+        allowDebugMessages: false,
+        contractInstanceCacheLifetime: 10000,
+        ramLimit: 32
     }
 };
 

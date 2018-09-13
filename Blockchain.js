@@ -117,6 +117,7 @@ function Blockchain(config) {
     }
     console.log('');
 
+
     /**
      * База данных блоков
      */
@@ -1590,8 +1591,11 @@ function Blockchain(config) {
                 storj.put('terminateAttempts', 0);
 
                 if(config.upnp.enabled) {
-                    upnpAdvertisment.stop();
-                    upnpBrowser.stop();
+                    try {
+                        upnpAdvertisment.stop();
+                        upnpBrowser.stop();
+                    } catch (e) {
+                    }
                 }
 
                 console.log('');
@@ -1712,6 +1716,20 @@ function Blockchain(config) {
         messagesHandlers: messagesHandlers,
         secretKeys: secretKeys,
         lastBlockInfo: lastBlockInfo,
+        /**
+         * Get block by id
+         * @param {Number} id
+         * @param {Function} cb
+         */
+        getBlockById(id, cb) {
+            blockchain.get(id, function (err, val) {
+                if(err) {
+                    cb(err);
+                } else {
+                    cb(err, JSON.parse(val));
+                }
+            })
+        }
     };
 
     //Init2
