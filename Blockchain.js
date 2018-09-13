@@ -69,8 +69,12 @@ function Blockchain(config) {
     const NodeMetaInfo = require('./modules/NodeMetaInfo');
     const StarwaveProtocol = require('./modules/starwaveProtocol');
     let starwave = new StarwaveProtocol(config, blockchainObject);
+    const BlockchainInfo = require('./modules/blockchainInfo');
+    const blockchainInfo = new BlockchainInfo(blockchainObject);
+    let lastBlockInfo = {}; //информация о последнем запрошенном блоке
 
     const EcmaContract = require('./modules/smartContracts/EcmaContract');
+
 
     const basic = auth.basic({
             realm: "RPC Auth"
@@ -297,7 +301,6 @@ function Blockchain(config) {
         });
 
     }
-
 
     /**
      * Добавляет блок в конец цепочки
@@ -545,16 +548,15 @@ function Blockchain(config) {
 
         p2pErrorHandler(ws);
         sockets.push(ws);
+        if(config.checkExternalConnectionData) {
+            blockchainInfo.onConnection(ws, write);
+        }
         initMessageHandler(ws);
         write(ws, metaMsg());         //посылаем метаинформацию
         write(ws, queryChainLengthMsg());
         write(ws, queryChainLengthMsg());
         sendAllBlockchain(ws, maxBlock - 1);
 
-        /*write(ws, createMessage({
-            address: config.recieverAddress,
-            version: '1.0'
-        }, config.recieverAddress, config.recieverAddress, 'VITAMIN_META', lastMsgIndex, config.TTL + 1));*/
     }
 
     /**
@@ -585,6 +587,17 @@ function Blockchain(config) {
                 message = JSON.parse(data);
             } catch (e) {
                 logger.error('' + e)
+            }
+
+            //проверяем сообщения, содержащие информацию о блокчейне
+
+            if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
+                return;
+            }
+
+            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
+            if(!ws.haveBlockchainInfo) {
+                return;
             }
 
             switch (message.type) {
@@ -1214,7 +1227,7 @@ function Blockchain(config) {
         createWalletIfNotExsists();
 
         if(config.appEntry) {
-            logger.info("Info: Loading DApp...\n");
+            logger.info("Loading DApp...\n");
             try {
                 /**
                  * @var {DApp} clientApplication
@@ -1555,7 +1568,7 @@ function Blockchain(config) {
                     }
                 }, config.blocksSavingInterval);
             }
-
+            lastBlockInfo = blockchainInfo.getOurBlockchainInfo()['lastBlockInfo'];
             transactor.startWatch(5000);
 
             process.on('SIGINT', () => {
@@ -1698,13 +1711,13 @@ function Blockchain(config) {
         routes: routes,
         messagesHandlers: messagesHandlers,
         secretKeys: secretKeys,
-
+        lastBlockInfo: lastBlockInfo,
     };
 
     //Init2
     frontend.blockchainObject = blockchainObject;
     transactor.blockchainObject = blockchainObject;
-
+    blockchainInfo.blockchain = blockchainObject;
 
     //Message dispatcher
     blockchainObject.messagesDispatcher = new MessagesDispatcher(config, blockchainObject);
