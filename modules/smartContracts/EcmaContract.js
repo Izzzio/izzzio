@@ -96,8 +96,8 @@ class EcmaContract {
      * @return {{vm: VM, db: KeyValueInstancer}}
      */
     createContractInstance(address, code, state, cb) {
-        let vm = new VM({ramLimit: this.config.ecmaContract.ramLimit});
-        let db = new TransactionalKeyValue(this.config.workDir + '/contractsRuntime/' + address);//new KeyValueInstancer(this.db, address);
+        let vm = new VM({ramLimit: this.config.ecmaContract.ramLimit, logging: this.config.ecmaContract.allowDebugMessages});
+        let db = new TransactionalKeyValue(this.config.workDir + '/contractsRuntime/' + address);
         try {
             vm.setTimingLimits(10000);
             vm.compileScript(code, state);
@@ -1066,7 +1066,7 @@ class EcmaContract {
         });
 
         app.post('/contracts/ecma/callMethod/:address/:method', async function (req, res) {
-            
+
             if(typeof req.body.argsEncoded !== 'undefined') {
                 req.body.args = JSON.parse(req.body.argsEncoded);
             } else {

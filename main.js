@@ -120,7 +120,8 @@ const config = {
 
     //SmartContracts
     ecmaContract: {
-        enabled: false
+        enabled: false,
+        allowDebugMessages: true
     }
 };
 

@@ -19,6 +19,7 @@ class VM {
         this.state = undefined;
         this.context = undefined;
         this.timeout = (typeof options === 'undefined' || typeof options.timeLimit === 'undefined' ? 1000 : options.timeLimit);
+        this.logging = (typeof options === 'undefined' || typeof options.logging === 'undefined' ? true : options.logging);
         this.busy = false;
         this.waitingForResponse = false;
     }
@@ -57,11 +58,18 @@ class VM {
      * @return {*}
      */
     setUpiZ3Context(randomSeed) {
+        let that = this;
         let context = this.isolate.createContextSync();
         let jail = context.global;
         jail.setSync('_ivm', ivm);
         jail.setSync('global', jail.derefInto());
-        jail.setSync('console', this.objToReference(console));
+        jail.setSync('console', this.objToReference({
+            log: function (...args) {
+                if(that.logging) {
+                    console.log(...args);
+                }
+            }
+        }));
         jail.setSync('system', this.objToReference({
             processMessages: function () {
                 return true;
