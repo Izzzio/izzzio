@@ -527,6 +527,8 @@ class EcmaContract {
         });
 
         vm.injectSource(__dirname + '/internalModules/BigNumber.js');
+        vm.injectSource(__dirname + '/internalModules/TypedKeyValue.js');
+        vm.injectSource(__dirname + '/internalModules/BlockchainObject.js');
         vm.injectSource(__dirname + '/internalModules/TokensRegister.js');
         vm.injectSource(__dirname + '/internalModules/Contract.js');
         vm.injectSource(__dirname + '/internalModules/TokenContract.js');
