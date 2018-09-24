@@ -73,6 +73,11 @@ function Blockchain(config) {
     const blockchainInfo = new BlockchainInfo(blockchainObject);
     let lastBlockInfo = {}; //информация о последнем запрошенном блоке
 
+    const TransactionCollector = require('./modules/transactionCollector');
+    let transactionsCollection =[]; //коллекция транзакций
+
+    let transactionCollector =  new TransactionCollector(blockchainObject);
+
     const EcmaContract = require('./modules/smartContracts/EcmaContract');
 
 
@@ -137,7 +142,8 @@ function Blockchain(config) {
         MY_PEERS: 3,
         BROADCAST: 4,
         META: 5,
-        SW_BROADCAST: 6
+        SW_BROADCAST: 6,
+        TRANS_COLL:7,
     };
 
     let maxBlock = -1;
@@ -1716,6 +1722,8 @@ function Blockchain(config) {
         messagesHandlers: messagesHandlers,
         secretKeys: secretKeys,
         lastBlockInfo: lastBlockInfo,
+
+        transactionsCollection: transactionsCollection, ////коллекция транзакций. состоит из связки ключ-хэш транзакции : объект - объект транзакции
         /**
          * Get block by id
          * @param {Number} id
@@ -1742,6 +1750,9 @@ function Blockchain(config) {
 
     //StarWave messaging protocol
     starwave.blockchain = blockchainObject;
+
+    //transactionCollector
+    transactionCollector.blockchain = blockchainObject;
 
     //EcmaContract Smartcontracts
     if(typeof config.ecmaContract !== 'undefined' && config.ecmaContract.enabled) {
