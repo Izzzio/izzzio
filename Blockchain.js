@@ -691,6 +691,12 @@ function Blockchain(config) {
                 case MessageType.SW_BROADCAST:
                     lastMsgIndex = starwave.handleMessage(message, messagesHandlers, ws);
                     break;
+                case MessageType.TRANS_COLL:
+                    let transaction = transactionCollector.handleMessage(message.data);
+                    //если добавлена транзакция, то пересылаем ее всем, кроме того, кто послал нам
+                    if (typeof transaction === 'object') {
+                        transactionCollector.sendTransactionToAllPeers(transaction, broadcast, ws);
+                    }
             }
         });
     }

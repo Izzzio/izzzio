@@ -13,6 +13,7 @@ class transactionCollector {
 
     constructor (blockchainObject) {
         this.blockchain = blockchainObject;
+        this.lastAddedTransaction = {};
     }
 
 
@@ -46,7 +47,7 @@ class transactionCollector {
      * @param collection //коллекция, по которой осуществляется поиск
      * @returns {*}
      */
-    findTransactions (keyValue, keyName, collection = this.blockchain.transactionsCollection) {
+    findTransactions (keyValue, keyName = 'hash', collection = this.blockchain.transactionsCollection) {
         return collection.find( item => item[keyname] === keyValue);
     }
 
@@ -102,23 +103,39 @@ class transactionCollector {
      * @returns {*}
      */
     handleMessage(messageData) {
+        let data = this.parseTransactionMessageData(messageData);
+        return this.addToCollection(data);
+    }
+
+    /**
+     * добавление блока в коллекцию
+     * @param data
+     * @returns {*}
+     */
+    addToCollection(data){
 
         let collection = this.blockchain.transactionsCollection;
-        let data = this.parseTransactionMessageData(messageData);
         //если data - не объект, значит, пришли неверные данные
         if (typeof data !== 'object') {
             return 1; //неправильный формат данных
         }
 
-        //не слишком ли старая транзакция прищла
+        //не слишком ли старая транзакция
         if (moment().utc().valueOf() + this.blockchain.config.transactionTTL < data.timestamp){
             return 2; //срок годности вышел
         }
 
-        //получаем хэш транзакции
-        let hash = this.blockchain.calculateHash('','','',data);
+        //проверяем наличие хэша
+        let hash;
+        if (!data.hash) {
+            //получаем хэш транзакции, если нет такого поля
+            let hash = this.blockchain.calculateHash('','','',data);
+        } else {
+            hash = data.hash
+        }
+
         //если такая транзакция уже есть, значит, мы уже ее обработали и ничего не делаем
-        if (this.findTransactions(hash) === []) {
+        if (this.findTransactions(hash) !== []) {
             return 3; //транзакция уже есть в коллекции
         }
 
@@ -127,7 +144,7 @@ class transactionCollector {
             data.fee = 0;
         }
 
-        //проверяем, нужно добавление в коллекцию или нет
+        //проверяем, можно/нужно добавление в коллекцию или нет
         if (this.getCollectionLength() < this.blockchain.config.transactionCollectionMaxElements && +collection[this.getCollectionLength()-1].fee >= +data.fee) {
             return 4;// ничего не делаем, т.к. минимальный fee больше пришедшего
         }
@@ -140,6 +157,11 @@ class transactionCollector {
         collection.sort((a,b) => b.fee - a.fee);
         //отрезаем лишнее
         this.blockchain.transactionsCollection = collection.slice(0, this.blockchain.config.transactionCollectionMaxElements);
+        //поиск по хэшу. вдруг мы отрезали новую
+        if (this.findTransactions(hash) === []) {
+            return 5; //мы отрезали новую, значит, ничего не будем передавать,т.к. коллекция не изменилась
+        }
+        this.lastAddedTransaction = data;
         return data;
     }
 
@@ -156,6 +178,16 @@ class transactionCollector {
             data: JSONdata,
             index:index
         }
+    }
+
+    /**
+     * рассылка сообщения о новом элементе коллекции всем подключенным, кроме excludeSocket, пирам с помощью функции broadcastFunction
+     * @param data
+     * @param broadcastFunction
+     * @param excludeSocket
+     */
+    sendTransactionToAllPeers(data, broadcastFunction, excludeSocket){
+        broadcastFunction (this.createMessage(data), excludeSocket);
     }
 
 
