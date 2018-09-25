@@ -13,59 +13,84 @@ class transactionCollector {
         this.blockchain = blockchainObject;
     }
 
-    parseTransactionMessageData(message) {
-        return;
+    /**
+     * получить длину коллекции
+     * @returns {number}
+     */
+    getCollectionLength() {
+        return this.blockchain.transactionsCollection.length;
     }
 
     /**
-     * проверяет наличие данной транзакции в коллекции
-     * @param hash
-     * @param collection
+     * разбираем входящее сообщение
+     * @param messageData
+     * @returns {any}
      */
-    checkTransactionMessageDublicate (hash, collection = this.blockchain.transactionsCollection) {
+    parseTransactionMessageData(messageData) {
+        let data;
+        try {
+            data = JSON.parse(messageData);
+        } catch (e) {
+            data = messageData;
+        }
+        return data;
+    }
+
+    /**
+     * выбирает из массива элементы с заданным значением заданного параметра и возвращает массив. если массив пустой, значит, таких элементов нет
+     * @param keyName //наизвание свойства
+     * @param keyValue //значение свойства
+     * @param collection //коллекция, по которой осуществляется поиск
+     * @returns {*}
+     */
+    findTransactions (keyName = 'hash', keyValue, collection = this.blockchain.transactionsCollection) {
         //перебираем все ключи(хэши) пока не найдем нужный
-        return this.blockchain.transactionsCollection[hash];
+        return collection.find( item => item[keyname] === keyValue);
     }
 
     /**
      * получаем максимальный fee
+     * @param collection
+     * @returns {number}
      */
-    getMaxFee() {
-        let maxFee = 0;
-        let collection = this.blockchain.transactionsCollection;
-        if (collection.length > 0){         //массив отсортирован по fee. максимум вначале, минимум в конце.
-            let keys = Object.keys(collection);
-            maxFee = collection[keys[0]].fee;
+    getMaxFee(collection = this.blockchain.transactionsCollection) {
+        // поскольку массив коллекции отсортирован в порядке убывания fee, то максимальный fee будет у элемента с индексом 0
+        //коллекция пуста, то устанавливаем maxFee = -1;
+        let maxFee = -1;
+        if (this.getCollectionLength() > 0) {
+            maxFee = collection[0];
         }
         return maxFee;
     }
 
-    getMaxFeeElements(count = 0, shouldDelete = false) {
-        count = count > 0 ? count : 0; //если 0 - значит, все полученные элементы
+    /**
+     * получить список элементов с максимальным fee
+     * @param count
+     * @param shouldDelete //флаг удаления элемента из коллекции после получения
+     * @returns {Array}
+     */
+    getTransactionsWithMaxFee(count = this.getCollectionLength() , shouldDelete = false) {
+        count = count > 0 ? count : this.getCollectionLength(); //при любом отрицательном значении также будут браться все элементы
 
         let elems = []; //массив с выбранными элементами
         let collection = this.blockchain.transactionsCollection; //чтобы писать поменьше
-
-        if (collection.length < 1) {    //если коллекция пуста, возвращаем пустой массив
-            return [];
-        }
-        let k = count | collection.length - 1; //счетчик выбранных элементов
         let maxFee = this.getMaxFee();
-
-        for (let key in collection) {
-            if (collection.hasOwnProperty(key)) {
-                if (collection[key].fee === maxFee) {
-                    elems[key] = collection[key];
-                    //проверяем, если нужно удаление, то удаляем найденный элемент из массива
-                    if (shouldDelete) {
-                        collection.splice(key, 1);
+        if (maxFee >= 0) {
+            if (shouldDelete)   {
+                elems = collection.map((v,i,a) => {
+                    if (v.fee === maxFee) {
+                        return a.splice(i,1);
                     }
-                    if (--k === 0) {    //если выбрали нужное количество элементов, то выходим из цикла
-                        break;
-                    }
-                }
+                });
+            } else {
+                elems = findTransactions('fee', maxFee);
             }
         }
+        //обрезаем массив до нужной длины
+        if (elems.length > count) {
+            elems = elems.slice(0, count-1);
+        }
+
         return elems;
     }
 
