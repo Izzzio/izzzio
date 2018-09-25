@@ -3,13 +3,12 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  Module which made transactions collections
  */
-  /*TODO узнать что делать с времнем жизни транзакции. нужно ли пробегать по коллекции и смотреть срок годности элементов в ней*/
 
 'use strict';
 
 const moment = require('moment');
 
-class transactionCollector {
+class TransactionCollector {
 
     constructor (blockchainObject) {
         this.blockchain = blockchainObject;
@@ -189,7 +188,6 @@ class transactionCollector {
     sendTransactionToAllPeers(data, broadcastFunction, excludeSocket){
         broadcastFunction (this.createMessage(data), excludeSocket);
     }
-
-
-
 }
+
+module.exports = TransactionCollector;
