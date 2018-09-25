@@ -3,15 +3,18 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  Module which made transactions collections
  */
-
+  /*TODO узнать что делать с времнем жизни транзакции. нужно ли пробегать по коллекции и смотреть срок годности элементов в ней*/
 
 'use strict';
+
+const moment = require('moment');
 
 class transactionCollector {
 
     constructor (blockchainObject) {
         this.blockchain = blockchainObject;
     }
+
 
     /**
      * получить длину коллекции
@@ -38,13 +41,12 @@ class transactionCollector {
 
     /**
      * выбирает из массива элементы с заданным значением заданного параметра и возвращает массив. если массив пустой, значит, таких элементов нет
-     * @param keyName //наизвание свойства
      * @param keyValue //значение свойства
+     * @param keyName //название свойства
      * @param collection //коллекция, по которой осуществляется поиск
      * @returns {*}
      */
-    findTransactions (keyName = 'hash', keyValue, collection = this.blockchain.transactionsCollection) {
-        //перебираем все ключи(хэши) пока не найдем нужный
+    findTransactions (keyValue, keyName, collection = this.blockchain.transactionsCollection) {
         return collection.find( item => item[keyname] === keyValue);
     }
 
@@ -83,7 +85,7 @@ class transactionCollector {
                     }
                 });
             } else {
-                elems = findTransactions('fee', maxFee);
+                elems = this.findTransactions(maxFee, 'fee');
             }
         }
         //обрезаем массив до нужной длины
@@ -94,8 +96,68 @@ class transactionCollector {
         return elems;
     }
 
-    handleMessage(message, messageHandlers) {
+    /**
+     * разбираем входящее сообщение. возвращаем объект добавленной транзакции если все прошло хорошо и блок добавлен
+     * @param messageData
+     * @returns {*}
+     */
+    handleMessage(messageData) {
 
+        let collection = this.blockchain.transactionsCollection;
+        let data = this.parseTransactionMessageData(messageData);
+        //если data - не объект, значит, пришли неверные данные
+        if (typeof data !== 'object') {
+            return 1; //неправильный формат данных
+        }
+
+        //не слишком ли старая транзакция прищла
+        if (moment().utc().valueOf() + this.blockchain.config.transactionTTL < data.timestamp){
+            return 2; //срок годности вышел
+        }
+
+        //получаем хэш транзакции
+        let hash = this.blockchain.calculateHash('','','',data);
+        //если такая транзакция уже есть, значит, мы уже ее обработали и ничего не делаем
+        if (this.findTransactions(hash) === []) {
+            return 3; //транзакция уже есть в коллекции
+        }
+
+        //проверяем наличие поля fee
+        if (!data.fee) {
+            data.fee = 0;
+        }
+
+        //проверяем, нужно добавление в коллекцию или нет
+        if (this.getCollectionLength() < this.blockchain.config.transactionCollectionMaxElements && +collection[this.getCollectionLength()-1].fee >= +data.fee) {
+            return 4;// ничего не делаем, т.к. минимальный fee больше пришедшего
+        }
+
+        //все проверки прошли успешно, значит, можно добавлять в коллекцию
+        //добавляем хэш
+        data.hash = hash;
+        collection.push(data);
+        //сортируем по убыванию fee
+        collection.sort((a,b) => b.fee - a.fee);
+        //отрезаем лишнее
+        this.blockchain.transactionsCollection = collection.slice(0, this.blockchain.config.transactionCollectionMaxElements);
+        return data;
     }
+
+    /**
+     * создаем сообщение с оповещением о новой транзакции
+     * @param data
+     * @param index
+     * @returns {{type: number, data: *, index: string}}
+     */
+    createMessage(data, index = ''){
+        let JSONdata = JSON.stringify(data);
+        return {
+            type: this.blockchain.messageType.TRANS_COLL,
+            data: JSONdata,
+            index:index
+        }
+    }
+
+
 
 }

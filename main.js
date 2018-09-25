@@ -114,6 +114,8 @@ const config = {
     transactionIndexPerf: true,             // режим высокой производительности индекса (требует много ОЗУ)
     transactionIndexEnable: false,          // активировать построение индекса
 
+    transactionTTL: 50000,                  //время жизни транзакции
+    transactionCollectionMaxElements: 10,   //максимальное число элементов в коллекции транзакций
 
     //Application
     appEntry: false,       //Точка входа в "приложение". False - если не требуется
