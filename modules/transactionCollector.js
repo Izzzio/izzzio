@@ -164,7 +164,6 @@ class TransactionCollector {
 
         //если такая транзакция уже есть, значит, мы уже ее обработали и ничего не делаем
         if (this.findTransactions(hash).length !== 0) {
-            console.log(`Transaction with hash ${hash} have already been included. Doing nothing,`);
             return 3; //транзакция уже есть в коллекции
         }
 
