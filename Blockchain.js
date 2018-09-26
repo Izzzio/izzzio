@@ -596,15 +596,16 @@ function Blockchain(config) {
                 logger.error('' + e)
             }
 
-            //проверяем сообщения, содержащие информацию о блокчейне
+            if (config.checkExternalConnectionData) {
+                //проверяем сообщения, содержащие информацию о блокчейне
+                if (blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
+                    return;
+                }
 
-            if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
-                return;
-            }
-
-            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
-            if(!ws.haveBlockchainInfo) {
-                return;
+                //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
+                if (!ws.haveBlockchainInfo) {
+                    return;
+                }
             }
 
             switch (message.type) {
