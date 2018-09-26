@@ -188,7 +188,7 @@ class TransactionCollector {
      */
     sendTransactionToAllPeers(data, broadcastFunction, excludeSocket){
         let message = this.createMessage(data);
-        broadcastFunction (this.createMessage(data), excludeSocket);
+        broadcastFunction (message, excludeSocket);
         return message;
     }
 }
