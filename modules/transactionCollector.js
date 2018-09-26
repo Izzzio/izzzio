@@ -7,6 +7,8 @@
 'use strict';
 
 const moment = require('moment');
+const CryptoJS = require("crypto-js");
+const crypto = require('crypto');
 
 class TransactionCollector {
 
@@ -47,7 +49,13 @@ class TransactionCollector {
      * @returns {*}
      */
     findTransactions (keyValue, keyName = 'hash', collection = this.blockchain.transactionsCollection) {
-        return collection.find( item => item[keyname] === keyValue);
+        let arr = [];
+        collection.map(item => {
+            if (item[keyName] === keyValue){
+                arr.push(item);
+            }
+        });
+        return arr;
     }
 
     /**
@@ -60,7 +68,7 @@ class TransactionCollector {
         //коллекция пуста, то устанавливаем maxFee = -1;
         let maxFee = -1;
         if (this.getCollectionLength() > 0) {
-            maxFee = collection[0];
+            maxFee = collection[0].fee;
         }
         return maxFee;
     }
@@ -73,27 +81,23 @@ class TransactionCollector {
      */
     getTransactionsWithMaxFee(count = this.getCollectionLength() , shouldDelete = false) {
         count = count > 0 ? count : this.getCollectionLength(); //при любом отрицательном значении также будут браться все элементы
-
         let elems = []; //массив с выбранными элементами
         let collection = this.blockchain.transactionsCollection; //чтобы писать поменьше
         let maxFee = this.getMaxFee();
         if (maxFee >= 0) {
-            if (shouldDelete)   {
-                elems = collection.map((v,i,a) => {
-                    if (v.fee === maxFee) {
-                        return a.splice(i,1);
-                    }
-                });
-            } else {
-                elems = this.findTransactions(maxFee, 'fee');
+            let c = count; //чтобы не наудалять лишнего
+            collection.map((v,i,a) => {
+                if ((v.fee === maxFee) && (c-- > 0)) {
+                    elems.push(v);
+                    a[i] = shouldDelete ?  undefined : a[i]; //заменяем выбранные элемены на undefined, если необходимо удаление
+                }
+            });
+            //удаляем пустые элементы, появившиеся, если было необходимо удаление
+            if (shouldDelete) {
+                this.blockchain.transactionsCollection = collection.filter(i => i!== undefined);
             }
         }
-        //обрезаем массив до нужной длины
-        if (elems.length > count) {
-            elems = elems.slice(0, count-1);
-        }
-
-        return elems;
+        return elems.map(item => delete item.hash);//возвращаем массив "чистых" транзакций(без поля hash)
     }
 
     /**
@@ -124,18 +128,24 @@ class TransactionCollector {
             return 2; //срок годности вышел
         }
 
-        //проверяем наличие хэша
-        let hash;
-        if (!data.hash) {
-            //получаем хэш транзакции, если нет такого поля
-            hash = this.blockchain.calculateHash('','','',data,'','');
-        } else {
-            hash = data.hash
-        }
-
-        //если такая транзакция уже есть, значит, мы уже ее обработали и ничего не делаем
-        if (this.findTransactions(hash) !== []) {
-            return 3; //транзакция уже есть в коллекции
+        //проверка подписи(если есть такое поле)
+        if (typeof data.sign !== "undefined") {
+            if (data.data){
+                //проверяем наличие открытого ключа
+                if (!data.pubkey) {
+                    return 6; //нет публичного ключа-не проверить
+                }
+                const verify = crypto.createVerify('SHA256');
+                verify.update(data.data);
+                try {
+                    let check = verify.verify(data.pubkey, data.sign, 'hex');
+                    if (!check){
+                        return 7;   //подпись недействительна
+                    }
+                } catch (e){
+                    return 8;
+                }
+            }
         }
 
         //проверяем наличие поля fee
@@ -143,9 +153,25 @@ class TransactionCollector {
             data.fee = 0;
         }
 
+        //проверяем наличие хэша
+        let hash;
+        if (!data.hash) {
+            //получаем хэш транзакции, если нет такого поля
+            hash = CryptoJS.SHA256(JSON.stringify(data)).toString();
+        } else {
+            hash = data.hash
+        }
+
+        //если такая транзакция уже есть, значит, мы уже ее обработали и ничего не делаем
+        if (this.findTransactions(hash).length !== 0) {
+            console.log(`Transaction with hash ${hash} have already been included. Doing nothing,`);
+            return 3; //транзакция уже есть в коллекции
+        }
+
         //проверяем, можно/нужно добавление в коллекцию или нет
-        if (this.getCollectionLength() < this.blockchain.config.transactionCollectionMaxElements && +collection[this.getCollectionLength()-1].fee >= +data.fee) {
-            return 4;// ничего не делаем, т.к. минимальный fee больше пришедшего
+        let colLength = this.getCollectionLength();
+        if ((colLength >= this.blockchain.config.transactionCollectionMaxElements) && (Number(collection[colLength-1].fee) >= Number(data.fee))) {
+            return 4;// ничего не делаем, т.к. минимальный fee больше либо равен пришедшему и в коллекции уже максимум элементов
         }
 
         //все проверки прошли успешно, значит, можно добавлять в коллекцию
