@@ -128,7 +128,7 @@ class TransactionCollector {
         let hash;
         if (!data.hash) {
             //получаем хэш транзакции, если нет такого поля
-            let hash = this.blockchain.calculateHash('','','',data);
+            hash = this.blockchain.calculateHash('','','',data);
         } else {
             hash = data.hash
         }
