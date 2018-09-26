@@ -184,9 +184,12 @@ class TransactionCollector {
      * @param data
      * @param broadcastFunction
      * @param excludeSocket
+     * @returns {{type: number, data: *, index: string}}
      */
     sendTransactionToAllPeers(data, broadcastFunction, excludeSocket){
+        let message = this.createMessage(data);
         broadcastFunction (this.createMessage(data), excludeSocket);
+        return message;
     }
 }
 
