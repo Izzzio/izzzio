@@ -1498,7 +1498,9 @@ function Blockchain(config) {
                 config.validators[0].generateNextBlock(blockData, function (generatedBlock) {
                     addBlock(generatedBlock);
                     broadcastLastBlock();
-                    setTimeout(coinEmission, 2000);
+                    if (config.oldCoinsEnabled) {       //проверяем разрешение на выпуск монет встаром стиле
+                        setTimeout(coinEmission, 2000);
+                    }
                     cb(generatedBlock);
                 });
             }, function () {
