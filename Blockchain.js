@@ -1498,9 +1498,7 @@ function Blockchain(config) {
                 config.validators[0].generateNextBlock(blockData, function (generatedBlock) {
                     addBlock(generatedBlock);
                     broadcastLastBlock();
-                    if (config.oldCoinsEnabled) {       //проверяем разрешение на выпуск монет встаром стиле
-                        setTimeout(coinEmission, 2000);
-                    }
+                    setTimeout(coinEmission, 2000);
                     cb(generatedBlock);
                 });
             }, function () {
@@ -1517,6 +1515,9 @@ function Blockchain(config) {
      * где precision это максимальная точность при операциях с не дробными монетами
      */
     function coinEmission() {
+        if (config.DisableInternalSocket) {
+            return;
+        }
         if(!blockHandler.isKeyFromKeyring(wallet.keysPair.public)) {
             logger.error("The selected key does not belong to the keychain! Emission corrupted.");
             return;
