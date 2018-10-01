@@ -303,6 +303,10 @@ let Wallet = function (walletFile, config) {
      * @param {Boolean} keyringed
      */
     wallet.transact = function (to, amount, fromTimestamp, keyringed) {
+        //запрещаем транзакции если установлен флаг
+        if (config.DisableInternalToken){
+            return false;
+        }
         to = String(to);
         amount = Number(amount);
 
