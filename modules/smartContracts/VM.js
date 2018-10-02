@@ -19,9 +19,58 @@ class VM {
         this.state = undefined;
         this.context = undefined;
         this.timeout = (typeof options === 'undefined' || typeof options.timeLimit === 'undefined' ? 1000 : options.timeLimit);
+        this.cpuLimit = (typeof options === 'undefined' || typeof options.cpuLimit === 'undefined' ? 500 : options.cpuLimit);
         this.logging = (typeof options === 'undefined' || typeof options.logging === 'undefined' ? true : options.logging);
         this.busy = false;
         this.waitingForResponse = false;
+        this.logPrefix = (typeof options === 'undefined' || typeof options.logPrefix === 'undefined' ? '' : options.logPrefix);
+    }
+
+    /**
+     * Returns CPU time
+     * @return {number}
+     */
+    getCpuTime() {
+        return (this.isolate.cpuTime[0] + this.isolate.cpuTime[1] / 1e9) * 1000;
+    }
+
+    /**
+     * Start CPU time limiter
+     * @private
+     */
+    _startCPULimitTimer() {
+        let that = this;
+        let lastCPU = this.getCpuTime();
+        let _cpuTimer = {
+            timer: setInterval(function () {
+                if(that.isolate.isDisposed) {
+                    clearInterval(_cpuTimer.timer);
+                    return;
+                }
+                let cpuTime = that.getCpuTime() - lastCPU;
+                //console.log(cpuTime);
+                if(cpuTime > that.cpuLimit) { //What we wanna do with time limit?
+                    clearInterval(_cpuTimer.timer);
+                    _cpuTimer.falled = true;
+                    _cpuTimer.reason = `CPU time limit exceed ${cpuTime}/${that.cpuLimit}`;
+                    that.isolate.dispose();
+
+                    that.busy = false;
+                    that.waitingForResponse = false;
+                }
+            }, 4), falled: false
+        };
+
+
+        return _cpuTimer;
+    }
+
+    /**
+     * Stop CPU time limiter
+     * @private
+     */
+    _stopCPULimitTimer(timerId) {
+        clearInterval(timerId.timer);
     }
 
     /**
@@ -66,6 +115,7 @@ class VM {
         jail.setSync('console', this.objToReference({
             log: function (...args) {
                 if(that.logging) {
+                    process.stdout.write(that.logPrefix);
                     console.log(...args);
                 }
             }
@@ -214,6 +264,20 @@ class VM {
      * @return {*}
      */
     runContextMethod(context, ...args) {
+        let cpuLimiter = this._startCPULimitTimer();
+        let result = this._runContextMethodUnlimited(context, args);
+        this._stopCPULimitTimer(cpuLimiter);
+        return result;
+    }
+
+    /**
+     * Run context method without CPU time limition
+     * @param context
+     * @param args
+     * @return {any}
+     * @private
+     */
+    _runContextMethodUnlimited(context, ...args) {
         this.busy = true;
         let vmContext = this.context.global;
         let prevContext = vmContext;
@@ -226,6 +290,7 @@ class VM {
             }
         }
         let result = vmContext.applySync(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout});
+
         this.busy = false;
         return result;
     }
@@ -249,12 +314,17 @@ class VM {
                 vmContext = vmContext.getSync(context[a]);
             }
         }
-
+        let cpuLimiter = this._startCPULimitTimer();
         vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout}).then(function (result) {
+            that._stopCPULimitTimer(cpuLimiter);
             that.busy = false;
             cb(null, result);
         }).catch(function (reason) {
             that.busy = false;
+            if(cpuLimiter.falled) {
+                reason = new Error(cpuLimiter.reason);
+            }
+            that._stopCPULimitTimer(cpuLimiter);
             cb(reason);
         });
     }
@@ -265,6 +335,14 @@ class VM {
      */
     setTimingLimits(limit) {
         this.timeout = limit;
+    }
+
+    /**
+     * Changes CPU time limit
+     * @param limit
+     */
+    setCpuLimit(limit) {
+        this.cpuLimit = limit;
     }
 
     /**
@@ -298,7 +376,7 @@ class VM {
             //console.trace()
         }
         this.context.global.setSync(name, this.objToReference(object));
-        return this.runContextMethod("_registerGlobalObjFromExternal", name);
+        return this._runContextMethodUnlimited("_registerGlobalObjFromExternal", name);
     }
 
     setObjectGlobalSecret(name, object) {
