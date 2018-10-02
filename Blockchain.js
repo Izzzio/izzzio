@@ -1517,7 +1517,7 @@ function Blockchain(config) {
      * где precision это максимальная точность при операциях с не дробными монетами
      */
     function coinEmission() {
-        if (config.DisableInternalToken) {
+        if (config.disableInternalToken) {
             return;
         }
         if(!blockHandler.isKeyFromKeyring(wallet.keysPair.public)) {

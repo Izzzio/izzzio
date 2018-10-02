@@ -304,7 +304,7 @@ let Wallet = function (walletFile, config) {
      */
     wallet.transact = function (to, amount, fromTimestamp, keyringed) {
         //запрещаем транзакции если установлен флаг
-        if (config.DisableInternalToken){
+        if (config.disableInternalToken){
             return false;
         }
         to = String(to);
