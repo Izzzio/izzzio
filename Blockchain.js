@@ -1448,6 +1448,11 @@ function Blockchain(config) {
      * @return {boolean}
      */
     function isReadyForTransaction() {
+        //посылаем сигнал неготовности к транзакции, если запрещен выпуск старой версии монет
+        if (config.DisableInternalToken){
+            return false;
+        }
+
         if(blockHandler.syncInProgress) {
             return false;
         }
