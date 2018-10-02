@@ -140,10 +140,6 @@ class Transactor {
             return false;
         }*/
 
-        if (that.blockchain.disableInternalToken){
-            return false;
-        }
-
         that.transactions.push({object: object, block: null, generator: generator, repeats: 0});
         let index = that.transactions.length - 1;
         logger.info('Transactor: Generating new block');
