@@ -1430,6 +1430,7 @@ function Blockchain(config) {
              }
          }*/
 
+
         for (let a = validators.length - 1; a > -1; a--) {
             if(validators.hasOwnProperty(a)) {
                 if(validators[a].isReady()) {
@@ -1448,6 +1449,7 @@ function Blockchain(config) {
      * @return {boolean}
      */
     function isReadyForTransaction() {
+
         if(blockHandler.syncInProgress) {
             return false;
         }
@@ -1515,6 +1517,9 @@ function Blockchain(config) {
      * где precision это максимальная точность при операциях с не дробными монетами
      */
     function coinEmission() {
+        if (config.disableInternalToken) {
+            return;
+        }
         if(!blockHandler.isKeyFromKeyring(wallet.keysPair.public)) {
             logger.error("The selected key does not belong to the keychain! Emission corrupted.");
             return;

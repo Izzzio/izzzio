@@ -314,7 +314,10 @@ class TransactionIndex {
      * @param cb
      */
     handleTransaction(block, transactionHash, blockData, cb) {
-
+        //do nothing if internal transactions
+        if (this.config.disableInternalToken){
+            return;
+        }
         if(this.indexDisabled) {
             if(typeof cb !== 'undefined') {
                 cb();

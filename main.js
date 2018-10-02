@@ -87,7 +87,7 @@ const config = {
     maxTransactionAtempts: 5,           //Сколько попыток добавить блок мы предпренимаем
     keyringKeysCount: 5,                //Сколько генерировать ключей в связку при старте сети. Используется в Trusted консенсусе и  других
     checkExternalConnectionData: false, //Проверять внешние данные на соответствие
-
+    disableInternalToken: false,        //выключить выпуск старых денег(false - разрешено выпускать старые деньги, true - запрет на выпуск)
 
     //Tokens
     precision: 10000000000,                  //Точность вычислений для кошелька
@@ -125,6 +125,7 @@ const config = {
         contractInstanceCacheLifetime: 10000,
         ramLimit: 32
     }
+
 };
 
 //*********************************************************************

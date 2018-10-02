@@ -132,6 +132,7 @@ class Transactor {
      * @param {Function} accepted
      */
     transact(object, generator, accepted) {
+
         let that = this;
         //console.log('Transactor: Create transaction');
 
