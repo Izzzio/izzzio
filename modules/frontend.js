@@ -187,7 +187,7 @@ class Frontend {
 
     createTransaction(req, res) {
         let that = this;
-        if (that.blockchainObject.config.DisableInternalToken){
+        if (that.blockchainObject.config.disableInternalToken){
             res.send('false');
         }
 
@@ -253,7 +253,7 @@ class Frontend {
     instantTransaction(req, res) {
         let that = this;
         //выключаем транзакцию, если выпуск старых денег запрещен
-        if (that.blockchainObject.config.DisableInternalToken){
+        if (that.blockchainObject.config.disableInternalToken){
             res.send('false');
         }
         utils.waitForSync(function () {
