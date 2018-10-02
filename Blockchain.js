@@ -1414,6 +1414,9 @@ function Blockchain(config) {
         if(config.program.enableAddressRotation) {
             rotateAddress();
         }
+        if (config.disableInternalToken) {
+            return;
+        }
         let validators = config.validators;
         /**
          * Модули консенсусов изначально расположены в порядке повышения приоритета.
@@ -1429,6 +1432,7 @@ function Blockchain(config) {
                  }
              }
          }*/
+
 
         for (let a = validators.length - 1; a > -1; a--) {
             if(validators.hasOwnProperty(a)) {
