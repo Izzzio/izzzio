@@ -7,7 +7,7 @@
 const Signable = require('../modules/blocks/signable');
 //const CryptoJS = require("crypto-js");
 const storj = require('../modules/instanceStorage');
-const cryptography = new (require('../modules/cryptography'))(storj.get('config'));
+const cryptography = storj.get('cryptography');
 let type = 'BenchmarkBlock';
 
 /**

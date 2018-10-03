@@ -8,7 +8,7 @@
 const Signable = require('./signable');
 //const CryptoJS = require("crypto-js");
 const storj = require('../instanceStorage');
-const cryptography = new (require('../cryptography'))(storj.get('config'));
+const cryptography = storj.get('cryptography');
 let type = 'CandyData';
 
 /**

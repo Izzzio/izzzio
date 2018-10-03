@@ -48,9 +48,7 @@ function Blockchain(config) {
     const moment = require('moment');
     const url = require('url');
 
-    //Cryptography
-    const Cryptography = require('./modules/cryptography');
-    const cryptography = new Cryptography(config);
+
 
     //Blockchain
     const Block = require('./modules/block');
@@ -66,6 +64,11 @@ function Blockchain(config) {
     const storj = require('./modules/instanceStorage');
     storj.put('app', app);
     storj.put('config', config);
+
+    //Cryptography
+    const Cryptography = require('./modules/cryptography');
+    const cryptography = new Cryptography(config);
+    storj.put('cryptography', cryptography);
 
     //Subsystems
     const blockController = new (require('./modules/blockchain'))();
