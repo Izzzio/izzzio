@@ -10,14 +10,15 @@ class Cryptography{
         //в любой непонятной ситуации используем SHA256
         if (typeof config === "undefined"){
             this.hashFunction = CryptoJS.SHA256 ;
-        }
-        switch (config.hashFunction){
-            case 'SHA256':
-                this.hashFunction = CryptoJS.SHA256;
-                break;
-            default:
-                this.hashFunction = CryptoJS.SHA256;
-                break;
+        } else {
+            switch (config.hashFunction) {
+                case 'SHA256':
+                    this.hashFunction = CryptoJS.SHA256;
+                    break;
+                default:
+                    this.hashFunction = CryptoJS.SHA256;
+                    break;
+            }
         }
     }
 
