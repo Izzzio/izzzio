@@ -6,8 +6,19 @@
 const CryptoJS = require('crypto-js');
 
 class Cryptography{
-    constructor(hashFunction){
-        this.hashFunction = typeof hashFunction === 'function' ? hashFunction : CryptoJS.SHA256 ;
+    constructor(config){
+        //в любой непонятной ситуации используем SHA256
+        if (typeof config === "undefined"){
+            this.hashFunction = CryptoJS.SHA256 ;
+        }
+        switch (config.hashFunction){
+            case 'SHA256':
+                this.hashFunction = CryptoJS.SHA256;
+                break;
+            default:
+                this.hashFunction = CryptoJS.SHA256;
+                break;
+        }
     }
 
     hash(data, hashFunction){
