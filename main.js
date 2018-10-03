@@ -7,6 +7,7 @@
 
 const version = require('./package.json').version;
 let program = require('commander');
+
 program
     .version(version)
     .description(' iZ3 blockchain core.')
@@ -124,7 +125,10 @@ const config = {
         allowDebugMessages: false,
         contractInstanceCacheLifetime: 10000,
         ramLimit: 32
-    }
+    },
+
+    //Cryptography
+    hashFunction: 'SHA256',                 //функция вычисления хэша
 
 };
 
@@ -219,7 +223,6 @@ if(program.generateWallets) {
     console.log('Info: Wallets created');
     process.exit();
 }
-
 
 const blockchain = new Blockchain(config);
 blockchain.start();

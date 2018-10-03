@@ -5,8 +5,10 @@
 
 
 const Signable = require('../../blocks/signable');
-const CryptoJS = require("crypto-js");
+//const CryptoJS = require("crypto-js");
 let type = 'EcmaContractDeploy';
+const storj = require('../../instanceStorage');
+const cryptography = storj.get('cryptography');
 
 /**
  * EcmaContract block
@@ -31,7 +33,8 @@ class EcmaContractDeployBlock extends Signable {
         this.type = type;
         this.ecmaCode = ecmaCode;
         this.state = state;
-        this.state.codeHash = CryptoJS.SHA256(this.ecmaCode).toString();
+       // this.state.codeHash = CryptoJS.SHA256(this.ecmaCode).toString();
+        this.state.codeHash = cryptography.hash(this.ecmaCode).toString();
         this.generateData();
     }
 
@@ -39,7 +42,8 @@ class EcmaContractDeployBlock extends Signable {
      * Data hash for sign
      */
     generateData() {
-        this.data = CryptoJS.SHA256(this.type + this.ecmaCode + JSON.stringify(this.state)).toString();
+        //this.data = CryptoJS.SHA256(this.type + this.ecmaCode + JSON.stringify(this.state)).toString();
+        this.data = cryptography.hash(this.type + this.ecmaCode + JSON.stringify(this.state)).toString();
     }
 
 

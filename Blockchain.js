@@ -30,7 +30,7 @@ function Blockchain(config) {
     const fs = require('fs-extra');
 
     //Crypto
-    const CryptoJS = require("crypto-js");
+    //const CryptoJS = require("crypto-js");
 
     //Networking
     const express = require("express");
@@ -49,6 +49,7 @@ function Blockchain(config) {
     const url = require('url');
 
 
+
     //Blockchain
     const Block = require('./modules/block');
     const Signable = require('./modules/blocks/signable');
@@ -63,6 +64,11 @@ function Blockchain(config) {
     const storj = require('./modules/instanceStorage');
     storj.put('app', app);
     storj.put('config', config);
+
+    //Cryptography
+    const Cryptography = require('./modules/cryptography');
+    const cryptography = new Cryptography(config);
+    storj.put('cryptography', cryptography);
 
     //Subsystems
     const blockController = new (require('./modules/blockchain'))();
@@ -784,7 +790,8 @@ function Blockchain(config) {
      * @returns {*|string|a}
      */
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
-        return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
+        //return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
+        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
     }
 
     /**
