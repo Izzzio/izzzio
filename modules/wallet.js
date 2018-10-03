@@ -16,7 +16,7 @@ const Transaction = require("./blocks/transaction");
 const WalletRegister = require("./blocks/walletRegister");
 const moment = require('moment');
 const formatToken = require('./formatToken');
-//const Cryptography = require('./cryptography');
+const Cryptography = require('./cryptography');
 
 const logger = new (require('./logger'))();
 
@@ -32,7 +32,7 @@ const SIGN_TYPE = 'sha256';
 let Wallet = function (walletFile, config) {
 
     let wallet = {};
-    //const cryptography = new Cryptography(config);
+    const cryptography = new Cryptography(config);
 
     wallet.walletFile = walletFile;
 

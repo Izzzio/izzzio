@@ -135,7 +135,6 @@ const config = {
 //*********************************************************************
 const fs = require('fs-extra');
 const Blockchain = require('./Blockchain');
-const Cryptography = require('./modules/cryptography');
 Array.prototype.remove = function (from, to) {
     let rest = this.slice((to || from) + 1 || this.length);
     this.length = from < 0 ? this.length + from : from;
@@ -224,8 +223,6 @@ if(program.generateWallets) {
     console.log('Info: Wallets created');
     process.exit();
 }
-//создаем глобальный объект для криптографии
-global.cryptography = new Cryptography(config);
 
 const blockchain = new Blockchain(config);
 blockchain.start();

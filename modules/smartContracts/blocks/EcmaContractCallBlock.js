@@ -7,6 +7,8 @@
 const Signable = require('../../blocks/signable');
 //const CryptoJS = require("crypto-js");
 let type = 'EcmaContractCallBlock';
+const storj = require('../../instanceStorage');
+const cryptography = new (require('../../cryptography'))(storj.get('config'));
 
 /**
  * EcmaContract block

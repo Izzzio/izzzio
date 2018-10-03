@@ -8,7 +8,7 @@ const CryptoJS = require('crypto-js');
 class Cryptography{
     constructor(config){
         //в любой непонятной ситуации используем SHA256
-        if (typeof config === "undefined"){
+        if (!config){
             this.hashFunction = CryptoJS.SHA256 ;
         } else {
             switch (config.hashFunction) {

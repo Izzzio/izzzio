@@ -48,9 +48,9 @@ function Blockchain(config) {
     const moment = require('moment');
     const url = require('url');
 
-    /*//Cryptography
+    //Cryptography
     const Cryptography = require('./modules/cryptography');
-    const cryptography = new Cryptography(config);*/
+    const cryptography = new Cryptography(config);
 
     //Blockchain
     const Block = require('./modules/block');
