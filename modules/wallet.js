@@ -16,7 +16,7 @@ const Transaction = require("./blocks/transaction");
 const WalletRegister = require("./blocks/walletRegister");
 const moment = require('moment');
 const formatToken = require('./formatToken');
-const storj = require('../../instanceStorage');
+const storj = require('./instanceStorage');
 const cryptography = storj.get('cryptography');
 
 const logger = new (require('./logger'))();
@@ -342,7 +342,7 @@ let Wallet = function (walletFile, config) {
         wallet.log('Info: Wallet balance: ' + formatToken(wallet.balance, config.precision));
         wallet.save();
     };
-    
+
     /**
      * Self validate signing
      * @return {boolean}
