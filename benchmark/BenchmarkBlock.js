@@ -5,7 +5,7 @@
 
 
 const Signable = require('../modules/blocks/signable');
-const CryptoJS = require("crypto-js");
+//const CryptoJS = require("crypto-js");
 let type = 'BenchmarkBlock';
 
 /**
@@ -27,7 +27,8 @@ class BenchmarkBlock extends Signable {
      * Создаёт строку данных для подписи
      */
     generateData() {
-        this.data =  CryptoJS.SHA256(this.type+JSON.stringify(this.blockData)).toString();
+        //this.data =  CryptoJS.SHA256(this.type+JSON.stringify(this.blockData)).toString();
+        this.data =  cryptography.hash(this.type+JSON.stringify(this.blockData)).toString();
     }
 
 
