@@ -76,18 +76,16 @@ class GOST {
      * @param {(ArrayBuffer|TypedArray)} data Data
      * @returns {ArrayBuffer} Digest of data
      */
-    digest2012 = (function ()
-        {
-            this.procreator = ''; //используется для определенных криптопровайдеров
-            this.bitLength = 256;
-            //***********************************************************************
-            // Constants 
-            var buffer0 = new Int32Array(16); // [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];  
+    bitLength = 256; //длина хэша
+    procreator = ''; //используется для определенных криптопровайдеров
+    digest2012 = (() => {
+            // Constants
+            var buffer0 = new Int32Array(16); // [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-            var buffer512 = new Int32Array(16); // [512, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; 
+            var buffer512 = new Int32Array(16); // [512, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             buffer512[0] = 512;
 
-            // Constant C 
+            // Constant C
             var C = (function (s) {
                 var h = new Int32Array(b64decode(s)),
                     r = new Array(12);
@@ -98,7 +96,7 @@ class GOST {
                 'B0Wm8lllgN0jTXTMNnR2BRXTYKQIKkKiAWlnkpHgfEv8xIV1jbhOcRbQRS5DdmovH3xlwIEvy+vp2soe2lsIsbebsSFwBHnmVs3L1xui3VXKpwrbwmG1XFiZ1hJrF7WaMQG1Fg9e1WGYKyMKcur+89e1cA9GneNPGi+dqYq1o2+yCroK9ZYemTHbeoZD9LbCCdtiYDc6ycGxnjWQ5A/i03t7KbEUderyix+cUl9e8QY1hD1qKPw5Cscvzius3HT1LtHjhLy+DCLxN+iToepTNL4DUpMzE7fYddYD7YIs16k/NV5orRxynX08XDN+hY5I3eRxXaDhSPnSZhXos98f71f+bHz9WBdg9WPqqX6iVnoWGicjtwD/36P1OiVHF82/vf8PgNc1njVKEIYWHxwVf2MjqWwMQT+amUdHraxr6ktufWRGekBo+jVPkDZyxXG/tsa+wmYf8gq0t5oct6b6z8aO8Jq0mn8YbKRCUfnEZi3AOTB6O8Okb9nTOh2urk+uk9QUOk1WhojzSjyiTEUXNQQFSiiDaUcGNyyCLcWrkgnJk3oZMz5H08mHv+bHxp45VAkkv/6GrFHsxaruFg7H9B7nAr/UDX+k' +
                 '2ahRWTXCrDYvxKXRK43RaZAGm5LLK4n0msTbTTtEtIke3jaccfi3TkFBbgwCqucDp8mTTUJbH5vbWiODUURhcmAqH8uS3DgOVJwHppqKK3uxzrLbC0QKgIQJDeC3Vdk8JEKJJRs6fTreXxbs2JpMlJsiMRZUWo837ZxFmPvHtHTDtjsV0fqYNvRSdjswbB56SzNprwJn558DYTMbiuH/H9t4iv8c50GJ8/PkskjlKjhSbwWApt6+qxst84HNpMprXdhvwEpZot6Ybkd9Hc2678q5SOrvcR2KeWaEFCGAASBhB6vru2v62JT+WmPNxgIw+4nI79CezXsg1xvxSpK8SJkbstnVF/T6UijhiKqkHeeGzJEYne+AXZufITDUEiD4dx3fvDI8pM16sUkEsIAT0roxFvFn5443');
 
-            // Precalc Ax 
+            // Precalc Ax
             var Ax = (function (s) {
                 return new Int32Array(b64decode(s));
             })(
@@ -142,12 +140,12 @@ class GOST {
             // Variables
             var sigma, N, h;
 
-            // 64bit tools 
+            // 64bit tools
             function get8(x, i) {
                 return (x[i >> 2] >> ((i & 3) << 3)) & 0xff;
             }
 
-            // 512bit tools 
+            // 512bit tools
             function add512(x, y) {
                 var CF = 0, w0, w1;
                 for (var i = 0; i < 16; i++) {
@@ -254,9 +252,9 @@ class GOST {
                 g(h, buffer0, sigma);
             }
 
-            return function (data) {
+            return (data) => {
 
-                // Cleanup 
+                // Cleanup
                 sigma = new512();
                 N = new512();
 
