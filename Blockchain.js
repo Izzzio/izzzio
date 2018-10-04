@@ -28,7 +28,13 @@ function Blockchain(config) {
     const logger = new (require('./modules/logger'))();
     const getid = require('./modules/getid');
     const fs = require('fs-extra');
+    //Instance storage
+    const storj = require('./modules/instanceStorage');
 
+    //Cryptography
+    const Cryptography = require('./modules/cryptography');
+    const cryptography = new Cryptography(config);
+    storj.put('cryptography', cryptography);
     //Crypto
     //const CryptoJS = require("crypto-js");
 
@@ -48,8 +54,6 @@ function Blockchain(config) {
     const moment = require('moment');
     const url = require('url');
 
-
-
     //Blockchain
     const Block = require('./modules/block');
     const Signable = require('./modules/blocks/signable');
@@ -60,15 +64,11 @@ function Blockchain(config) {
     const Frontend = require('./modules/frontend');
     const app = express();
 
-    //Instance storage
-    const storj = require('./modules/instanceStorage');
+
     storj.put('app', app);
     storj.put('config', config);
 
-    //Cryptography
-    const Cryptography = require('./modules/cryptography');
-    const cryptography = new Cryptography(config);
-    storj.put('cryptography', cryptography);
+
 
     //Subsystems
     const blockController = new (require('./modules/blockchain'))();
