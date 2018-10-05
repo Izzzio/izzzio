@@ -9,7 +9,11 @@ class GOST {
         this.procreator = ''; //используется для определенных криптопровайдеров(возможно, понадобится)
     }
 
-    // Check buffer and correct type
+    /**
+     * Check buffer and correct type
+     * @param d
+     * @returns {any}
+     */
     static buffer(d) {
         if (d instanceof ArrayBuffer)
             return d;
@@ -21,13 +25,24 @@ class GOST {
     }
 
 
-    // Copy len values from s[sOfs] to d[dOfs]
+    /**
+     * Copy len values from s[sOfs] to d[dOfs]
+     * @param s
+     * @param sOfs
+     * @param d
+     * @param dOfs
+     * @param len
+     */
     static arraycopy(s, sOfs, d, dOfs, len) {
         for (let i = 0; i < len; i++)
             d[dOfs + i] = s[sOfs + i];
     }
 
-    // Swap bytes in buffer
+    /**
+     * Swap bytes in buffer
+     * @param s
+     * @returns {ArrayBufferLike}
+     */
     static swap(s) {
         let src = new Uint8Array(s),
             dst = new Uint8Array(src.length);
@@ -36,8 +51,12 @@ class GOST {
         return dst.buffer;
     }
 
-    // Convert BASE64 string to Uint8Array
-    // for decompression of constants and precalc values
+    /**
+     * Convert BASE64 string to Uint8Array
+     * for decompression of constants and precalc values
+     * @param s
+     * @returns {ArrayBufferLike}
+     */
     static b64decode(s) {
         // s = s.replace(/[^A-Za-z0-9\+\/]/g, '');
         let n = s.length,
@@ -321,6 +340,7 @@ class GOST {
             else
                 return digest.buffer;
         }
+        //check output variants
         let res = computeHash(dataForHashing); //Buffer
         if (stringOnOutput) {
             switch (stringFormat){
@@ -335,10 +355,7 @@ class GOST {
                     break;
             }
         }
-
         return res;
     };
-
-
-
 }
+module.exports = GOST;

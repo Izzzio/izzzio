@@ -4,6 +4,7 @@
 
 'use strict';
 const CryptoJS = require('crypto-js');
+const GOST = new (require('./gost'))();
 
 class Cryptography{
     constructor(config){
@@ -14,6 +15,13 @@ class Cryptography{
             switch (config.hashFunction) {
                 case 'SHA256':
                     this.hashFunction = CryptoJS.SHA256;
+                    break;
+                case 'STRIBOG':
+                    this.hashFunction = GOST.digest2012;
+                    break;
+                case 'STRIBOG512':
+                    GOST.hashbitLength = 512;
+                    this.hashFunction = GOST.digest2012;
                     break;
                 default:
                     this.hashFunction = CryptoJS.SHA256;
