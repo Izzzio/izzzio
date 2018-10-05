@@ -1,5 +1,6 @@
 /**
  * GOST algs.
+ * get part from http://gostcrypto.com/
  *
  */
 
