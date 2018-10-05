@@ -4,10 +4,6 @@
  */
 
 class GOST {
-    constructor() {
-        this.hashbitLength = 256; //длина хэша
-        this.procreator = ''; //используется для определенных криптопровайдеров(возможно, понадобится)
-    }
 
     /**
      * Check buffer and correct type
@@ -112,20 +108,11 @@ class GOST {
      *      GOST R 34.11-256-12 - 256 bits digest
      *      GOST R 34.11-512-12 - 512 bits digest
      *
-     * @param data  //input data
-     * @param stringOnOutput    //if true, then returns hash as string, else returns ArrayBuffer
-     * @param stringFormat //format of the returning string 'utf8', 'base64', 'hex'(as default)
-     * @returns {*}
+     * @param hashBitLength //length of the hash
+     * @param procreator //connectors with diffwrent providers(maybe will be useful in future)
+     * @returns {Function} link to a function which calculating hash with parameters
      */
-    digest2012(data, stringOnOutput = true, stringFormat = 'hex') {
-
-        let that = this;
-        let dataForHashing;
-        try {
-            dataForHashing = Buffer.from(data);
-        } catch (e) {
-            dataForHashing = Buffer.from(JSON.stringify(data));
-        }
+    digest2012(hashBitLength = 256, procreator = '') {
 
         // Constants
         let buffer0 = new Int32Array(16); // [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -301,7 +288,19 @@ class GOST {
             g(h, buffer0, sigma);
         }
 
-        function computeHash(data) {
+        /*
+        * hash calculating function
+        * @param data  //input data
+        * @param stringOnOutput    //if true, then returns hash as string, else returns ArrayBuffer
+        * @param stringFormat //format of the returning string 'utf8', 'base64', 'hex'(as default)
+         */
+        return (data, stringOnOutput = true, stringFormat = 'hex') => {
+            let dataForHashing;
+            try {
+                dataForHashing = Buffer.from(data);
+            } catch (e) {
+                dataForHashing = Buffer.from(JSON.stringify(data));
+            }
 
             // Cleanup
             sigma = new512();
@@ -310,22 +309,22 @@ class GOST {
             // Initial vector
             h = new512();
             for (let i = 0; i < 16; i++)
-                if (that.hashbitLength === 256)
+                if (hashBitLength === 256)
                     h[i] = 0x01010101;
 
             // Make data
-            let d = new Uint8Array(GOST.buffer(data));
+            let d = new Uint8Array(GOST.buffer(dataForHashing));
 
             let n = d.length;
             let r = n % 64, q = (n - r) / 64;
 
             for (let i = 0; i < q; i++)
-                stage2.call(that, new Uint8Array(d.buffer, i * 64, 64));
+                stage2.call(this, new Uint8Array(d.buffer, i * 64, 64));
 
-            stage3.call(that, new Uint8Array(d.buffer, q * 64, r));
+            stage3.call(this, new Uint8Array(d.buffer, q * 64, r));
 
             let digest;
-            if (that.hashbitLength === 256) {
+            if (hashBitLength === 256) {
                 digest = new Int32Array(8);
                 for (let i = 0; i < 8; i++)
                     digest[i] = h[8 + i];
@@ -334,28 +333,29 @@ class GOST {
                 for (let i = 0; i < 16; i++)
                     digest[i] = h[i];
             }
+            let res;
             // Swap hash for SignalCom
-            if (that.procreator === 'SC' || that.procreator === 'VN')
-                return GOST.swap(digest.buffer);
+            if (procreator === 'SC' || procreator === 'VN')
+                res = GOST.swap(digest.buffer);
             else
-                return digest.buffer;
-        }
-        //check output variants
-        let res = computeHash(dataForHashing); //Buffer
-        if (stringOnOutput) {
-            switch (stringFormat){
-                case 'utf8':
-                    res = Buffer.from(res).toString();
-                    break;
-                case 'base64':
-                    res = Buffer.from(res).toString('base64');
-                    break;
-                default:
-                    res = Buffer.from(res).toString('hex');
-                    break;
+                res = digest.buffer;
+            //check output variants
+            if (stringOnOutput) {
+                switch (stringFormat){
+                    case 'utf8':
+                        res = Buffer.from(res).toString();
+                        break;
+                    case 'base64':
+                        res = Buffer.from(res).toString('base64');
+                        break;
+                    default:
+                        res = Buffer.from(res).toString('hex');
+                        break;
+                }
+            return res;
             }
         }
-        return res;
     };
 }
+
 module.exports = GOST;

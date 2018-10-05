@@ -17,11 +17,10 @@ class Cryptography{
                     this.hashFunction = CryptoJS.SHA256;
                     break;
                 case 'STRIBOG':
-                    this.hashFunction = GOST.digest2012;
+                    this.hashFunction = GOST.digest2012();
                     break;
                 case 'STRIBOG512':
-                    GOST.hashbitLength = 512;
-                    this.hashFunction = GOST.digest2012;
+                    this.hashFunction = GOST.digest2012(512);
                     break;
                 default:
                     this.hashFunction = CryptoJS.SHA256;
