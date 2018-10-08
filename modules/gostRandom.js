@@ -29,7 +29,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * 
  */
-const logger = new (require('./logger'))('GOST_Random');
 module.exports = (function () {
 
     /**
@@ -100,12 +99,12 @@ module.exports = (function () {
     {
 
         if (!array.byteLength){
-            logger.error('Array is not of an integer type (Int8Array, Uint8Array, Int16Array, Uint16Array, Int32Array, or Uint32Array)');
+            throw new Error('Array is not of an integer type (Int8Array, Uint8Array, Int16Array, Uint16Array, Int32Array, or Uint32Array)');
         }
 
         if (array.byteLength > 65536)
         {
-            logger.error('Byte length of array can\'t be greate then 65536')
+            throw new Error('Byte length of array can\'t be greate then 65536')
         }
 
         let u8 = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);

@@ -43,15 +43,11 @@ let gostFunctionsForSign = (function () {
      * http://tools.ietf.org/html/rfc7091
      * http://tools.ietf.org/html/rfc4357
      *
-     */ // <editor-fold defaultstate="collapsed">
+     */
 
     var root = this;
     var rootCrypto = root.crypto || root.msCrypto;
     var CryptoOperationData = root.ArrayBuffer;
-
-    var OperationError = root.OperationError || root.Error,
-        DataError = root.DataError || root.Error,
-        NotSupportedError = root.NotSupportedError || root.Error;
 
     // Predefined named curve collection
     var ECGostParams = {
@@ -177,13 +173,13 @@ let gostFunctionsForSign = (function () {
             q: '0x96120477DF0F3896628E6F4A88D83C93204C210FF262BCCB7DAE450355125259',
             a: '0x3F1817052BAA7598FE3E4F4FC5C5F616E122CFF9EBD89EF81DC7CE8BF56CC64B43586C80F1C4F56DD5718FDD76300BE336784259CA25AADE5A483F64C02A20CF4A10F9C189C433DEFE31D263E6C9764660A731ECCAECB74C8279303731E8CF69205BC73E5A70BDF93E5BB681DAB4EEB9C733CAAB2F673C475E0ECA921D29782E'
         }
-    }; // </editor-fold>
+    };
 
     /*
      * BigInteger arithmetic tools
      * optimized release of http://www-cs-students.stanford.edu/~tjw/jsbn/jsbn.js
      *
-     */ // <editor-fold defaultstate="collapsed">
+     */
 
     // Bits per one element
     var DB = 28, DM = (1 << DB) - 1, DV = 1 << DB,
@@ -514,7 +510,7 @@ let gostFunctionsForSign = (function () {
     function divRemTo(n, m, q, r) {
         var pm = abs(m);
         if (pm.t <= 0)
-            throw new OperationError('Division by zero');
+            throw new Error('Division by zero');
         var pt = abs(n);
         if (pt.t < pm.t) {
             if (q)
@@ -681,13 +677,13 @@ let gostFunctionsForSign = (function () {
     function extend(c, o) {
         for (var i in o)
             c.prototype[i] = o[i];
-    } // </editor-fold>
+    }
 
     /*
      * Classic, Barret, Mongomery reductions, optimized ExpMod algorithms
      * optimized release of http://www-cs-students.stanford.edu/~tjw/jsbn/jsbn2.js
      *
-     */ // <editor-fold defaultstate="collapsed">
+     */
 
     // Classic reduction
     var Classic = function (m) {
@@ -967,7 +963,7 @@ let gostFunctionsForSign = (function () {
             }
         }
         return z.revert(r);
-    } // </editor-fold>
+    }
 
     /*
      * EC Field Elements, Points, Curves
@@ -1447,14 +1443,14 @@ let gostFunctionsForSign = (function () {
             return d.byteOffset === 0 && d.byteLength === d.buffer.byteLength ?
                 d.buffer : new Uint8Array(new Uint8Array(d, d.byteOffset, d.byteLength)).buffer;
         else
-            throw new DataError('CryptoOperationData or CryptoOperationDataView required');
+            throw new Error('CryptoOperationData or CryptoOperationDataView required');
     }
 
     // Check double buffer
     function to2(d) {
         var b = buffer(d);
         if (b.byteLength % 2 > 0)
-            throw new DataError('Buffer length must be even');
+            throw new Error('Buffer length must be even');
         var n = b.byteLength / 2;
         return [atobi(new Uint8Array(b, 0, n)), atobi(new Uint8Array(b, n, n))];
     }
@@ -1476,7 +1472,7 @@ let gostFunctionsForSign = (function () {
             randomSource.getRandomValues(d);
             return d;
         } else
-            throw new NotSupportedError('Random generator not found');
+            throw new Error('Random generator not found');
     } // </editor-fold>
 
     /**
@@ -1645,9 +1641,6 @@ let gostFunctionsForSign = (function () {
                 // Calculate public key
                 Q = mulEC(this.P, d);
                 var x = getX(Q), y = getY(Q);
-                // console.log('d', bitoh(d));
-                // console.log('x', bitoh(x));
-                // console.log('y', bitoh(y));
             }
 
             // Return result
@@ -1657,7 +1650,7 @@ let gostFunctionsForSign = (function () {
             };
 
         } else
-            throw new NotSupportedError('Key generation for GOST R 34.10-94 not supported');
+            throw new Error('Key generation for GOST R 34.10-94 not supported');
     } // </editor-fold>
 
     /**
@@ -1682,7 +1675,7 @@ let gostFunctionsForSign = (function () {
             // Return result
             return bitoa(d, this.bitLength);
         } else
-            throw new NotSupportedError('Key generation for GOST R 34.10-94 not supported');
+            throw new Error('Key generation for GOST R 34.10-94 not supported');
     } // </editor-fold>
 
     /**
@@ -1707,7 +1700,7 @@ let gostFunctionsForSign = (function () {
             var z = this.procreator === 'VN' ? mod(mul(x, y), q) : mod(mul(x, invMod(y, q)), q);
             return bitoa(z);
         } else
-            throw new NotSupportedError('Key wrapping GOST R 34.10-94 not supported');
+            throw new Error('Key wrapping GOST R 34.10-94 not supported');
     } // </editor-fold>
 
     /**
@@ -1732,7 +1725,7 @@ let gostFunctionsForSign = (function () {
             var z = this.procreator === 'VN' ? mod(mul(x, invMod(y, q)), q) : mod(mul(x, y), q);
             return bitoa(z);
         } else
-            throw new NotSupportedError('Key wrapping GOST R 34.10-94 not supported');
+            throw new Error('Key wrapping GOST R 34.10-94 not supported');
     } // </editor-fold>
 
     /**
@@ -1793,7 +1786,7 @@ let gostFunctionsForSign = (function () {
     function deriveBits(baseKey, length) // <editor-fold defaultstate="collapsed">
     {
         if (length < 8 || length > this.bitLength || length % 8 > 0)
-            throw new DataError('Length must be no more than ' + this.bitLength + ' bits and multiple of 8');
+            throw new Error('Length must be no more than ' + this.bitLength + ' bits and multiple of 8');
         var n = length / 8,
             b = derive.call(this, baseKey),
             r = new Uint8Array(n);
@@ -1971,7 +1964,7 @@ let gostFunctionsForSign = (function () {
             else if (keyLen > 254 && keyLen <= 256)
                 keyLen = 256;
             else
-                throw new NotSupportedError('Support keys only 256 or 512 bits length');
+                throw new Error('Support keys only 256 or 512 bits length');
             hashLen = keyLen;
         } else {
             keyLen = algorithm.modulusLength || bitLength(this.p);
@@ -1980,7 +1973,7 @@ let gostFunctionsForSign = (function () {
             else if (keyLen > 508 && keyLen <= 512)
                 keyLen = 512;
             else
-                throw new NotSupportedError('Support keys only 512 or 1024 bits length');
+                throw new Error('Support keys only 512 or 1024 bits length');
             hashLen = 256;
         }
         this.bitLength = hashLen;
@@ -2007,7 +2000,7 @@ let gostFunctionsForSign = (function () {
             if (!GostDigest)
                 GostDigest = root.GostDigest;
             if (!GostDigest)
-                throw new NotSupportedError('Object GostDigest not found');
+                throw new Error('Object GostDigest not found');
 
             this.hash = new GostDigest(hash);
         }
