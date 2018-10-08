@@ -45,12 +45,12 @@ let gostFunctionsForSign = (function () {
      *
      */
 
-    var root = this;
-    var rootCrypto = root.crypto || root.msCrypto;
-    var CryptoOperationData = root.ArrayBuffer;
+    let root = this;
+    let rootCrypto = root.crypto || root.msCrypto;
+    let CryptoOperationData = root.ArrayBuffer;
 
     // Predefined named curve collection
-    var ECGostParams = {
+    let ECGostParams = {
         'S-256-TEST': {
             a: 7,
             b: '0x5FBFF498AA938CE739B8E022FBAFEF40563F6E6A3472FC2A514C0CE9DAE23B7E',
@@ -124,7 +124,7 @@ let gostFunctionsForSign = (function () {
     ECGostParams['T-256-C'] = ECGostParams['S-256-C'];
 
 
-    var GostParams = {
+    let GostParams = {
         'S-TEST': {
             modulusLength: 512, // bit length of p (512 or 1024 bits)
             p: '0xEE8172AE8996608FB69359B89EB82A69854510E2977A4D63BC97322CE5DC3386EA0A12B343E9190F23177539845839786BB0C345D165976EF2195EC9B1C379E3',
@@ -182,15 +182,15 @@ let gostFunctionsForSign = (function () {
      */
 
     // Bits per one element
-    var DB = 28, DM = (1 << DB) - 1, DV = 1 << DB,
+    let DB = 28, DM = (1 << DB) - 1, DV = 1 << DB,
         FV = Math.pow(2, 52), F1 = 52 - DB, F2 = 2 * DB - 52;
 
     function am(y, i, x, w, j, c, n) {
-        var xl = x & 0x3fff, xh = x >> 14;
+        let xl = x & 0x3fff, xh = x >> 14;
         while (--n >= 0) {
-            var l = y[i] & 0x3fff;
-            var h = y[i++] >> 14;
-            var m = xh * l + h * xl;
+            let l = y[i] & 0x3fff;
+            let h = y[i++] >> 14;
+            let m = xh * l + h * xl;
             l = xl * l + ((m & 0x3fff) << 14) + w[j] + c;
             c = (l >> 28) + (m >> 14) + xh * h;
             w[j++] = l & 0xfffffff;
@@ -199,14 +199,14 @@ let gostFunctionsForSign = (function () {
     }
 
     function nbi(words) {
-        var r = new Array(Math.ceil(words));
+        let r = new Array(Math.ceil(words));
         r.s = 0;
         r.t = 0;
         return r;
     }
 
     function copyTo(x, r) {
-        for (var i = x.t - 1; i >= 0; --i)
+        for (let i = x.t - 1; i >= 0; --i)
             r[i] = x[i];
         r.t = x.t;
         r.s = x.s;
@@ -230,22 +230,22 @@ let gostFunctionsForSign = (function () {
     }
 
     function nbv(i) {
-        var r = nbi(1);
+        let r = nbi(1);
         setInt(r, i);
         return r;
     }
 
-    var ZERO = nbv(0), ONE = nbv(1), THREE = nbv(3);
+    let ZERO = nbv(0), ONE = nbv(1), THREE = nbv(3);
 
     function clamp(x) {
-        var c = x.s & DM;
+        let c = x.s & DM;
         while (x.t > 0 && x[x.t - 1] === c)
             --x.t;
         return x;
     }
 
     function subTo(x, a, r) {
-        var i = 0, c = 0, m = Math.min(a.t, x.t);
+        let i = 0, c = 0, m = Math.min(a.t, x.t);
         while (i < m) {
             c += x[i] - a[i];
             r[i++] = c & DM;
@@ -283,7 +283,7 @@ let gostFunctionsForSign = (function () {
     }
 
     function addTo(x, a, r) {
-        var i = 0, c = 0, m = Math.min(a.t, x.t);
+        let i = 0, c = 0, m = Math.min(a.t, x.t);
         while (i < m) {
             c += x[i] + a[i];
             r[i++] = c & DM;
@@ -337,10 +337,10 @@ let gostFunctionsForSign = (function () {
     }
 
     function compare(x, a) {
-        var r = x.s - a.s;
+        let r = x.s - a.s;
         if (r !== 0)
             return r;
-        var i = x.t;
+        let i = x.t;
         r = i - a.t;
         if (r !== 0)
             return (x.s < 0) ? -r : r;
@@ -363,7 +363,7 @@ let gostFunctionsForSign = (function () {
     }
 
     function nbits(x) {
-        var r = 1, t;
+        let r = 1, t;
         if ((t = x >>> 16) !== 0) {
             x = t;
             r += 16;
@@ -388,7 +388,7 @@ let gostFunctionsForSign = (function () {
     }
 
     function dshlTo(x, n, r) {
-        var i;
+        let i;
         for (i = x.t - 1; i >= 0; --i)
             r[i + n] = x[i];
         for (i = n - 1; i >= 0; --i)
@@ -398,7 +398,7 @@ let gostFunctionsForSign = (function () {
         return r;
     }
     function dshrTo(x, n, r) {
-        for (var i = n; i < x.t; ++i)
+        for (let i = n; i < x.t; ++i)
             r[i - n] = x[i];
         r.t = Math.max(x.t - n, 0);
         r.s = x.s;
@@ -406,10 +406,10 @@ let gostFunctionsForSign = (function () {
     }
 
     function shlTo(x, n, r) {
-        var bs = n % DB;
-        var cbs = DB - bs;
-        var bm = (1 << cbs) - 1;
-        var ds = Math.floor(n / DB), c = (x.s << bs) & DM, i;
+        let bs = n % DB;
+        let cbs = DB - bs;
+        let bm = (1 << cbs) - 1;
+        let ds = Math.floor(n / DB), c = (x.s << bs) & DM, i;
         for (i = x.t - 1; i >= 0; --i) {
             r[i + ds + 1] = (x[i] >> cbs) | c;
             c = (x[i] & bm) << bs;
@@ -424,16 +424,16 @@ let gostFunctionsForSign = (function () {
 
     function shrTo(x, n, r) {
         r.s = x.s;
-        var ds = Math.floor(n / DB);
+        let ds = Math.floor(n / DB);
         if (ds >= x.t) {
             r.t = 0;
             return;
         }
-        var bs = n % DB;
-        var cbs = DB - bs;
-        var bm = (1 << bs) - 1;
+        let bs = n % DB;
+        let cbs = DB - bs;
+        let bm = (1 << bs) - 1;
         r[0] = x[ds] >> bs;
-        for (var i = ds + 1; i < x.t; ++i) {
+        for (let i = ds + 1; i < x.t; ++i) {
             r[i - ds - 1] |= (x[i] & bm) << cbs;
             r[i - ds] = x[i] >> bs;
         }
@@ -444,7 +444,7 @@ let gostFunctionsForSign = (function () {
     }
 
     function shl(x, n) {
-        var r = nbi(x.t);
+        let r = nbi(x.t);
         if (n < 0)
             shrTo(x, -n, r);
         else
@@ -453,7 +453,7 @@ let gostFunctionsForSign = (function () {
     }
 
     function shr(x, n) {
-        var r = nbi(x.t);
+        let r = nbi(x.t);
         if (n < 0)
             shlTo(x, -n, r);
         else
@@ -468,8 +468,8 @@ let gostFunctionsForSign = (function () {
     }
 
     function mulTo(b, a, r) {
-        var x = abs(b), y = abs(a);
-        var i = x.t;
+        let x = abs(b), y = abs(a);
+        let i = x.t;
         r.t = i + y.t;
         while (--i >= 0)
             r[i] = 0;
@@ -486,12 +486,12 @@ let gostFunctionsForSign = (function () {
     }
 
     function sqrTo(a, r) {
-        var x = abs(a);
-        var i = r.t = 2 * x.t;
+        let x = abs(a);
+        let i = r.t = 2 * x.t;
         while (--i >= 0)
             r[i] = 0;
         for (i = 0; i < x.t - 1; ++i) {
-            var c = am(x, i, x[i], r, 2 * i, 0, 1);
+            let c = am(x, i, x[i], r, 2 * i, 0, 1);
             if ((r[i + x.t] += am(x, i + 1, 2 * x[i], r, 2 * i + 1, c, x.t - i - 1)) >= x.DV) {
                 r[i + x.t] -= x.DV;
                 r[i + x.t + 1] = 1;
@@ -508,10 +508,10 @@ let gostFunctionsForSign = (function () {
     }
 
     function divRemTo(n, m, q, r) {
-        var pm = abs(m);
+        let pm = abs(m);
         if (pm.t <= 0)
             throw new Error('Division by zero');
-        var pt = abs(n);
+        let pt = abs(n);
         if (pt.t < pm.t) {
             if (q)
                 setInt(q, 0);
@@ -521,8 +521,8 @@ let gostFunctionsForSign = (function () {
         }
         if (!r)
             r = nbi(m.t);
-        var y = nbi(m.t), ts = n.s, ms = m.s;
-        var nsh = DB - nbits(pm[pm.t - 1]);
+        let y = nbi(m.t), ts = n.s, ms = m.s;
+        let nsh = DB - nbits(pm[pm.t - 1]);
         if (nsh > 0) {
             shlTo(pm, nsh, y);
             shlTo(pt, nsh, r);
@@ -531,13 +531,13 @@ let gostFunctionsForSign = (function () {
             copyTo(pm, y);
             copyTo(pt, r);
         }
-        var ys = y.t;
-        var y0 = y[ys - 1];
+        let ys = y.t;
+        let y0 = y[ys - 1];
         if (y0 === 0)
             return q;
-        var yt = y0 * (1 << F1) + ((ys > 1) ? y[ys - 2] >> F2 : 0);
-        var d1 = FV / yt, d2 = (1 << F1) / yt, e = 1 << F2;
-        var i = r.t, j = i - ys, t = !q ? nbi(Math.max(n.t - m.t, 1)) : q;
+        let yt = y0 * (1 << F1) + ((ys > 1) ? y[ys - 2] >> F2 : 0);
+        let d1 = FV / yt, d2 = (1 << F1) / yt, e = 1 << F2;
+        let i = r.t, j = i - ys, t = !q ? nbi(Math.max(n.t - m.t, 1)) : q;
         dshlTo(y, j, t);
         if (compare(r, t) >= 0) {
             r[r.t++] = 1;
@@ -548,7 +548,7 @@ let gostFunctionsForSign = (function () {
         while (y.t < ys)
             y[y.t++] = 0;
         while (--j >= 0) {
-            var qd = (r[--i] === y0) ? DM : Math.floor(r[i] * d1 + (r[i - 1] + e) * d2);
+            let qd = (r[--i] === y0) ? DM : Math.floor(r[i] * d1 + (r[i - 1] + e) * d2);
             if ((r[i] += am(y, 0, qd, r, j, 0, ys)) < qd) {
                 dshlTo(y, j, t);
                 subTo(r, t, r);
@@ -604,11 +604,11 @@ let gostFunctionsForSign = (function () {
     }
 
     function invMod(x, m) {
-        var ac = isEven(m);
+        let ac = isEven(m);
         if ((isEven(x) && ac) || sig(m) === 0)
             return ZERO;
-        var u = copy(m), v = copy(x);
-        var a = nbv(1), b = nbv(0), c = nbv(0), d = nbv(1);
+        let u = copy(m), v = copy(x);
+        let a = nbv(1), b = nbv(0), c = nbv(0), d = nbv(1);
         while (sig(u) !== 0) {
             while (isEven(u)) {
                 shrTo(u, 1, u);
@@ -664,7 +664,7 @@ let gostFunctionsForSign = (function () {
     }
 
     function testBit(x, n) {
-        var j = Math.floor(n / DB);
+        let j = Math.floor(n / DB);
         if (j >= x.t)
             return (x.s !== 0);
         return ((x[j] & (1 << (n % DB))) !== 0);
@@ -675,7 +675,7 @@ let gostFunctionsForSign = (function () {
     }
 
     function extend(c, o) {
-        for (var i in o)
+        for (let i in o)
             c.prototype[i] = o[i];
     }
 
@@ -686,7 +686,7 @@ let gostFunctionsForSign = (function () {
      */
 
     // Classic reduction
-    var Classic = function (m) {
+    let Classic = function (m) {
         this.m = m;
     };
 
@@ -714,10 +714,10 @@ let gostFunctionsForSign = (function () {
     function invDig(a) {
         if (a.t < 1)
             return 0;
-        var x = a[0];
+        let x = a[0];
         if ((x & 1) === 0)
             return 0;
-        var y = x & 3;
+        let y = x & 3;
         y = (y * (2 - (x & 0xf) * y)) & 0xf;
         y = (y * (2 - (x & 0xff) * y)) & 0xff;
         y = (y * (2 - (((x & 0xffff) * y) & 0xffff))) & 0xffff;
@@ -726,7 +726,7 @@ let gostFunctionsForSign = (function () {
     }
 
     // Montgomery reduction
-    var Montgomery = function (m) {
+    let Montgomery = function (m) {
         this.m = m;
         this.mp = invDig(m);
         this.mpl = this.mp & 0x7fff;
@@ -738,7 +738,7 @@ let gostFunctionsForSign = (function () {
     extend(Montgomery, {
         // xR mod m
         convert: function (x) {
-            var r = nbi(x.t);
+            let r = nbi(x.t);
             dshlTo(abs(x), this.m.t, r);
             divRemTo(r, this.m, null, r);
             if (x.s < 0 && compare(r, ZERO) > 0)
@@ -747,7 +747,7 @@ let gostFunctionsForSign = (function () {
         },
         // x/R mod m
         revert: function (x) {
-            var r = nbi(x.t);
+            let r = nbi(x.t);
             copyTo(x, r);
             this.reduce(r);
             return r;
@@ -756,9 +756,9 @@ let gostFunctionsForSign = (function () {
         reduce: function (x) {
             while (x.t <= this.mt2)
                 x[x.t++] = 0;
-            for (var i = 0; i < this.m.t; ++i) {
-                var j = x[i] & 0x7fff;
-                var u0 = (j * this.mpl + (((j * this.mph + (x[i] >> 15) * this.mpl) & this.um) << 15)) & DM;
+            for (let i = 0; i < this.m.t; ++i) {
+                let j = x[i] & 0x7fff;
+                let u0 = (j * this.mpl + (((j * this.mph + (x[i] >> 15) * this.mpl) & this.um) << 15)) & DM;
                 j = i + this.m.t;
                 x[j] += am(this.m, 0, u0, x, i, 0, this.m.t);
                 while (x[j] >= DV) {
@@ -798,12 +798,12 @@ let gostFunctionsForSign = (function () {
     }
 
     function mulLowerTo(x, a, n, r) {
-        var i = Math.min(x.t + a.t, n);
+        let i = Math.min(x.t + a.t, n);
         r.s = 0; // assumes a,x >= 0
         r.t = i;
         while (i > 0)
             r[--i] = 0;
-        var j;
+        let j;
         for (j = r.t - x.t; i < j; ++i)
             r[i + x.t] = am(x, 0, a[i], r, i, 0, x.t);
         for (j = Math.min(a.t, n); i < j; ++i)
@@ -813,7 +813,7 @@ let gostFunctionsForSign = (function () {
 
     function mulUpperTo(x, a, n, r) {
         --n;
-        var i = r.t = x.t + a.t - n;
+        let i = r.t = x.t + a.t - n;
         r.s = 0; // assumes a,x >= 0
         while (--i >= 0)
             r[i] = 0;
@@ -840,7 +840,7 @@ let gostFunctionsForSign = (function () {
             else if (compare(x, this.m) < 0)
                 return x;
             else {
-                var r = nbi(x.t);
+                let r = nbi(x.t);
                 copyTo(x, r);
                 this.reduce(r);
                 return r;
@@ -879,7 +879,7 @@ let gostFunctionsForSign = (function () {
 
     // x^e % m (HAC 14.85)
     function expMod(x, e, m) {
-        var i = bitLength(e), k, r = nbv(1), z;
+        let i = bitLength(e), k, r = nbv(1), z;
         if (i <= 0)
             return r;
         else if (i < 18)
@@ -900,10 +900,10 @@ let gostFunctionsForSign = (function () {
             z = new Montgomery(m);
 
         // precomputation
-        var g = new Array(), n = 3, k1 = k - 1, km = (1 << k) - 1;
+        let g = new Array(), n = 3, k1 = k - 1, km = (1 << k) - 1;
         g[1] = z.convert(x);
         if (k > 1) {
-            var g2 = nbi(m.t * 2);
+            let g2 = nbi(m.t * 2);
             z.sqrTo(g[1], g2);
             while (n <= km) {
                 g[n] = nbi(m.t * 2);
@@ -912,7 +912,7 @@ let gostFunctionsForSign = (function () {
             }
         }
 
-        var j = e.t - 1, w, is1 = true, r2 = nbi(m.t * 2), t;
+        let j = e.t - 1, w, is1 = true, r2 = nbi(m.t * 2), t;
         i = nbits(e[j]) - 1;
         while (j >= 0) {
             if (i >= k1)
@@ -990,14 +990,14 @@ let gostFunctionsForSign = (function () {
     }
 
     function addFE(a, b) {
-        var r = add(a, b);
+        let r = add(a, b);
         if (compare(r, a.q) > 0)
             subTo(r, a.q, r);
         return copyFE(a, r);
     }
 
     function subFE(a, b) {
-        var r = sub(a, b);
+        let r = sub(a, b);
         if (r.s < 0)
             addTo(a.q, r, r);
         return copyFE(a, r);
@@ -1058,7 +1058,7 @@ let gostFunctionsForSign = (function () {
             return isInfinity(b);
         if (isInfinity(b))
             return isInfinity(a);
-        var u, v;
+        let u, v;
         // u = Y2 * Z1 - Y1 * Z2
         u = subFE(mulFE(b.y, a.z), mulFE(a.y, b.z));
         if (!isZero(u))
@@ -1079,9 +1079,9 @@ let gostFunctionsForSign = (function () {
             return a;
 
         // u = Y2 * Z1 - Y1 * Z2
-        var u = subFE(mulFE(b.y, a.z), mulFE(a.y, b.z));
+        let u = subFE(mulFE(b.y, a.z), mulFE(a.y, b.z));
         // v = X2 * Z1 - X1 * Z2
-        var v = subFE(mulFE(b.x, a.z), mulFE(a.x, b.z));
+        let v = subFE(mulFE(b.x, a.z), mulFE(a.x, b.z));
 
         if (isZero(v)) {
             if (isZero(u)) {
@@ -1090,20 +1090,20 @@ let gostFunctionsForSign = (function () {
             return getInfinity(a); // a = -b, so infinity
         }
 
-        var x1 = a.x;
-        var y1 = a.y;
+        let x1 = a.x;
+        let y1 = a.y;
 
-        var v2 = sqrFE(v);
-        var v3 = mulFE(v2, v);
-        var x1v2 = mulFE(x1, v2);
-        var zu2 = mulFE(sqrFE(u), a.z);
+        let v2 = sqrFE(v);
+        let v3 = mulFE(v2, v);
+        let x1v2 = mulFE(x1, v2);
+        let zu2 = mulFE(sqrFE(u), a.z);
 
         // x3 = v * (z2 * (z1 * u^2 - 2 * x1 * v^2) - v^3)
-        var x3 = mulFE(subFE(mulFE(subFE(zu2, shlFE(x1v2, 1)), b.z), v3), v);
+        let x3 = mulFE(subFE(mulFE(subFE(zu2, shlFE(x1v2, 1)), b.z), v3), v);
         // y3 = z2 * (3 * x1 * u * v^2 - y1 * v^3 - z1 * u^3) + u * v^3
-        var y3 = addFE(mulFE(subFE(subFE(mulFE(mulFE(x1v2, THREE), u), mulFE(y1, v3)), mulFE(zu2, u)), b.z), mulFE(u, v3));
+        let y3 = addFE(mulFE(subFE(subFE(mulFE(mulFE(x1v2, THREE), u), mulFE(y1, v3)), mulFE(zu2, u)), b.z), mulFE(u, v3));
         // z3 = v^3 * z1 * z2
-        var z3 = mulFE(mulFE(v3, a.z), b.z);
+        let z3 = mulFE(mulFE(v3, a.z), b.z);
 
         return newEC(a.curve, x3, y3, z3);
     }
@@ -1114,25 +1114,25 @@ let gostFunctionsForSign = (function () {
         if (sig(b.y) === 0)
             return getInfinity(b);
 
-        var x1 = b.x;
-        var y1 = b.y;
+        let x1 = b.x;
+        let y1 = b.y;
 
-        var y1z1 = mulFE(y1, b.z);
-        var y1sqz1 = mulFE(y1z1, y1);
-        var a = b.curve.a;
+        let y1z1 = mulFE(y1, b.z);
+        let y1sqz1 = mulFE(y1z1, y1);
+        let a = b.curve.a;
 
         // w = 3 * x1^2 + a * z1^2
-        var w = mulFE(sqrFE(x1), THREE);
+        let w = mulFE(sqrFE(x1), THREE);
         if (!isZero(a)) {
             w = addFE(w, mulFE(sqrFE(b.z), a));
         }
 
         // x3 = 2 * y1 * z1 * (w^2 - 8 * x1 * y1^2 * z1)
-        var x3 = mulFE(shlFE(subFE(sqrFE(w), mulFE(shlFE(x1, 3), y1sqz1)), 1), y1z1);
+        let x3 = mulFE(shlFE(subFE(sqrFE(w), mulFE(shlFE(x1, 3), y1sqz1)), 1), y1z1);
         // y3 = 4 * y1^2 * z1 * (3 * w * x1 - 2 * y1^2 * z1) - w^3
-        var y3 = subFE(mulFE(shlFE(subFE(mulFE(mulFE(w, THREE), x1), shlFE(y1sqz1, 1)), 2), y1sqz1), mulFE(sqrFE(w), w));
+        let y3 = subFE(mulFE(shlFE(subFE(mulFE(mulFE(w, THREE), x1), shlFE(y1sqz1, 1)), 2), y1sqz1), mulFE(sqrFE(w), w));
         // z3 = 8 * (y1 * z1)^3
-        var z3 = shlFE(mulFE(sqrFE(y1z1), y1z1), 3);
+        let z3 = shlFE(mulFE(sqrFE(y1z1), y1z1), 3);
 
         return newEC(b.curve, x3, y3, z3);
     }
@@ -1144,18 +1144,18 @@ let gostFunctionsForSign = (function () {
         if (sig(k) === 0)
             return getInfinity(a);
 
-        var e = k;
-        var h = mul(e, THREE);
+        let e = k;
+        let h = mul(e, THREE);
 
-        var neg = negEC(a);
-        var R = a;
+        let neg = negEC(a);
+        let R = a;
 
-        var i;
+        let i;
         for (i = bitLength(h) - 2; i > 0; --i) {
             R = twiceEC(R);
 
-            var hBit = testBit(h, i);
-            var eBit = testBit(e, i);
+            let hBit = testBit(h, i);
+            let eBit = testBit(e, i);
 
             if (hBit !== eBit) {
                 R = addEC(R, hBit ? a : neg);
@@ -1166,11 +1166,11 @@ let gostFunctionsForSign = (function () {
     }
 
     function mul2AndAddEC(a, k) {
-        var nbits = bitLength(k);
-        var R = a,
+        let nbits = bitLength(k);
+        let R = a,
             Q = getInfinity(a);
 
-        for (var i = 0; i < nbits - 1; i++) {
+        for (let i = 0; i < nbits - 1; i++) {
             if (testBit(k, i) === 1)
                 Q = addEC(Q, R);
 
@@ -1185,14 +1185,14 @@ let gostFunctionsForSign = (function () {
 
     // Compute a*j + x*k (simultaneous multiplication)
     function mulTwoEC(a, j, x, k) {
-        var i;
+        let i;
         if (bitLength(j) > bitLength(k))
             i = bitLength(j) - 1;
         else
             i = bitLength(k) - 1;
 
-        var R = getInfinity(a);
-        var both = addEC(a, x);
+        let R = getInfinity(a);
+        let both = addEC(a, x);
         while (i >= 0) {
             R = twiceEC(R);
             if (testBit(j, i)) {
@@ -1216,7 +1216,7 @@ let gostFunctionsForSign = (function () {
 
     // EC Curve
     function newCurve(q, a, b) {
-        var curve = {};
+        let curve = {};
         curve.q = q;
         curve.r = new Barrett(q);
         curve.a = newFE(curve, a);
@@ -1231,14 +1231,14 @@ let gostFunctionsForSign = (function () {
      */ // <editor-fold defaultstate="collapsed">
 
     function atobi(d) {
-        var k = 8;
-        var a = new Uint8Array(d);
-        var r = nbi(a.length * 8 / DB);
+        let k = 8;
+        let a = new Uint8Array(d);
+        let r = nbi(a.length * 8 / DB);
         r.t = 0;
         r.s = 0;
-        var sh = 0;
-        for (var i = 0, n = a.length; i < n; i++) {
-            var x = a[i];
+        let sh = 0;
+        for (let i = 0, n = a.length; i < n; i++) {
+            let x = a[i];
             if (sh === 0)
                 r[r.t++] = x;
             else if (sh + k > DB) {
@@ -1255,9 +1255,9 @@ let gostFunctionsForSign = (function () {
     }
 
     function bitoa(s, bitLength) {
-        var k = 8;
-        var km = (1 << k) - 1, d, m = false, r = [], i = s.t;
-        var p = DB - (i * DB) % k;
+        let k = 8;
+        let km = (1 << k) - 1, d, m = false, r = [], i = s.t;
+        let p = DB - (i * DB) % k;
         if (i-- > 0) {
             if (p < DB && (d = s[i] >> p) > 0) {
                 m = true;
@@ -1281,7 +1281,7 @@ let gostFunctionsForSign = (function () {
                     r.push(d);
             }
         }
-        var r8 = new Uint8Array(bitLength ? bitLength / 8 : r.length);
+        let r8 = new Uint8Array(bitLength ? bitLength / 8 : r.length);
         if (m)
             r8.set(r.reverse());
         return r8.buffer;
@@ -1294,16 +1294,16 @@ let gostFunctionsForSign = (function () {
         s = s.replace(/[^\-A-Fa-f0-9]/g, '');
         if (!s)
             s = '0';
-        var k = 4;
-        var r = nbi(s.length / 7);
-        var i = s.length, mi = false, sh = 0;
+        let k = 4;
+        let r = nbi(s.length / 7);
+        let i = s.length, mi = false, sh = 0;
         while (--i >= 0) {
-            var c = s.charAt(i);
+            let c = s.charAt(i);
             if (c === '-') {
                 mi = true;
                 continue;
             }
-            var x = parseInt(s.charAt(i), 16);
+            let x = parseInt(s.charAt(i), 16);
             mi = false;
             if (sh === 0)
                 r[r.t++] = x;
@@ -1325,9 +1325,9 @@ let gostFunctionsForSign = (function () {
     function bitoh(x) {
         if (x.s < 0)
             return "-" + bitoh(negTo(x, nbi(x.t)));
-        var k = 4;
-        var km = (1 << k) - 1, d, m = false, r = "", i = x.t;
-        var p = DB - (i * DB) % k;
+        let k = 4;
+        let km = (1 << k) - 1, d, m = false, r = "", i = x.t;
+        let p = DB - (i * DB) % k;
         if (i-- > 0) {
             if (p < DB && (d = x[i] >> p) > 0) {
                 m = true;
@@ -1356,9 +1356,9 @@ let gostFunctionsForSign = (function () {
 
     // biginteger to big-endian integer bytearray
     function bitoi(s) {
-        var i = s.t, r = [];
+        let i = s.t, r = [];
         r[0] = s.s;
-        var p = DB - (i * DB) % 8, d, k = 0;
+        let p = DB - (i * DB) % 8, d, k = 0;
         if (i-- > 0) {
             if (p < DB && (d = s[i] >> p) !== (s.s & DM) >> p)
                 r[k++] = d | (s.s << (DB - p));
@@ -1387,13 +1387,13 @@ let gostFunctionsForSign = (function () {
 
     // big-endian integer bytearray to biginteger
     function itobi(d) {
-        var k = 8, s = new Uint8Array(d),
+        let k = 8, s = new Uint8Array(d),
             r = nbi(s.length / 7);
         r.t = 0;
         r.s = 0;
-        var i = s.length, sh = 0;
+        let i = s.length, sh = 0;
         while (--i >= 0) {
-            var x = s[i] & 0xff;
+            let x = s[i] & 0xff;
             if (sh === 0)
                 r[r.t++] = x;
             else if (sh + k > DB) {
@@ -1417,9 +1417,9 @@ let gostFunctionsForSign = (function () {
 
     // Swap bytes in buffer
     function swap(s) {
-        var src = new Uint8Array(s),
+        let src = new Uint8Array(s),
             dst = new Uint8Array(src.length);
-        for (var i = 0, n = src.length; i < n; i++)
+        for (let i = 0, n = src.length; i < n; i++)
             dst[n - i - 1] = src[i];
         return dst.buffer;
     }
@@ -1448,15 +1448,15 @@ let gostFunctionsForSign = (function () {
 
     // Check double buffer
     function to2(d) {
-        var b = buffer(d);
+        let b = buffer(d);
         if (b.byteLength % 2 > 0)
             throw new Error('Buffer length must be even');
-        var n = b.byteLength / 2;
+        let n = b.byteLength / 2;
         return [atobi(new Uint8Array(b, 0, n)), atobi(new Uint8Array(b, n, n))];
     }
 
     function from2(x, y, bitLength) {
-        var a = bitoa(x, bitLength),
+        let a = bitoa(x, bitLength),
             b = bitoa(y, bitLength),
             d = new Uint8Array(a.byteLength + b.byteLength);
         d.set(new Uint8Array(a));
@@ -1466,9 +1466,9 @@ let gostFunctionsForSign = (function () {
 
     function getSeed(length) {
         let GostRandom = require('./gostRandom');
-        var randomSource = GostRandom ? new (GostRandom || root.GostRandom) : rootCrypto;
+        let randomSource = GostRandom ? new (GostRandom || root.GostRandom) : rootCrypto;
         if (randomSource.getRandomValues) {
-            var d = new Uint8Array(Math.ceil(length / 8));
+            let d = new Uint8Array(Math.ceil(length / 8));
             randomSource.getRandomValues(d);
             return d;
         } else
@@ -1491,34 +1491,34 @@ let gostFunctionsForSign = (function () {
     {
 
         // Stage 1
-        var b = buffer(data);
-        var alpha = atobi(hash.call(this, b));
+        let b = buffer(data);
+        let alpha = atobi(hash.call(this, b));
 
-        var q = this.q;
-        var x = mod(atobi(buffer(privateKey)), q);
+        let q = this.q;
+        let x = mod(atobi(buffer(privateKey)), q);
 
         // Stage 2
-        var e = mod(alpha, q);
+        let e = mod(alpha, q);
         if (isZero(e))
             e = ONE;
 
-        var s = ZERO;
+        let s = ZERO;
         while (isZero(s)) {
-            var r = ZERO;
+            let r = ZERO;
             while (isZero(r)) {
 
                 // Stage 3
-                var k = mod(atobi(this.ukm ||
+                let k = mod(atobi(this.ukm ||
                     getSeed(this.bitLength)), q); // pseudo random 0 < k < q
                 // Stage 4
                 if (this.curve) {
                     // Gost R 34.10-2001 || Gost R 34.10-2012
-                    var P = this.P;
-                    var C = mulEC(P, k);
+                    let P = this.P;
+                    let C = mulEC(P, k);
                     r = mod(getX(C), q);
                 } else {
                     // Gost R 34.10-94
-                    var p = this.p, a = this.a;
+                    let p = this.p, a = this.a;
                     r = mod(expMod(a, k, p), q);
                 }
             }
@@ -1528,7 +1528,7 @@ let gostFunctionsForSign = (function () {
         // Stage 6
         // console.log('s', bitoh(s));
         // console.log('r', bitoh(r));
-        var zetta;
+        let zetta;
         // Integer structure for SignalCom algorithm
         if (this.procreator === 'SC') {
             zetta = {
@@ -1561,8 +1561,8 @@ let gostFunctionsForSign = (function () {
     {
 
         // Stage 1
-        var q = this.q;
-        var r, s;
+        let q = this.q;
+        let r, s;
         // Ready int for SignalCom algorithm
         if (this.procreator === 'SC') {
             r = htobi(signature.r);
@@ -1570,7 +1570,7 @@ let gostFunctionsForSign = (function () {
         } else {
             if (this.procreator === 'CP' || this.procreator === 'VN')
                 signature = swap(signature);
-            var zetta = to2(signature);
+            let zetta = to2(signature);
             // Swap bytes for CryptoPro algorithm
             s = zetta[1]; //  first 32 octets contain the big-endian representation of s
             r = zetta[0]; //  and second 32 octets contain the big-endian representation of r
@@ -1578,33 +1578,33 @@ let gostFunctionsForSign = (function () {
         if (compare(r, q) >= 0 || compare(s, q) >= 0)
             return false;
         // Stage 2
-        var b = buffer(data);
-        var alpha = atobi(hash.call(this, b));
+        let b = buffer(data);
+        let alpha = atobi(hash.call(this, b));
         // Stage 3
-        var e = mod(alpha, q);
+        let e = mod(alpha, q);
         if (isZero(e) === 0)
             e = ONE;
         // Stage 4
-        var v = invMod(e, q);
+        let v = invMod(e, q);
         // Stage 5
-        var z1 = mod(mul(s, v), q);
-        var z2 = sub(q, mod(mul(r, v), q));
+        let z1 = mod(mul(s, v), q);
+        let z2 = sub(q, mod(mul(r, v), q));
         // Stage 6
         if (this.curve) {
             // Gost R 34.10-2001 || Gost R 34.10-2012
-            var k2 = to2(publicKey),
+            let k2 = to2(publicKey),
                 curve = this.curve,
                 P = this.P,
                 x = newFE(curve, k2[0]), // first 32 octets contain the little-endian representation of x
                 y = newFE(curve, k2[1]), // and second 32 octets contain the little-endian representation of y.
                 Q = new newEC(curve, x, y); // This corresponds to the binary representation of (<y>256||<x>256)
-            var C = mulTwoEC(P, z1, Q, z2);
-            var R = mod(getX(C), q);
+            let C = mulTwoEC(P, z1, Q, z2);
+            let R = mod(getX(C), q);
         } else {
             // Gost R 34.10-94
-            var p = this.p, a = this.a;
-            var y = atobi(publicKey);
-            var R = mod(mod(mul(expMod(a, z1, p), expMod(y, z2, p)), p), q);
+            let p = this.p, a = this.a;
+            let y = atobi(publicKey);
+            let R = mod(mod(mul(expMod(a, z1, p), expMod(y, z2, p)), p), q);
         }
         // Stage 7
         return (compare(R, r) === 0);
@@ -1623,14 +1623,16 @@ let gostFunctionsForSign = (function () {
      */
     function generateKey() // <editor-fold defaultstate="collapsed">
     {
-        var curve = this.curve;
+        let curve = this.curve;
+        let d;
+        let x, y;
         if (curve) {
 
-            var Q = curve.infinity;
+            let Q = curve.infinity;
             while (isInfinity(Q)) {
 
                 // Generate random private key
-                var d = ZERO;
+                d = ZERO;
                 if (this.ukm) {
                     d = atobi(this.ukm);
                 } else {
@@ -1640,7 +1642,8 @@ let gostFunctionsForSign = (function () {
 
                 // Calculate public key
                 Q = mulEC(this.P, d);
-                var x = getX(Q), y = getY(Q);
+                x = getX(Q);
+                y = getY(Q);
             }
 
             // Return result
@@ -1665,10 +1668,10 @@ let gostFunctionsForSign = (function () {
      */
     function generateMaskKey() // <editor-fold defaultstate="collapsed">
     {
-        var curve = this.curve;
+        let curve = this.curve;
         if (curve) {
             // Generate random private key
-            var d = ZERO;
+            let d = ZERO;
             while (isZero(d))
                 d = mod(atobi(getSeed(this.bitLength)), this.q); // 0 < d < q
 
@@ -1692,12 +1695,12 @@ let gostFunctionsForSign = (function () {
      */
     function unwrapKey(baseKey, data) // <editor-fold defaultstate="collapsed">
     {
-        var curve = this.curve;
+        let curve = this.curve;
         if (curve) {
-            var q = this.q;
-            var x = mod(atobi(buffer(data)), q);
-            var y = mod(atobi(buffer(baseKey)), q);
-            var z = this.procreator === 'VN' ? mod(mul(x, y), q) : mod(mul(x, invMod(y, q)), q);
+            let q = this.q;
+            let x = mod(atobi(buffer(data)), q);
+            let y = mod(atobi(buffer(baseKey)), q);
+            let z = this.procreator === 'VN' ? mod(mul(x, y), q) : mod(mul(x, invMod(y, q)), q);
             return bitoa(z);
         } else
             throw new Error('Key wrapping GOST R 34.10-94 not supported');
@@ -1717,12 +1720,12 @@ let gostFunctionsForSign = (function () {
      */
     function wrapKey(baseKey, data) // <editor-fold defaultstate="collapsed">
     {
-        var curve = this.curve;
+        let curve = this.curve;
         if (curve) {
-            var q = this.q;
-            var x = mod(atobi(buffer(data)), q);
-            var y = mod(atobi(buffer(baseKey)), q);
-            var z = this.procreator === 'VN' ? mod(mul(x, invMod(y, q)), q) : mod(mul(x, y), q);
+            let q = this.q;
+            let x = mod(atobi(buffer(data)), q);
+            let y = mod(atobi(buffer(baseKey)), q);
+            let z = this.procreator === 'VN' ? mod(mul(x, invMod(y, q)), q) : mod(mul(x, y), q);
             return bitoa(z);
         } else
             throw new Error('Key wrapping GOST R 34.10-94 not supported');
@@ -1741,9 +1744,9 @@ let gostFunctionsForSign = (function () {
     function derive(baseKey) // <editor-fold defaultstate="collapsed">
     {
 
-        var k, ukm = atobi(this.ukm);
-        var q = this.q;
-        var x = mod(atobi(buffer(baseKey)), q);
+        let k, ukm = atobi(this.ukm);
+        let q = this.q;
+        let x = mod(atobi(buffer(baseKey)), q);
 
         if (this.curve) {
             // 1) Let K(x,y,UKM) = ((UKM*x)(mod q)) . (y.P) (512 bit), where
@@ -1755,7 +1758,7 @@ let gostFunctionsForSign = (function () {
             // P - base point on the elliptic curve (two 256-bit coordinates)
             // UKM*x - x multiplied by UKM as integers
             // x.P - a multiple point
-            var K = mulEC(this.peer_Q, mod(mul(ukm, x), q));
+            let K = mulEC(this.peer_Q, mod(mul(ukm, x), q));
             k = from2(getX(K), getY(K), // This corresponds to the binary representation of (<y>256||<x>256)
                 this.bitLength);
         } else {
@@ -1763,7 +1766,7 @@ let gostFunctionsForSign = (function () {
             // x - sender’s private key, a^x - sender’s public key
             // y - recipient’s private key, a^y - recipient’s public key
             // a, p - parameters
-            var p = this.p, a = this.a;
+            let p = this.p, a = this.a;
             k = bitoa(expMod(this.peer_y, x, p));
         }
         // 2) Calculate a 256-bit hash of K(x,y,UKM):
@@ -1787,7 +1790,7 @@ let gostFunctionsForSign = (function () {
     {
         if (length < 8 || length > this.bitLength || length % 8 > 0)
             throw new Error('Length must be no more than ' + this.bitLength + ' bits and multiple of 8');
-        var n = length / 8,
+        let n = length / 8,
             b = derive.call(this, baseKey),
             r = new Uint8Array(n);
 
@@ -1812,7 +1815,7 @@ let gostFunctionsForSign = (function () {
      */
     function deriveKey(baseKey) // <editor-fold defaultstate="collapsed">
     {
-        var b = derive.call(this, baseKey),
+        let b = derive.call(this, baseKey),
             r = new Uint8Array(32);
 
         r.set(new Uint8Array(b, 0, 32));
@@ -1902,7 +1905,7 @@ let gostFunctionsForSign = (function () {
             (typeof algorithm.namedCurve === 'string' ? '/' + algorithm.namedCurve : '') +
             (typeof algorithm.sBox === 'string' ? '/' + algorithm.sBox : '');
 
-        var version = algorithm.version || 2012;
+        let version = algorithm.version || 2012;
 
         // Functions
         switch (algorithm.mode || 'SIGN') {
@@ -1926,7 +1929,7 @@ let gostFunctionsForSign = (function () {
         // Define parameters
         if (version === 1994) {
             // Named or parameters algorithm
-            var param = algorithm.param;
+            let param = algorithm.param;
             if (!param)
                 param = GostParams[this.namedParam = (algorithm.namedParam || 'S-A').toUpperCase()];
             this.modulusLength = algorithm.modulusLength || param.modulusLength || 1024;
@@ -1938,17 +1941,17 @@ let gostFunctionsForSign = (function () {
                 this.peer_y = atobi(algorithm['public']);
         } else {
             // Named or parameters algorithm
-            var param = algorithm.curve;
+            let param = algorithm.curve;
             if (!param)
                 param = ECGostParams[this.namedCurve = (algorithm.namedCurve || 'S-256-A').toUpperCase()];
-            var curve = this.curve = newCurve(htobi(param.p), htobi(param.a), htobi(param.b));
+            let curve = this.curve = newCurve(htobi(param.p), htobi(param.a), htobi(param.b));
             this.P = newEC(curve,
                 newFE(curve, htobi(param.x)),
                 newFE(curve, htobi(param.y)));
             this.q = htobi(param.q);
             // Public key for derive
             if (algorithm['public']) {
-                var k2 = to2(algorithm['public']);
+                let k2 = to2(algorithm['public']);
                 this.peer_Q = new newEC(this.curve, // This corresponds to the binary representation of (<y>256||<x>256)
                     newFE(this.curve, k2[0]), // first 32 octets contain the little-endian representation of x
                     newFE(this.curve, k2[1])); // and second 32 octets contain the little-endian representation of y.
@@ -1956,7 +1959,7 @@ let gostFunctionsForSign = (function () {
         }
 
         // Check bit length
-        var hashLen, keyLen;
+        let hashLen, keyLen;
         if (this.curve) {
             keyLen = algorithm.length || bitLength(this.q);
             if (keyLen > 508 && keyLen <= 512)
@@ -1983,7 +1986,7 @@ let gostFunctionsForSign = (function () {
         this.procreator = algorithm.procreator;
 
         // Hash function definition
-        var hash = algorithm.hash;
+        let hash = algorithm.hash;
         if (hash) {
             if (typeof hash === 'string' || hash instanceof String)
                 hash = {name: hash};
