@@ -969,7 +969,7 @@ let gostFunctionsForSign = (function () {
      * EC Field Elements, Points, Curves
      * optimized release of http://www-cs-students.stanford.edu/~tjw/jsbn/ec.js
      *
-     */ // <editor-fold defaultstate="collapsed">
+     */
 
     // EC Field Elemets
     function newFE(a, x) {
@@ -1489,7 +1489,7 @@ let gostFunctionsForSign = (function () {
      */
     function sign(privateKey, data) // <editor-fold defaultstate="collapsed">
     {
-
+        let k;
         // Stage 1
         let b = buffer(data);
         let alpha = atobi(hash.call(this, b));
@@ -1508,7 +1508,7 @@ let gostFunctionsForSign = (function () {
             while (isZero(r)) {
 
                 // Stage 3
-                let k = mod(atobi(this.ukm ||
+                k = mod(atobi(this.ukm ||
                     getSeed(this.bitLength)), q); // pseudo random 0 < k < q
                 // Stage 4
                 if (this.curve) {
@@ -1542,7 +1542,7 @@ let gostFunctionsForSign = (function () {
                 zetta = swap(zetta);
         }
         return zetta;
-    } // </editor-fold>
+    }
 
     /**
      * Algorithm name GOST R 34.10<br><br>
@@ -1590,6 +1590,7 @@ let gostFunctionsForSign = (function () {
         let z1 = mod(mul(s, v), q);
         let z2 = sub(q, mod(mul(r, v), q));
         // Stage 6
+        let R;
         if (this.curve) {
             // Gost R 34.10-2001 || Gost R 34.10-2012
             let k2 = to2(publicKey),
@@ -1599,12 +1600,12 @@ let gostFunctionsForSign = (function () {
                 y = newFE(curve, k2[1]), // and second 32 octets contain the little-endian representation of y.
                 Q = new newEC(curve, x, y); // This corresponds to the binary representation of (<y>256||<x>256)
             let C = mulTwoEC(P, z1, Q, z2);
-            let R = mod(getX(C), q);
+            R = mod(getX(C), q);
         } else {
             // Gost R 34.10-94
             let p = this.p, a = this.a;
             let y = atobi(publicKey);
-            let R = mod(mod(mul(expMod(a, z1, p), expMod(y, z2, p)), p), q);
+            R = mod(mod(mul(expMod(a, z1, p), expMod(y, z2, p)), p), q);
         }
         // Stage 7
         return (compare(R, r) === 0);
@@ -1666,7 +1667,7 @@ let gostFunctionsForSign = (function () {
      * @instance
      * @returns {Object} Object with two CryptoOperationData members: privateKey and publicKey
      */
-    function generateMaskKey() // <editor-fold defaultstate="collapsed">
+    function generateMaskKey()
     {
         let curve = this.curve;
         if (curve) {
