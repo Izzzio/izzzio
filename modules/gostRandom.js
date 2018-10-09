@@ -29,7 +29,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * 
  */
-module.exports = (function () {
+let gostFunctionForRandom = function () {
 
     /**
      * The gostCrypto provide general purpose cryptographic functionality for
@@ -125,5 +125,6 @@ module.exports = (function () {
 
     return GostRandom;
 
-})();
+};
+module.exports = gostFunctionForRandom;
 

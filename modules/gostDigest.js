@@ -1256,6 +1256,6 @@ let gostFunctionForDigest = (function () {
 
     return GostDigest;
 
-});
+})();
 
 module.exports = gostFunctionForDigest;

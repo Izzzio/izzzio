@@ -33,9 +33,10 @@
  *
  */
 
-const GOST = new (require('./gost'))();//для вычисления хэша
-const GostRandom = require('./gostRandom');
-const GostDigest =new require('./gostDigest')();
+const GOST = require('./gost');//для вычисления хэша
+const GostRandom = new (require('./gostRandom'))();
+const GostDigest = require('./gostDigest');
+const GostCoding = require('./gostCoding');
 
 let gostFunctionsForSign = (function () {
 
@@ -1443,7 +1444,14 @@ let gostFunctionsForSign = (function () {
     }
 
     // Check buffer
-    function buffer(d) {
+    function buffer(_d) {
+        //конвертируем данные в массив байт
+        let d;
+        try {
+            d = Buffer.from(_d)
+        } catch (e) {
+            d = Buffer.from(JSON.stringify(_d));
+        }
         if (d instanceof CryptoOperationData)
             return d;
         else if (d && d.buffer && d.buffer instanceof CryptoOperationData)
@@ -2045,7 +2053,10 @@ let a = {
     namedCurve: "S-256-A"
 };
 
+let coding = new GostCoding();
+
 let q = new gostFunctionsForSign(a);
+
 let w = q.generateKey();
 console.log ('private:');
 let hexPrivate = Buffer.from(w.privateKey).toString('hex');
@@ -2055,28 +2066,13 @@ console.log ('public:');
 let hexPublic = Buffer.from(w.publicKey).toString('hex');
 console.log(hexPublic);
 data = 'hello';
-data = Buffer.from(data);
+//data = Buffer.from(data);
 let s = q.sign(w.privateKey,data);
-console.log(s.toString('hex'));
+let shex = Buffer.from(s).toString('hex');
+console.log(shex);
 
 let v = q.verify(w.publicKey, s, data);
 console.log(v);
 
-let gostCrypto = require('node-gost');
 
-gostCrypto.subtle.importKey('raw', gostCrypto.coding.Hex.decode(hexPublic),
-    'GOST R 34.10', true, ['verify']).then(function(key) {
-
-    // Use public key for verify message signature
-    return gostCrypto.subtle.verify('GOST R 34.10/GOST R 34.11', key,
-        gostCrypto.coding.Hex.decode(s.toString('hex')), gostCrypto.coding.Chars.decode(data));
-}).then(function(result) {
-
-    // Check result
-    console.log(result);
-}).catch(function(error) {
-    console.log(error.message);
-});
-
-//**********************************************************
 

@@ -2255,7 +2255,7 @@ let gostFunctionForCipher = (function () {
     } // </editor-fold>
 
     return GostCipher;
-});
+})();
 
 module.exports = gostFunctionForCipher;
 
