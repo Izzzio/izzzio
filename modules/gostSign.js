@@ -33,7 +33,6 @@
  *
  */
 
-const GOST = require('./gost');//для вычисления хэша
 const GostRandom = new (require('./gostRandom'))();
 const GostDigest = require('./gostDigest');
 const GostCoding = require('./gostCoding');
@@ -1444,14 +1443,7 @@ let gostFunctionsForSign = (function () {
     }
 
     // Check buffer
-    function buffer(_d) {
-        //конвертируем данные в массив байт
-        let d;
-        try {
-            d = Buffer.from(_d)
-        } catch (e) {
-            d = Buffer.from(JSON.stringify(_d));
-        }
+    function buffer(d) {
         if (d instanceof CryptoOperationData)
             return d;
         else if (d && d.buffer && d.buffer instanceof CryptoOperationData)
@@ -1504,7 +1496,6 @@ let gostFunctionsForSign = (function () {
      */
     function sign(privateKey, data) // <editor-fold defaultstate="collapsed">
     {
-
         // Stage 1
         var b = buffer(data);
         var alpha = atobi(hash.call(this, b));
@@ -1574,7 +1565,6 @@ let gostFunctionsForSign = (function () {
      */
     function verify(publicKey, signature, data) // <editor-fold defaultstate="collapsed">
     {
-
         // Stage 1
         var q = this.q;
         var r, s;
@@ -2035,44 +2025,27 @@ let gostFunctionsForSign = (function () {
 module.exports = gostFunctionsForSign;
 
 
-let a = {
-    hash:{
-        keySize: 32,
-        length: 256,
-        mode: "HASH",
-        name: "GOST R 34.11",
-        procreator: '',
-        version: 2012
-    },
-    name: "GOST R 34.10",
-    version: 2012,
-    mode: "SIGN",
-    length: 256,
-    procreator: "",
-    keySize: 32,
-    namedCurve: "S-256-A"
-};
 
-let coding = new GostCoding();
+   // hash:{
+     //   keySize: 32,
+     //   length: 256,
+     //   mode: "HASH",
+      //  name: "GOST R 34.11",
+     //   procreator: '',
+     //   version: 2012
+    //},
+ //   hash: "GOST R 34.11",
+ //   name: "GOST R 34.10",
+//    version: 2012,
+//    mode: "SIGN",
+ //   length: 512,
+  //  procreator: "",
+ //   keySize: 32,
+ //   namedCurve: "T-512-A"
+//    namedCurve: "S-256-A"
 
-let q = new gostFunctionsForSign(a);
 
-let w = q.generateKey();
-console.log ('private:');
-let hexPrivate = Buffer.from(w.privateKey).toString('hex');
-console.log(hexPrivate);
 
-console.log ('public:');
-let hexPublic = Buffer.from(w.publicKey).toString('hex');
-console.log(hexPublic);
-data = 'hello';
-//data = Buffer.from(data);
-let s = q.sign(w.privateKey,data);
-let shex = Buffer.from(s).toString('hex');
-console.log(shex);
-
-let v = q.verify(w.publicKey, s, data);
-console.log(v);
 
 
 
