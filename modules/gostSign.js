@@ -1225,12 +1225,12 @@ let gostFunctionsForSign = (function () {
         curve.b = newFE(curve, b);
         curve.infinity = newEC(curve);
         return curve;
-    } // </editor-fold>
+    }
 
     /*
      * Converion tools (hex, binary)
      *
-     */ // <editor-fold defaultstate="collapsed">
+     */
 
     function atobi(d) {
         let k = 8;
@@ -1575,18 +1575,27 @@ let gostFunctionsForSign = (function () {
      */
     function verify(publicKey, signature, data)
     {
+        //преобразуем в буфер
+        let _publicKey = Buffer.from(publicKey);
+        let _signature = Buffer.from(signature);
+        let _data;
+        try {
+            _data = Buffer.from(data);
+        } catch (e) {
+            _data = Buffer.from(JSON.stringify(data));
+        }
 
         // Stage 1
         let q = this.q;
         let r, s;
         // Ready int for SignalCom algorithm
         if (this.procreator === 'SC') {
-            r = htobi(signature.r);
-            s = htobi(signature.s);
+            r = htobi(_signature.r);
+            s = htobi(_signature.s);
         } else {
             if (this.procreator === 'CP' || this.procreator === 'VN')
-                signature = swap(signature);
-            let zetta = to2(signature);
+                _signature = swap(_signature);
+            let zetta = to2(_signature);
             // Swap bytes for CryptoPro algorithm
             s = zetta[1]; //  first 32 octets contain the big-endian representation of s
             r = zetta[0]; //  and second 32 octets contain the big-endian representation of r
@@ -1594,7 +1603,7 @@ let gostFunctionsForSign = (function () {
         if (compare(r, q) >= 0 || compare(s, q) >= 0)
             return false;
         // Stage 2
-        let b = buffer(data);
+        let b = buffer(_data);
         let alpha = atobi(hash.call(this, b));
         // Stage 3
         let e = mod(alpha, q);
@@ -1609,7 +1618,7 @@ let gostFunctionsForSign = (function () {
         let R;
         if (this.curve) {
             // Gost R 34.10-2001 || Gost R 34.10-2012
-            let k2 = to2(publicKey),
+            let k2 = to2(_publicKey),
                 curve = this.curve,
                 P = this.P,
                 x = newFE(curve, k2[0]), // first 32 octets contain the little-endian representation of x
@@ -1620,12 +1629,12 @@ let gostFunctionsForSign = (function () {
         } else {
             // Gost R 34.10-94
             let p = this.p, a = this.a;
-            let y = atobi(publicKey);
+            let y = atobi(_publicKey);
             R = mod(mod(mul(expMod(a, z1, p), expMod(y, z2, p)), p), q);
         }
         // Stage 7
         return (compare(R, r) === 0);
-    } // </editor-fold>
+    }
 
     /**
      * Algorithm name GOST R 34.10<br><br>
@@ -2058,11 +2067,24 @@ data = 'hello';
 let s = q.sign(Buffer.from(hexPrivate),data);
 console.log(s.toString('hex'));
 
+let v = q.verify(hexPublic, s, data);
+console.log(v);
 
+let gostCrypto = require('node-gost');
 
+gostCrypto.subtle.importKey('raw', gostCrypto.coding.Hex.decode(hexPublic),
+    'GOST R 34.10', true, ['verify']).then(function(key) {
 
+    // Use public key for verify message signature
+    return gostCrypto.subtle.verify('GOST R 34.10/GOST R 34.11', key,
+        gostCrypto.coding.Hex.decode(s.toString('hex')), gostCrypto.coding.Chars.decode(data));
+}).then(function(result) {
 
-
+    // Check result
+    console.log(result);
+}).catch(function(error) {
+    alert(error.message);
+});
 
 //**********************************************************
 

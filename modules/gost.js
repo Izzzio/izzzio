@@ -353,8 +353,8 @@ class GOST {
                         res = Buffer.from(res).toString('hex');
                         break;
                 }
-            return res;
             }
+            return res;
         }
     };
 }
