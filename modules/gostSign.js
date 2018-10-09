@@ -33,6 +33,8 @@
  *
  */
 
+const GOST = new (require('./gost'))();//для вычисления хэша
+
 let gostFunctionsForSign = (function () {
 
 
@@ -1424,15 +1426,18 @@ let gostFunctionsForSign = (function () {
         return dst.buffer;
     }
 
-    // Calculate hash of data
+    // Calculate hash of data//используем свою функцию вместо этого
     function hash(d) {
-        if (this.hash)
+        //заменяем на свою функцию
+        return (GOST.digest2012())(d, false);
+
+        /*if (this.hash)
             d = this.hash.digest(d);
         // Swap hash for SignalCom
         if (this.procreator === 'SC' ||
             (this.procreator === 'VN' && this.hash.version === 2012))
             d = swap(d);
-        return d;
+        return d;*/
     }
 
     // Check buffer
@@ -1487,11 +1492,21 @@ let gostFunctionsForSign = (function () {
      * @param {(CryptoOperationData|TypedArray)} data Data
      * @returns {CryptoOperationData} Signature
      */
-    function sign(privateKey, data) // <editor-fold defaultstate="collapsed">
+    function sign(privateKey, data)
     {
+
         let k;
+        let r;
         // Stage 1
-        let b = buffer(data);
+        //преобразуем данные в arraybuffer
+        let data1;
+        try {
+            data1 = Buffer.from(data);
+        } catch (e) {
+            data1 = Buffer.from(JSON.stringify(data));
+        }
+
+        let b = buffer(data1);
         let alpha = atobi(hash.call(this, b));
 
         let q = this.q;
@@ -1504,7 +1519,7 @@ let gostFunctionsForSign = (function () {
 
         let s = ZERO;
         while (isZero(s)) {
-            let r = ZERO;
+            r = ZERO;
             while (isZero(r)) {
 
                 // Stage 3
@@ -1541,7 +1556,8 @@ let gostFunctionsForSign = (function () {
             if (this.procreator === 'CP' || this.procreator === 'VN')
                 zetta = swap(zetta);
         }
-        return zetta;
+        //возвращаем буфер(чтобы можно было конвертировать)
+        return Buffer.from(zetta);
     }
 
     /**
@@ -1557,7 +1573,7 @@ let gostFunctionsForSign = (function () {
      * @param {(CryptoOperationData|TypedArray)} data Data
      * @returns {boolean} Signature verified = true
      */
-    function verify(publicKey, signature, data) // <editor-fold defaultstate="collapsed">
+    function verify(publicKey, signature, data)
     {
 
         // Stage 1
@@ -1622,7 +1638,7 @@ let gostFunctionsForSign = (function () {
      * @instance
      * @returns {Object} Object with two CryptoOperationData members: privateKey and publicKey
      */
-    function generateKey() // <editor-fold defaultstate="collapsed">
+    function generateKey()
     {
         let curve = this.curve;
         let d;
@@ -2032,9 +2048,18 @@ let a = {
 let q = new gostFunctionsForSign(a);
 let w = q.generateKey();
 console.log ('private:');
-console.log(Buffer.from(w.privateKey).toString('hex'));
+let hexPrivate = Buffer.from(w.privateKey).toString('hex');
+console.log(hexPrivate);
+
 console.log ('public:');
-console.log(Buffer.from(w.publicKey).toString('hex'));
+let hexPublic = Buffer.from(w.publicKey).toString('hex');
+console.log(hexPublic);
+data = 'hello';
+let s = q.sign(Buffer.from(hexPrivate),data);
+console.log(s.toString('hex'));
+
+
+
 
 
 
