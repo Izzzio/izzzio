@@ -4,12 +4,13 @@
 
 'use strict';
 const CryptoJS = require('crypto-js');
-const GOST = new (require('./GOSTModules/gost'))();
+//const GOST = new (require('./GOSTModules/gost'))();
 const GostSign = require('./GOSTModules/gostSign');
 const inputOutputFormat = 'hex';
 const SIGN_TYPE = 'sha256';
 const crypto = require('crypto');
 const keypair = require('keypair');
+const GostDigest = require('./GOSTModules/gostDigest');
 
 
 /**
@@ -24,59 +25,63 @@ function repairKey(key) {
     return key.replace(new RegExp("\n\n", 'g'),"\n");
 }
 
-
-
-class Cryptography{
+class Cryptography {
     constructor(config){
         if (!config){
-            this.hashFunction = CryptoJS.SHA256 ; // используем SHA256 как хэш по умолчанию
         } else {
+            let ha = {};
             //настраиваем хэш
             switch (config.hashFunction) {
-                case 'SHA256':
-                    this.hashFunction = CryptoJS.SHA256;
-                    break;
                 case 'STRIBOG':
-                    this.hashFunction = GOST.digest2012();
+                    ha.length = 256;
                     break;
                 case 'STRIBOG512':
-                    this.hashFunction = GOST.digest2012(512);
-                    break;
-                default:
-                    this.hashFunction = CryptoJS.SHA256;
+                    ha.length = 512;
                     break;
             }
-            let a = {};
-           /* //настраиваем генерацию ключей
+            let sa = {};
 
-            switch (config.keyGenerationFunction){
-                case 'GOST':
-                    a = {hash: "GOST R 34.11", length: 256};
-                    break;
-                case 'GOST512':
-                    a = {hash: "GOST R 34.11", length: 512, namedCurve: "T-512-A"};
-                    break;
-            }*/
             //настраиваем подпись
             switch (config.signFunction) {
                 case 'GOST':
-                    a = {hash: "GOST R 34.11", length: 256};
+                    sa = {hash: "GOST R 34.11", length: 256};
                     break;
                 case 'GOST512':
-                    a = {hash: "GOST R 34.11", length: 512, namedCurve: "T-512-A"};
+                    sa = {hash: "GOST R 34.11", length: 512, namedCurve: "T-512-A"};
                     break;
             }
-            if (a !== {}){
-                this.gostSign = new GostSign(a);
+            //проверяем параметры хэша
+            if (ha !== {}) {
+                this.gostDigest = new GostDigest(ha);
             }
+            //проверяем параметры подписи и ключей
+            if (sa !== {}) {
+                this.gostSign = new GostSign(sa);
+            }
+
         }
+    }
+
+    /**
+     * convert data data to buffer (all strings consider as utf8 format only)
+     * @param data
+     * @returns {Buffer}
+     */
+    static data2Buffer(data) {
+        let bData;
+        try{
+            bData = Buffer.from(data);
+        } catch (e) {
+            bData = Buffer.from(JSON.stringify(data));
+        }
+        return bData;
     }
 
     /**
      * generates pair of keys
      * @returns {{private: *, public: *}}
      */
-    generateKeyPair(){
+    generateKeyPair() {
         let keyPair;
         if (this.gostSign) {
             keyPair = this.gostSign.generateKey();
@@ -97,16 +102,14 @@ class Cryptography{
      * @param key
      * @returns {{data: *, sign: *}}
      */
-    sign(data, key){
+    sign(data, key) {
         let signedData;
         if (this.gostSign) {
             let bData, bKey;
-            try{
-                bData = Buffer.from(data);
-            } catch (e) {
-                bData = Buffer.from(JSON.stringify(data));
-            }
+            //prepare data for processing
+            bData = Cryptography.data2Buffer(data);
             bKey = Buffer.from(key, inputOutputFormat);
+
             signedData = this.gostSign.sign(bKey, bData);
             signedData = Buffer.from(signedData).toString(inputOutputFormat);
         } else {
@@ -123,9 +126,9 @@ class Cryptography{
      * @param data
      * @param sign
      * @param key
-     * @returns {*}
+     * @returns {boolean} true or false
      */
-    verify(data, sign, key){
+    verify(data, sign, key) {
         if(typeof  data === 'object') {
             sign = data.sign;
             data = data.data;
@@ -133,13 +136,10 @@ class Cryptography{
         let result;
         if (this.gostSign) {
             let bData, bKey, bSign;
-            try{
-                bData = Buffer.from(data);
-            } catch (e) {
-                bData = Buffer.from(JSON.stringify(data));
-            }
+            bData = Cryptography.data2Buffer(data);
             bKey = Buffer.from(key, inputOutputFormat);
             bSign = Buffer.from(sign, inputOutputFormat);
+
             result = this.gostSign.verify(bKey, bSign, bData);
         } else {
             const verify = crypto.createVerify(SIGN_TYPE);
@@ -151,35 +151,19 @@ class Cryptography{
 
     /**
      * creates hash of the data
-     * @param data
-     * @param hashFunction
-     * @returns {*}
+     * @param {string/ArrayBufferTypes}data
+     * @returns {Buffer}
      */
-    hash(data, hashFunction){
-        if (!data){
-            return false;
-        }
-        //если не указана функция хэширования, то используем установленную в классе
-        let functionForHash = typeof hashFunction === 'function' ? hashFunction : this.hashFunction;
-        let dataForHash;
-        //преобразуем в строку данные, если еще не преобразованы
-        if (typeof data !== 'string'){
-            try {
-                dataForHash = JSON.stringify(data);
-            } catch (e) {
-                return false;
-            }
+    hash(data = '') {
+        let bData = Cryptography.data2Buffer(data);
+        let hashBuffer;
+        if (this.gostDigest) {
+            hashBuffer = this.gostDigest.digest(bData);
         } else {
-            dataForHash = data;
+            hashBuffer = CryptoJS.SHA256(data).toString();
+            hashBuffer = Buffer.from(hashBuffer,'hex'); //make output independent to hash function type
         }
-        let computedHash;
-        //пробуем преобразовать полученные данные в хэш
-        try {
-            computedHash = functionForHash(dataForHash);
-        } catch (e) {
-            return false;
-        }
-        return computedHash;
+        return Buffer.from(hashBuffer).toString(inputOutputFormat);
     }
 }
 
