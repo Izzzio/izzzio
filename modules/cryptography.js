@@ -9,6 +9,7 @@ const GostSign = require('./gostSign');
 const inputOutputFormat = 'hex';
 const SIGN_TYPE = 'sha256';
 const crypto = require('crypto');
+const keypair = require('keypair');
 
 
 /**
@@ -80,8 +81,8 @@ class Cryptography{
         if (this.gostSign) {
             keyPair = this.gostSign.generateKey();
             //конвертируем в формат
-            keyPair.public = Buffer.from(keypair.publiKey).toString(inputOutputFormat);
-            keyPair.private = Buffer.from(keypair.privateKey).toString(inputOutputFormat);
+            keyPair.public = Buffer.from(keyPair.publicKey).toString(inputOutputFormat);
+            keyPair.private = Buffer.from(keyPair.privateKey).toString(inputOutputFormat);
         } else {
             keyPair = keypair({bits: 2048});
             keyPair.private = repairKey(keyPair.private);
@@ -112,7 +113,7 @@ class Cryptography{
             key = repairKey(key);
             const _sign = crypto.createSign(SIGN_TYPE);
             _sign.update(data);
-            let signedData = _sign.sign(key).toString(inputOutputFormat);
+            signedData = _sign.sign(key).toString(inputOutputFormat);
         }
         return {data: data, sign: signedData};
     }
@@ -139,7 +140,7 @@ class Cryptography{
             }
             bKey = Buffer.from(key, inputOutputFormat);
             bSign = Buffer.from(sign, inputOutputFormat);
-            result = this.gostSign.verify(bkey, bSign, bData);
+            result = this.gostSign.verify(bKey, bSign, bData);
         } else {
             const verify = crypto.createVerify(SIGN_TYPE);
             verify.update(data);
