@@ -118,6 +118,37 @@ class Cryptography{
     }
 
     /**
+     * verifies signed data
+     * @param data
+     * @param sign
+     * @param key
+     * @returns {*}
+     */
+    verify(data, sign, key){
+        if(typeof  data === 'object') {
+            sign = data.sign;
+            data = data.data;
+        }
+        let result;
+        if (this.gostSign) {
+            let bData, bKey, bSign;
+            try{
+                bData = Buffer.from(data);
+            } catch (e) {
+                bData = Buffer.from(JSON.stringify(data));
+            }
+            bKey = Buffer.from(key, inputOutputFormat);
+            bSign = Buffer.from(sign, inputOutputFormat);
+            result = this.gostSign.verify(bkey, bSign, bData);
+        } else {
+            const verify = crypto.createVerify(SIGN_TYPE);
+            verify.update(data);
+            result = verify.verify(key, sign, inputOutputFormat);
+        }
+        return result;
+    }
+
+    /**
      * creates hash of the data
      * @param data
      * @param hashFunction
