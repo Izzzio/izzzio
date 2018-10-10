@@ -33,7 +33,7 @@
  *
  */
 
-const GostRandom = new (require('./gostRandom'))();
+const GostRandom = require('./gostRandom');
 const GostDigest = require('./gostDigest');
 const GostCoding = require('./gostCoding');
 
@@ -2024,7 +2024,11 @@ let gostFunctionsForSign = (function () {
 
 module.exports = gostFunctionsForSign;
 
-
+// let gs = new gostFunctionsForSign({hash: "GOST R 34.11"});
+// let data = Buffer.from('123');
+// let k = gs.generateKey();
+// let s = gs.sign(k.privateKey, data);
+// console.log(gs.verify(k.publicKey, s, data));
 
    // hash:{
      //   keySize: 32,

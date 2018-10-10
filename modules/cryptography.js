@@ -4,8 +4,8 @@
 
 'use strict';
 const CryptoJS = require('crypto-js');
-const GOST = new (require('./gost'))();
-const GostSign = require('./gostSign');
+const GOST = new (require('./GOSTModules/gost'))();
+const GostSign = require('./GOSTModules/gostSign');
 const inputOutputFormat = 'hex';
 const SIGN_TYPE = 'sha256';
 const crypto = require('crypto');
