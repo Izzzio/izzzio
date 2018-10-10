@@ -140,12 +140,8 @@ let Wallet = function (walletFile, config) {
 
          wallet.keysPair.public = key.exportKey('public');
          wallet.keysPair.private = key.exportKey('private');*/
-        wallet.keysPair = keypair({bits: 2048});
 
-        //1.0.4b bug workaround
-        wallet.keysPair.private = repairKey(wallet.keysPair.private);
-        wallet.keysPair.public = repairKey(wallet.keysPair.public);
-        //1.0.4b bug workaround
+        wallet.keysPair = cryptography.generateKeyPair();
 
         wallet.log('Info: Generated');
         this.createId();
@@ -191,11 +187,7 @@ let Wallet = function (walletFile, config) {
      */
     wallet.signData = function (data, key) {
         key = typeof key === 'undefined' ? wallet.keysPair.private : key;
-        key = repairKey(key);
-        const sign = crypto.createSign(SIGN_TYPE);
-        sign.update(data);
-        let signKey = sign.sign(key).toString('hex');
-        return {data: data, sign: signKey};
+        return cryptography.sign(data, key);
     };
 
     /**
@@ -206,21 +198,8 @@ let Wallet = function (walletFile, config) {
      * @returns {boolean}
      */
     wallet.verifyData = function (data, sign, key) {
-        if(typeof  data === 'object') {
-            sign = data.sign;
-            data = data.data;
-        }
-        const verify = crypto.createVerify(SIGN_TYPE);
-        verify.update(data);
-
         key = typeof key === 'undefined' ? wallet.keysPair.public : key;
-
-        //NO WORKAROUND HERE! OLD TRANSACTIONS MAY STAY BAD!
-        //1.0.4b bug workaround
-        //key = repairKey(key);
-        //1.0.4b bug workaround
-
-        return verify.verify(key, sign, 'hex');
+        return cryptography.verify(data, sign, key);
     };
 
     /**
