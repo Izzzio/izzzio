@@ -213,19 +213,3 @@ class Cryptography {
 }
 
 module.exports = Cryptography;
-
-let cr = new Cryptography({signFunction:'RSAB64'});
-//let cr = new Cryptography({signFunction:'GOST',hashFunction:'STRIBOG'});
-let kp = cr.generateKeyPair();
-let data = 'hello';
-let s = cr.sign(data, kp.private).sign;
-let v = cr.verify(data, s, kp.public);
-console.log(v);
-console.log(kp.public);
-console.log(s);
-
-
-//cr = new Cryptography({signFunction:'GOST',hashFunction:'STRIBOG'});
-//kp = cr.generateKeyPair();
-//console.log(kp);
-//console.log(cr.hash(kp));
