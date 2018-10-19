@@ -160,24 +160,52 @@ class Cryptography {
         return pem;
     }
 
+    /**
+     * convert hex string to utf16 string
+     * @param hexKey
+     * @param charset
+     * @returns {string}
+     * @constructor
+     */
     HexToUtf16 (hexKey, charset = 'utf16') {
         let k = this.coding.Hex.decode(key);
         let utf16 = this.coding.Chars.encode(k, charset).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
         return utf16;
     }
 
+    /**
+     * convert utf16 string to hex string
+     * @param Utf16Key
+     * @param charset
+     * @returns {string}
+     * @constructor
+     */
     Utf16ToHex (Utf16Key, charset = 'utf16') {
         let k = this.coding.Chars.decode(key, charset);
         let hex = this.coding.Hex.encode(k).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
         return hex;
     }
 
+    /**
+     * convert base64 string to utf16 string
+     * @param Base64Key
+     * @param charset
+     * @returns {string}
+     * @constructor
+     */
     Base64ToUtf16 (Base64Key, charset = 'utf16') {
         let k = this.coding.Base64.decode(key);
         let utf16 = this.coding.Chars.encode(k, charset).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
         return utf16;
     }
 
+    /**
+     * convert utf16 string to base64 string
+     * @param Utf16Key
+     * @param charset
+     * @returns {string}
+     * @constructor
+     */
     Utf16ToBase64 (Utf16Key, charset = 'utf16') {
         let k = this.coding.Chars.decode(key, charset);
         let hex = this.coding.Base64.encode(k).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
