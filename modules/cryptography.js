@@ -168,7 +168,7 @@ class Cryptography {
      * @constructor
      */
     HexToUtf16 (hexKey, charset = 'utf16') {
-        let k = this.coding.Hex.decode(key);
+        let k = this.coding.Hex.decode(hexKey);
         let utf16 = this.coding.Chars.encode(k, charset).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
         return utf16;
     }
@@ -181,7 +181,7 @@ class Cryptography {
      * @constructor
      */
     Utf16ToHex (Utf16Key, charset = 'utf16') {
-        let k = this.coding.Chars.decode(key, charset);
+        let k = this.coding.Chars.decode(Utf16Key, charset);
         let hex = this.coding.Hex.encode(k).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
         return hex;
     }
@@ -194,7 +194,7 @@ class Cryptography {
      * @constructor
      */
     Base64ToUtf16 (Base64Key, charset = 'utf16') {
-        let k = this.coding.Base64.decode(key);
+        let k = this.coding.Base64.decode(Base64Key);
         let utf16 = this.coding.Chars.encode(k, charset).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
         return utf16;
     }
@@ -207,13 +207,13 @@ class Cryptography {
      * @constructor
      */
     Utf16ToBase64 (Utf16Key, charset = 'utf16') {
-        let k = this.coding.Chars.decode(key, charset);
+        let k = this.coding.Chars.decode(Utf16Key, charset);
         let hex = this.coding.Base64.encode(k).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
         return hex;
     }
 
     /**
-     * generates pair of keys
+     * generates pair of keys (
      * @returns {{private: *, public: *}}
      */
     generateKeyPair() {
@@ -222,9 +222,9 @@ class Cryptography {
             case 'GOST':
             case 'GOST512':
                 keyPair = this.gostSign.generateKey();
-                //конвертируем в формат
-                keyPair.public = Buffer.from(keyPair.publicKey).toString(this.keyFormat);
-                keyPair.private = Buffer.from(keyPair.privateKey).toString(this.keyFormat);
+                //конвертируем в формат utf16
+                keyPair.public = this.coding.Chars.encode(keyPair.publicKey, 'utf16');
+                keyPair.private = this.coding.Hex.encode(keyPair.privateKey);
                 break;
             default:
                 keyPair = keypair({bits: 2048});
@@ -233,10 +233,9 @@ class Cryptography {
                 //converting format
                 if (this.config.signFunction === 'NEWRSA') {
                     //converting only public because private is used in pem format
-                    keyPair.public =  this.PEMToBase64(keyPair.public, 'public');
+                    keyPair.public =  this.PEMToUtf16(keyPair.public, 'public');
                 }
         }
-
         return {private: keyPair.private, public: keyPair.public};
     }
 
@@ -251,7 +250,7 @@ class Cryptography {
         if (this.gostSign) {
             let bData, bKey;
             //prepare data for processing
-            bData =  this.data2Buffer(data);
+            bData =  Cryptography.data2Buffer(data);
             bKey = Buffer.from(key, this.keyFormat);
 
             signedData = this.gostSign.sign(bKey, bData);
@@ -282,13 +281,13 @@ class Cryptography {
         let result;
         if (this.gostSign) {
             let bData, bKey, bSign;
-            bData =  this.data2Buffer(data);
-            bKey = Buffer.from(key, this.keyFormat);
+            bData =  Cryptography.data2Buffer(data);
+            bKey = this.coding.Chars.decode(key, 'utf16');
             bSign = Buffer.from(sign, inputOutputFormat);   //sign in hex for compability with old versions
             result = this.gostSign.verify(bKey, bSign, bData);
         } else {
             let k = key;
-            k = k.indexOf('RSA PUBLIC KEY') < 0 ?  this.Base64ToPem(k,'PUBLIC') : k;
+            k = k.indexOf('RSA PUBLIC KEY') < 0 ?  this.Utf16ToPem(k,'PUBLIC') : k;
             const verify = crypto.createVerify(SIGN_TYPE);
             verify.update(data);
             result = verify.verify(k, sign, inputOutputFormat);
@@ -311,15 +310,19 @@ class Cryptography {
                 break;
         default:
             hashBuffer = CryptoJS.SHA256(data).toString();
-            hashBuffer = Buffer.from(hashBuffer,'hex'); //make output independent to hash function type
+            hashBuffer = this.coding.Hex.decode(hashBuffer); //make output independent to hash function type
         }
-        return Buffer.from(hashBuffer).toString(inputOutputFormat);
+        return this.coding.Hex.encode(hashBuffer).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
     }
 }
 
 module.exports = Cryptography;
 
-let cr = new Cryptography({signFunction:'NEWRSA'});
+let cr = new Cryptography({signFunction:'GOST'});
 let p = cr.generateKeyPair();
-console.log(p);
+let d = 'hello';
+let s = cr.sign(d,p.private).sign;
+let v = cr.verify(d,s,p.public);
+console.log(v);
+
 
