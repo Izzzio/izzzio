@@ -172,6 +172,17 @@ class Cryptography {
         return hex;
     }
 
+    Base64ToUtf16 (Base64Key, charset = 'utf16') {
+        let k = this.coding.Base64.decode(key);
+        let utf16 = this.coding.Chars.encode(k, charset).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
+        return utf16;
+    }
+
+    Utf16ToBase64 (Utf16Key, charset = 'utf16') {
+        let k = this.coding.Chars.decode(key, charset);
+        let hex = this.coding.Base64.encode(k).replace(new RegExp("\r\n|\n\r|\r|\n", 'g'),"");
+        return hex;
+    }
 
     /**
      * generates pair of keys
