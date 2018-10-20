@@ -11,39 +11,27 @@
 
 NPM version >= 5.3.0
 
-**Wallet shell** depends on Electron version >= 1.6.2
+**Building depends on:**
 
-#### Before building:
+Python >= 2.7
 
-- Install electron packager
+GCC / MinGW / VC++
 
-```
-npm -g install electron-packager
-```
 
-And appdmg for OS X (requires XCode command line tools)
-
-```
-npm -g install macos-alias electron-osx-sign appdmg
-```
+#### Building
 
 Preparing for work is done by running the command 
 ```
 npm install
 ```
 
-in shell and root directory.
-
-#### Building
-
-For building Wallet for Windows, Linux and MacOs (Darwin) use build.sh shell script.
-You can use any bash-like interpreter to run. We recommend using git bash from Git console utils.
-
-You can run node server by command
+Now you can start node server by command
 
 ```
 node index.js
 ```
+
+**If the building ends with an error, delete the node_modules directory before retrying**
 
 ## Contributing
 
@@ -53,6 +41,6 @@ node index.js
 4. Push to the branch (git push origin my-new-feature)
 5. Create a new Pull Request
 
-## Contributors
+## Maintainers
 
-- [lailune](https://github.com/lailune) Andrey Nedobylsky - creator, maintainer
+- [lailune](https://github.com/lailune) Andrey Nedobylsky - maintainer
