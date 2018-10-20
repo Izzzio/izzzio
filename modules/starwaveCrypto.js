@@ -16,6 +16,9 @@ const crypto = require("crypto");
 const CryptoJS = require('crypto-js');
 const logger = new (require('./logger'))('StarwaveCrypto');
 
+/**
+ * Crypto module for StarWave protocol
+ */
 class StarwaveCrypto {
     constructor(starwaveProtocolObject, secretKeysKeyring, curve = 'secp256k1') {
         let that = this;
