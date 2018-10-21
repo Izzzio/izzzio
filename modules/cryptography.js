@@ -225,6 +225,3 @@ class Cryptography {
 }
 
 module.exports = Cryptography;
-
-let c = new Cryptography({hashFunction:'STRIBOG'});
-console.log(c.hash('123'));
