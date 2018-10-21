@@ -36,17 +36,17 @@ module.exports = {
      */
     hexString2Unicode: function (str) {
 
-        if(str.length % 4 !== 0){
+        if(str.length % 4 !== 0) {
             return false;
         }
 
         str = str.toLowerCase();
         let code = '';
         str = str.match(/.{1,4}/g);
-        for(let s of str){
+        for (let s of str) {
             if(s.length === 4) {
                 code += String.fromCharCode(parseInt(s, 16));
-            }else{
+            } else {
                 code += s;
             }
         }
@@ -60,8 +60,18 @@ module.exports = {
      */
     unicode2HexString: function (uniStr) {
         let str = '';
-        for(let i = 0; i<uniStr.length; i++){
-            str += uniStr.charCodeAt(i).toString(16);
+        for (let i = 0; i < uniStr.length; i++) {
+            let charCode = uniStr.charCodeAt(i);
+            if(charCode < 0x1000) {
+                str += '0';
+            }
+            if(charCode < 0x100) {
+                str += '0';
+            }
+            if(charCode < 0x10) {
+                str += '0';
+            }
+            str += charCode.toString(16);
         }
 
         return str;
