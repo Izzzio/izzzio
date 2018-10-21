@@ -29,10 +29,12 @@ class Cryptography {
         this.utils = require('./utils');
         this.coding = new GostCoding();
         this.config = config;
+        this.config.hashFunction = this.config.hashFunction ? this.config.hashFunction.toUpperCase() : this.config.hashFunction;
+        this.config.signFunction = this.config.signFunction ? this.config.signFunction.toUpperCase() : this.config.signFunction;
         let ha,sa;
         if (config) {
             //настраиваем хэш
-            switch (config.hashFunction) {
+            switch (this.config.hashFunction) {
                 case 'STRIBOG':
                     ha = {length: 256};
                     break;
@@ -41,7 +43,7 @@ class Cryptography {
                     break;
             }
             //настраиваем подпись
-            switch (config.signFunction) {
+            switch (this.config.signFunction) {
                 case 'GOST':
                     sa = {hash: "GOST R 34.11", length: 256};
                     break;
@@ -215,7 +217,7 @@ class Cryptography {
         if (this.gostDigest) {
             hashBuffer = this.gostDigest.digest(bData);
         } else {
-            hashBuffer = _this.CryptoJS.SHA256(data).toString();
+            hashBuffer = CryptoJS.SHA256(data).toString();
             hashBuffer = this.coding.Hex.decode(hashBuffer); //make output independent to hash function type
         }
         return this.coding.Hex.encode(hashBuffer).replace('\r\n','');
@@ -224,4 +226,5 @@ class Cryptography {
 
 module.exports = Cryptography;
 
-
+let c = new Cryptography({hashFunction:'STRIBOG'});
+console.log(c.hash('123'));
