@@ -153,7 +153,11 @@ let Wallet = function (walletFile, config) {
      */
     wallet.createId = function () {
         //wallet.id = CryptoJS.SHA256(wallet.keysPair.public + Math.random()).toString();
-        wallet.id = cryptography.hash(wallet.keysPair.public + Math.random()).toString();
+        if (typeof config.signFunction !== "undefined"){
+            wallet.id = wallet.keysPair.public;
+        } else {
+            wallet.id = cryptography.hash(wallet.keysPair.public + Math.random()).toString();
+        }
     };
 
 
