@@ -102,7 +102,7 @@ let Wallet = function (walletFile, config) {
         if(key[key.length - 1] !== "\n") {
             key += "\n";
         }
-        return key.replace(new RegExp("\n\n", 'g'),"\n");
+        return key.replace(new RegExp("\n\n", 'g'), "\n");
     }
 
     if(typeof walletFile !== 'undefined' && walletFile) {
@@ -152,11 +152,10 @@ let Wallet = function (walletFile, config) {
      * Generate wallet ID
      */
     wallet.createId = function () {
-        //wallet.id = CryptoJS.SHA256(wallet.keysPair.public + Math.random()).toString();
-        if (typeof config.signFunction !== "undefined"){
-            wallet.id = wallet.keysPair.public;
-        } else {
+        if(typeof config.signFunction === "undefined" || config.signFunction === false) {
             wallet.id = cryptography.hash(wallet.keysPair.public + Math.random()).toString();
+        } else {
+            wallet.id = wallet.keysPair.public;
         }
     };
 
@@ -289,7 +288,7 @@ let Wallet = function (walletFile, config) {
      */
     wallet.transact = function (to, amount, fromTimestamp, keyringed) {
         //запрещаем транзакции если установлен флаг
-        if (config.disableInternalToken){
+        if(config.disableInternalToken) {
             return false;
         }
         to = String(to);
