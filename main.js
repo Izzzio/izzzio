@@ -5,6 +5,7 @@
 
 'use strict';
 
+const logger = new (require('./modules/logger'))();
 const version = require('./package.json').version;
 let program = require('commander');
 
@@ -136,11 +137,14 @@ const config = {
 //*********************************************************************
 const fs = require('fs-extra');
 const Blockchain = require('./Blockchain');
+const path = require('path');
 Array.prototype.remove = function (from, to) {
     let rest = this.slice((to || from) + 1 || this.length);
     this.length = from < 0 ? this.length + from : from;
     return this.push.apply(this, rest);
 };
+
+global.PATH = {}; //object for saving paths
 
 try {
     let loadedConfig = JSON.parse(fs.readFileSync(program.config));
@@ -149,15 +153,16 @@ try {
             config[i] = loadedConfig[i];
         }
     }
+
+    global.PATH.configDir = process.cwd(); //setup config path to global var(undefined if no config)
     /*   try {
            fs.writeFileSync('config.json', JSON.stringify(config));
        } catch (e) {
            console.log('Info: Can\'t save config');
        }*/
 } catch (e) {
-    console.log('Info: No configure found. Using standard configuration.');
+    logger.info('No configure found. Using standard configuration.');
 }
-
 
 config.program = program;
 
@@ -167,11 +172,11 @@ if(config.program.splash) {
 
 
 if(program.clear) {
-    console.log('Info: Clear up.');
+    logger.info('Clear up.');
     fs.removeSync('wallets');
     fs.removeSync('blocks');
     fs.removeSync(config.walletFile);
-    console.log('Info: End');
+    logger.info('End');
 }
 
 if(program.newChain) {
@@ -198,14 +203,14 @@ if(program.workDir) {
 if(program.clearDb) {
     fs.removeSync(config.workDir + '/wallets');
     fs.removeSync(config.workDir + '/blocks');
-    console.log('Info: DB cleared');
+    logger.info('DB cleared');
 }
 
 
 if(program.generateWallets) {
     const Wallet = require('./modules/wallet');
 
-    console.log('Info: Generating wallets from keyring ' + program.generateWallets);
+    logger.info('Generating wallets from keyring ' + program.generateWallets);
 
     fs.ensureDirSync(config.workDir + '/keyringWallets');
 
@@ -221,8 +226,38 @@ if(program.generateWallets) {
         }
     }
 
-    console.log('Info: Wallets created');
+    logger.info('Wallets created');
     process.exit();
+}
+
+global.PATH.mainDir = __dirname;
+//check how appEntry is written
+if (global.PATH.configDir) {
+    if (config.appEntry) {
+        //try to find app file near the config
+        let fullPathToAppEntry = '';
+        let existenceFlag = false;
+        //ref path in config
+        try {
+            fullPathToAppEntry = global.PATH.mainDir + path.sep + config.appEntry;
+            fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
+            existenceFlag = true;
+        } catch (err) {
+
+        }
+        //if only filename written
+        if (!existenceFlag) {
+            try {
+                let fullPathToAppEntry = global.PATH.configDir + path.sep + config.appEntry;
+                fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
+                config.appEntry = fullPathToAppEntry;
+            } catch (err) {
+                logger.warning('There is wrong filename in appEntry in config. appEntry will be set to "false"');
+                config.appEntry = false;
+            }
+        }
+
+    }
 }
 
 const blockchain = new Blockchain(config);
@@ -230,7 +265,7 @@ blockchain.start();
 
 if(!program.fallOnErrors) {
     process.on('uncaughtException', function (err) {
-        console.log('Uncaught exception: ' + err);
+        logger.error('Uncaught exception: ' + err);
     });
 }
 
