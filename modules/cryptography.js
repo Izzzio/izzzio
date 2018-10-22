@@ -80,7 +80,35 @@ class Cryptography {
     }
 
     /**
-     * convert key from PEM format to hex string
+     * convert key from PEM format to Hex string
+     * @param key PEM key
+     * @param kind kind of the key: public or private
+     * @returns {string} base64 encoded key
+     * @constructor
+     */
+    PEMToHex(key, kind = 'PUBLIC') {
+        let k = this.coding.PEM.decode(key, `rsa ${kind} key`);
+        let hex = this.coding.Hex.encode(k);
+        hex = hex.replace(new RegExp(/\r\n/, 'g'),"");
+        return hex;
+    }
+
+    /**
+     * convert key from Hex string to PEM format
+     * @param key
+     * @param kind
+     * @returns {*|String|string|CryptoOperationData|Uint8Array}
+     * @constructor
+     */
+    hexToPem(key, kind = 'PUBLIC') {
+        key = key.replace(new RegExp(/\r\n/, 'g'),"");
+        let k = this.coding.Hex.decode(key);
+        let pem = this.coding.PEM.encode(k, `RSA ${kind} KEY`);
+        return pem;
+    }
+
+    /**
+     * convert key from PEM format to Utf16 string
      * @param key PEM key
      * @param kind kind of the key: public or private
      * @returns {string} base64 encoded key
@@ -94,7 +122,7 @@ class Cryptography {
     }
 
     /**
-     * convert key from hex string to PEM format
+     * convert key from Utf16 string to PEM format
      * @param key
      * @param kind
      * @returns {*|String|string|CryptoOperationData|Uint8Array}
@@ -129,6 +157,7 @@ class Cryptography {
         return k;
     }
 
+
     /**
      * generates pair of keys
      * @returns {{private: *, public: *}}
@@ -137,7 +166,7 @@ class Cryptography {
         let keyPair;
         if (this.gostSign) {
             keyPair = this.gostSign.generateKey();
-            keyPair.public = this.bufferToUtf16(keyPair.publicKey);
+            keyPair.public = this.coding.Hex.encode(keyPair.publicKey).replace(new RegExp(/\r\n/, 'g'),"");
             keyPair.private = this.coding.Hex.encode(keyPair.privateKey);
         } else {
             keyPair = keypair({bits: 2048});
@@ -146,7 +175,7 @@ class Cryptography {
         }
         if (this.config.signFunction === 'NEWRSA'){
             //get old rsa key in PEM format and convert to utf-16
-            keyPair.public = this.PEMToUtf16(keyPair.public);
+            keyPair.public = this.PEMToHex(keyPair.public);
         }
         return {private: keyPair.private, public: keyPair.public};
     }
@@ -192,13 +221,13 @@ class Cryptography {
         if (this.gostSign) {
             let bData, bKey, bSign;
             bData = this.data2Buffer(data);
-            bKey = this.utf16ToBuffer(key);
+            bKey = this.coding.Hex.decode(key);
             bSign = this.coding.Hex.decode(sign);
             result = this.gostSign.verify(bKey, bSign, bData);
         } else {
             let k = key;
             //convert key if it's not in PEM
-            k = k.indexOf('RSA PUBLIC KEY') < 0 ?  this.utf16ToPem(k,'PUBLIC') : k;
+            k = k.indexOf('RSA PUBLIC KEY') < 0 ?  this.hexToPem(k,'PUBLIC') : k;
             const verify = crypto.createVerify(SIGN_TYPE);
             verify.update(data);
             result = verify.verify(k, sign, inputOutputFormat);
