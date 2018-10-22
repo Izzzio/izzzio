@@ -120,11 +120,6 @@ function Blockchain(config) {
     }
     console.log('');
 
-    //меняем адрес ноды, если в конфиге установлена любая новая функция подписи.
-    if (!config.signFunction) {
-        config.recieverAddress = wallet.keysPair.public;
-    }
-
     let nodeMetaInfo = new NodeMetaInfo(config);
 
     /**
