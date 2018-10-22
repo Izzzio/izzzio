@@ -21,18 +21,18 @@ function repairKey(key) {
     if(key[key.length - 1] !== "\n") {
         key += "\n";
     }
-    return key.replace(new RegExp("\n\n", 'g'),"\n");
+    return key.replace(new RegExp("\n\n", 'g'), "\n");
 }
 
 class Cryptography {
-    constructor(config = {}){
+    constructor(config = {}) {
         this.utils = require('./utils');
         this.coding = new GostCoding();
         this.config = config;
         this.config.hashFunction = this.config.hashFunction ? this.config.hashFunction.toUpperCase() : this.config.hashFunction;
         this.config.signFunction = this.config.signFunction ? this.config.signFunction.toUpperCase() : this.config.signFunction;
-        let ha,sa;
-        if (config) {
+        let ha, sa;
+        if(config) {
             //настраиваем хэш
             switch (this.config.hashFunction) {
                 case 'STRIBOG':
@@ -53,11 +53,11 @@ class Cryptography {
             }
         }
         //проверяем параметры хэша
-        if (ha) {
+        if(ha) {
             this.gostDigest = new GostDigest(ha);
         }
         //проверяем параметры подписи и ключей
-        if (sa) {
+        if(sa) {
             this.gostSign = new GostSign(sa);
         }
 
@@ -70,7 +70,7 @@ class Cryptography {
      */
     data2Buffer(data) {
         let bData;
-        try{
+        try {
             bData = this.coding.Chars.decode(data, 'utf8');
 
         } catch (e) {
@@ -89,7 +89,7 @@ class Cryptography {
     PEMToHex(key, kind = 'PUBLIC') {
         let k = this.coding.PEM.decode(key, `rsa ${kind} key`);
         let hex = this.coding.Hex.encode(k);
-        hex = hex.replace(new RegExp(/\r\n/, 'g'),"");
+        hex = hex.replace(new RegExp(/\r\n/, 'g'), "");
         return hex;
     }
 
@@ -101,7 +101,7 @@ class Cryptography {
      * @constructor
      */
     hexToPem(key, kind = 'PUBLIC') {
-        key = key.replace(new RegExp(/\r\n/, 'g'),"");
+        key = key.replace(new RegExp(/\r\n/, 'g'), "");
         let k = this.coding.Hex.decode(key);
         let pem = this.coding.PEM.encode(k, `RSA ${kind} KEY`);
         return pem;
@@ -117,7 +117,7 @@ class Cryptography {
     PEMToUtf16(key, kind = 'PUBLIC') {
         let k = this.coding.PEM.decode(key, `rsa ${kind} key`);
         let hex = this.coding.Hex.encode(k);
-        hex = hex.replace(new RegExp(/\r\n/, 'g'),"");
+        hex = hex.replace(new RegExp(/\r\n/, 'g'), "");
         return this.utils.hexString2Unicode(hex);
     }
 
@@ -129,7 +129,7 @@ class Cryptography {
      * @constructor
      */
     utf16ToPem(key, kind = 'PUBLIC') {
-        key = this.utils.unicode2HexString(key).replace(new RegExp(/\r\n/, 'g'),"");
+        key = this.utils.unicode2HexString(key).replace(new RegExp(/\r\n/, 'g'), "");
         let k = this.coding.Hex.decode(key);
         let pem = this.coding.PEM.encode(k, `RSA ${kind} KEY`);
         return pem;
@@ -140,8 +140,8 @@ class Cryptography {
      * @param key {ArrayBuffer}
      * @returns {*|string}
      */
-    bufferToUtf16(key){
-        let k = this.coding.Hex.encode(key).replace(new RegExp(/\r\n/, 'g'),"");
+    bufferToUtf16(key) {
+        let k = this.coding.Hex.encode(key).replace(new RegExp(/\r\n/, 'g'), "");
         k = this.utils.hexString2Unicode(k);
         return k;
     }
@@ -151,7 +151,7 @@ class Cryptography {
      * @param key {string} unicode string
      * @returns {*|string}
      */
-    utf16ToBuffer(key){
+    utf16ToBuffer(key) {
         let k = this.utils.unicode2HexString(key);
         k = this.coding.Hex.decode(k);
         return k;
@@ -164,16 +164,16 @@ class Cryptography {
      */
     generateKeyPair() {
         let keyPair;
-        if (this.gostSign) {
+        if(this.gostSign) {
             keyPair = this.gostSign.generateKey();
-            keyPair.public = this.coding.Hex.encode(keyPair.publicKey).replace(new RegExp(/\r\n/, 'g'),"");
+            keyPair.public = this.coding.Hex.encode(keyPair.publicKey).replace(new RegExp(/\r\n/, 'g'), "");
             keyPair.private = this.coding.Hex.encode(keyPair.privateKey);
         } else {
             keyPair = keypair({bits: 2048});
             keyPair.private = repairKey(keyPair.private);
             keyPair.public = repairKey(keyPair.public);
         }
-        if (this.config.signFunction === 'NEWRSA'){
+        if(this.config.signFunction === 'NEWRSA') {
             //get old rsa key in PEM format and convert to utf-16
             keyPair.public = this.PEMToHex(keyPair.public);
         }
@@ -188,7 +188,7 @@ class Cryptography {
      */
     sign(data, key) {
         let signedData;
-        if (this.gostSign) {
+        if(this.gostSign) {
             let bData, bKey;
             //prepare data for processing
             bData = this.data2Buffer(data);
@@ -201,7 +201,7 @@ class Cryptography {
             _sign.update(data);
             signedData = _sign.sign(key).toString(inputOutputFormat);
         }
-        signedData = signedData.replace('\r\n',''); //delete wrong symbols
+        signedData = signedData.replace('\r\n', ''); //delete wrong symbols
         return {data: data, sign: signedData};
     }
 
@@ -218,7 +218,7 @@ class Cryptography {
             data = data.data;
         }
         let result;
-        if (this.gostSign) {
+        if(this.gostSign) {
             let bData, bKey, bSign;
             bData = this.data2Buffer(data);
             bKey = this.coding.Hex.decode(key);
@@ -227,7 +227,7 @@ class Cryptography {
         } else {
             let k = key;
             //convert key if it's not in PEM
-            k = k.indexOf('RSA PUBLIC KEY') < 0 ?  this.hexToPem(k,'PUBLIC') : k;
+            k = k.indexOf('RSA PUBLIC KEY') < 0 ? this.hexToPem(k, 'PUBLIC') : k;
             const verify = crypto.createVerify(SIGN_TYPE);
             verify.update(data);
             result = verify.verify(k, sign, inputOutputFormat);
@@ -243,13 +243,13 @@ class Cryptography {
     hash(data = '') {
         let bData = this.data2Buffer(data);
         let hashBuffer;
-        if (this.gostDigest) {
+        if(this.gostDigest) {
             hashBuffer = this.gostDigest.digest(bData);
         } else {
             hashBuffer = CryptoJS.SHA256(data).toString();
             hashBuffer = this.coding.Hex.decode(hashBuffer); //make output independent to hash function type
         }
-        return this.coding.Hex.encode(hashBuffer).replace('\r\n','');
+        return this.coding.Hex.encode(hashBuffer).replace('\r\n', '');
     }
 }
 

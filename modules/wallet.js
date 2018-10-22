@@ -131,16 +131,6 @@ let Wallet = function (walletFile, config) {
      * Generates new data for wallet
      */
     wallet.generate = function () {
-        /* let exp = Math.round(Math.random() * 65536);
-         exp = exp % 2 === 0 ? exp + 1 : exp;
-         wallet.log('Info: Generate wallet with EXP ' + exp);
-         wallet.keysPair = keypair({bits: 2048, e: exp});*/
-
-        /* let key = NodeRSA({b: 2048, environment: 'node'});
-
-         wallet.keysPair.public = key.exportKey('public');
-         wallet.keysPair.private = key.exportKey('private');*/
-
         wallet.keysPair = cryptography.generateKeyPair();
 
         wallet.log('Info: Generated');
@@ -153,7 +143,7 @@ let Wallet = function (walletFile, config) {
      */
     wallet.createId = function () {
         if(typeof config.signFunction === "undefined" || config.signFunction === false) {
-            wallet.id = cryptography.hash(wallet.keysPair.public + Math.random()).toString();
+            wallet.id = cryptography.hash(String(wallet.keysPair.public) + Math.random()).toString();
         } else {
             wallet.id = wallet.keysPair.public;
         }
