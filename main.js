@@ -97,7 +97,7 @@ const config = {
 
     //Messaging Bus
     enableMessaging: false,              //Разрешить использование шины сообщений (необходима для некоторых консенсусов)
-    recieverAddress: getid() + getid() + getid(), //Адрес ноды в сети. Если установлена любая signFunction, то адрес ноды изменяется на public key
+    recieverAddress: getid() + getid() + getid(), //Адрес ноды в сети.
     messagingMaxTTL: 3,                 //Максимальный предел скачков сообщения
     //maximumInputSize: 15 * 1024 * 1024, //Максимальный объем сообщения (здесь 15 мегабайт)
     maximumInputSize: 2 * 1024 * 1024,
