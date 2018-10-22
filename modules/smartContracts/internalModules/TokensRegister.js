@@ -14,8 +14,9 @@
      * @constructor
      */
     environment.TokensRegister = function (name) {
-        this.db = new KeyValue(name);
-
+        this.db = new KeyValue(name);.
+        this.allowed = new KeyValue();
+     
         /**
          * Validate input number
          * @param number
@@ -215,6 +216,26 @@
 
             amount = new BigNumber(amount);
             this.deposit(address, amount);
+        };
+     
+         /**
+         * Establish allowance and approve mechanism
+         * @param owner allowance establisher
+         * @param spender
+         * @param amount 
+         */
+        this.approve = function (owner, spender, amount) {
+            this.validateNumber(amount);
+            amount = new BigNumber(amount);
+
+            let allowanceKey = String(owner + "_" + spender);
+            if (!this.allowed.get(allowanceKey)) {
+                this.allowed.put(allowanceKey, amount);
+            } else {
+                let actualAmount = new BigNumber(this.allowed.get(allowanceKey));
+                this.allowed.put(allowanceKey, amount.plus(actualAmount));
+            }
+            return this.allowed.get(allowanceKey);
         };
 
 
