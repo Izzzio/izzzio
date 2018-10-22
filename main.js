@@ -96,7 +96,7 @@ const config = {
 
     //Messaging Bus
     enableMessaging: false,              //Разрешить использование шины сообщений (необходима для некоторых консенсусов)
-    recieverAddress: getid() + getid() + getid(), //Адрес ноды в сети
+    recieverAddress: getid() + getid() + getid(), //Адрес ноды в сети. Если установлена любая signFunction, то адрес ноды изменяется на public key
     messagingMaxTTL: 3,                 //Максимальный предел скачков сообщения
     //maximumInputSize: 15 * 1024 * 1024, //Максимальный объем сообщения (здесь 15 мегабайт)
     maximumInputSize: 2 * 1024 * 1024,
@@ -129,7 +129,7 @@ const config = {
 
     //Cryptography
     hashFunction: 'SHA256',                 //функция вычисления хэша
-    signFunction: '',                       //Функция вычисления цифровой подписи и генерации паролей(пустая-значит, по умолчанию используется)
+    signFunction: '',                       //Функция вычисления цифровой подписи и генерации паролей(пустая-значит, по умолчанию используется), 'GOST' 'GOST256' 'NEWRSA'
 
 };
 

@@ -111,9 +111,6 @@ function Blockchain(config) {
     console.log('Message bus address: ' + config.recieverAddress);
     console.log('');
 
-
-    let nodeMetaInfo = new NodeMetaInfo(config);
-
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
     logger.info('Wallet address ' + wallet.getAddress(false));
@@ -123,6 +120,12 @@ function Blockchain(config) {
     }
     console.log('');
 
+    //меняем адрес ноды, если в конфиге установлена любая новая функция подписи.
+    if (!config.signFunction) {
+        config.recieverAddress = wallet.keysPair.public;
+    }
+
+    let nodeMetaInfo = new NodeMetaInfo(config);
 
     /**
      * База данных блоков
