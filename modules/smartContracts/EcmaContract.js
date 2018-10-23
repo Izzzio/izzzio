@@ -989,6 +989,9 @@ class EcmaContract {
                 }
                 let contractInstance = {};
                 try {
+                    if (state.deploy){
+                        throw new Error('There has been already deployed contract');
+                    }
                     state.deploy = true;
                     that.getOrCreateContractInstance(address, code, state, function (contractInstance) {
                         that.deployAndClearContractsChain(state, function () {
