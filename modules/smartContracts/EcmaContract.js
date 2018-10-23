@@ -989,9 +989,6 @@ class EcmaContract {
                 }
                 let contractInstance = {};
                 try {
-                    if (state.deploy){
-                        throw new Error('There has been already deployed contract');
-                    }
                     state.deploy = true;
                     that.getOrCreateContractInstance(address, code, state, function (contractInstance) {
                         that.deployAndClearContractsChain(state, function () {
@@ -1036,7 +1033,10 @@ class EcmaContract {
      */
     _handleContractCall(address, method, args, state, block, callback) {
         let that = this;
-
+        if ((method === 'contract.deploy') || (method === 'deploy'))
+        {
+            throw Error('Calling deploy method og contract is not allowed');
+        }
         state.block = block;
         state.randomSeed = block.index;
         state.contractAddress = address;
