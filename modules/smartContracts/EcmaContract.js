@@ -1035,8 +1035,8 @@ class EcmaContract {
         let that = this;
         if ((method === 'contract.deploy') || (method === 'deploy'))
         {
-            logger.error('Calling deploy method of contract is not allowed');
-            callback(err);
+            //logger.error('Calling deploy method of contract is not allowed');
+            return callback('Calling deploy method of contract is not allowed');
         }
         state.block = block;
         state.randomSeed = block.index;
