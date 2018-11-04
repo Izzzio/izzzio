@@ -28,7 +28,7 @@ npm install
 Now you can start node server by command
 
 ```
-node index.js
+node main.js
 ```
 
 **If the building ends with an error, delete the node_modules directory before retrying**
