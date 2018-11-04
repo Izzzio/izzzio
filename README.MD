@@ -44,3 +44,22 @@ node main.js
 ## Maintainers
 
 - [lailune](https://github.com/lailune) Andrey Nedobylsky - maintainer
+
+## Troubleshooting
+**If the building ends with an error, delete the node_modules directory before retrying**
+
+#### Windows.
+
+If the package installation fails, then
+
+```
+npm install --global --production windows-build-tools
+```
+By default, this command will install build tools from Visual Studio 2017.
+
+Control Panel -> Programs and Components -> Microsoft Visual Studio Installer(run change).
+
+In Visual Studio Installer window, find installed "Visual Studio Build Tools 2017" and click "Change".
+
+For block "Visual C++ Build Tools" check needed options in right panel.
+Make sure the "...VC++ 2015.3 v14.00(v140)" option is enabled.
