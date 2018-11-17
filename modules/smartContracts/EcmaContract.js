@@ -517,7 +517,6 @@ class EcmaContract {
                     }
                 }
             };
-
         });
 
         vm.injectSource(__dirname + '/internalModules/mockdate.js');
