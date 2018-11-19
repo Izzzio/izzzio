@@ -53,6 +53,38 @@ class InnerContractConnector {
     }
 
     /**
+     * Get parent caller address
+     * @return {*}
+     */
+    caller(){
+        return this.contracts.caller();
+    }
+
+    /**
+     * Is called from another contract?
+     * @return {boolean}
+     */
+    isChild(){
+        return this.contracts.isChild();
+    }
+
+    /**
+     * Is deploying now or just method call
+     * @return {boolean}
+     */
+    isDeploy(){
+        return this.contracts.isDeploy();
+    }
+
+    /**
+     * Get index of contract calling chain
+     * @return {number}
+     */
+    callingIndex(){
+        return this.contracts.callingIndex();
+    }
+
+    /**
      * Register new Call another contract method with deploy
      * @param method
      * @param alias
