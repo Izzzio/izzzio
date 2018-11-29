@@ -141,14 +141,14 @@ let Wallet = function (walletFile, config) {
     /**
      * Generate wallet ID
      */
-    wallet.createId = function () {
-        if(typeof config.signFunction === "undefined" || config.signFunction === false) {
-            wallet.id = cryptography.hash(String(wallet.keysPair.public) + Math.random()).toString();
+    wallet.createId = function (publicKey) {
+        publicKey = publicKey || wallet.keysPair.public;
+        if(typeof config.signFunction === "undefined" || 0 === config.signFunction.length) {
+            wallet.id = cryptography.hash(String(publicKey)).toString();
         } else {
-            wallet.id = wallet.keysPair.public;
+            wallet.id = publicKey;
         }
     };
-
 
     if(typeof walletFile === 'undefined') {
         //wallet.generate();

@@ -813,6 +813,12 @@ class EcmaContract {
         });
         deployBlock = this.blockchain.wallet.signBlock(deployBlock);
 
+        this.blockchain.wallet.createId(deployBlock.pubkey);
+        if(this.blockchain.wallet.id !== deployBlock.state.from){
+            logger.error('Contract deploy check author error');
+            return;
+        }
+
         this.blockchain.generateNextBlockAuto(deployBlock, function (generatedBlock) {
             that.blockchain.addBlock(generatedBlock, function () {
                 that.blockchain.broadcastLastBlock();
@@ -837,6 +843,13 @@ class EcmaContract {
 
         let callBlock = new EcmaContractCallBlock(address, method, args, state);
         callBlock = this.blockchain.wallet.signBlock(callBlock);
+
+        this.blockchain.wallet.createId(callBlock.pubkey);
+        if(this.blockchain.wallet.id !== state.from){
+            logger.error('Contract method deploy check author error');
+            return;
+        }
+
         this.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
             that.blockchain.addBlock(generatedBlock, function () {
                 that.blockchain.broadcastLastBlock();
