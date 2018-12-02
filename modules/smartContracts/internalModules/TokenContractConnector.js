@@ -13,7 +13,7 @@ class TokenContractConnector {
         this.address = address;
         this.registerMethod('balanceOf', '_balanceOf');
         this.registerMethod('totalSupply', '_totalSupply');
-        this.registerMethod('getContractProperty', '_contract');
+        this.registerMethod('contract', '_contract');
 
         this.registerDeployMethod('transfer', '_transfer');
         this.registerDeployMethod('mint', '_mint');
@@ -93,11 +93,10 @@ class TokenContractConnector {
 
     /**
      * Get contract info constants
-     * @param cb
      * @returns {*}
      */
-    contract(cb) {
-        return this[_contract](this.address, 'contract.contract', cb)
+    contract() {
+        return this['_contract']();
     }
 
 }
