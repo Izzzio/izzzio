@@ -7,10 +7,9 @@
 /**
  * Contract can connects with any standard token contract inside contract
  */
-class TokenContractConnector {
+class TokenContractConnector extends ContractConnector {
     constructor(address) {
-        this.contracts = global.contracts;
-        this.address = address;
+        super(address);
         this.registerMethod('balanceOf', '_balanceOf');
         this.registerMethod('totalSupply', '_totalSupply');
         this.registerMethod('contract', '_contract');
@@ -20,31 +19,6 @@ class TokenContractConnector {
         this.registerDeployMethod('burn', '_burn');
     }
 
-    /**
-     * Register new stateless method
-     * @param method
-     * @param alias
-     */
-    registerMethod(method, alias) {
-        let that = this;
-        alias = (typeof alias === 'undefined' ? method : alias);
-        this[alias] = (...args) => {
-            return that.contracts.callMethodRollback(that.address, method, args);
-        }
-    }
-
-    /**
-     * Register new deploying method. This call creates transaction
-     * @param method
-     * @param alias
-     */
-    registerDeployMethod(method, alias) {
-        let that = this;
-        alias = (typeof alias === 'undefined' ? method : alias);
-        this[alias] = (...args) => {
-            return that.contracts.callMethodDeploy(that.address, method, args);
-        }
-    }
 
     /**
      * Get balance of address
