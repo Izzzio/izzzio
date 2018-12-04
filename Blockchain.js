@@ -789,7 +789,14 @@ function Blockchain(config) {
      */
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
         //return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
-        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
+        return cryptography.hash(
+            String(index) +
+            previousHash +
+            String(timestamp) +
+            String(startTimestamp) +
+            String(sign) +
+            JSON.stringify(data)
+        ).toString();
     }
 
     /**

@@ -9,6 +9,11 @@
  */
 class Block {
     constructor(index, previousHash, timestamp, data, hash, startTimestamp, sign) {
+
+        if(typeof data === 'object') {
+            data = JSON.stringify(data);
+        }
+
         this.index = index;
         this.previousHash = String(previousHash).toString();
         this.timestamp = timestamp;
