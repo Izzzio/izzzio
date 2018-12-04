@@ -68,8 +68,8 @@ class TokenContractConnector extends ContractConnector {
      * Get contract info constants
      * @returns {*}
      */
-    contract() {
-        return this['_contract']();
+    get contract() {
+        return this.getProperty('contract');
     }
 
 }

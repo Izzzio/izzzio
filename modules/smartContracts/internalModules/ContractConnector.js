@@ -43,4 +43,12 @@ class ContractConnector {
         }
     }
 
+    /**
+     * Returns property value
+     * @param property
+     * @return {*}
+     */
+    getProperty(property){
+        return this.contracts.getContractProperty(this.address, property);
+    }
 }
