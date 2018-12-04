@@ -3,8 +3,6 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-const ContractConnector = require('./ContractConnector');
-
 /**
  * Contract can connects with any standard token contract inside contract
  */
@@ -75,5 +73,3 @@ class TokenContractConnector extends ContractConnector {
     }
 
 }
-
-module.exports = TokenContractConnector;
