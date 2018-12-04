@@ -140,15 +140,17 @@ class VM {
                 let newObj = {};
                 for (let a in obj) {
                     if(obj.hasOwnProperty(a)) {
-                        if(obj[a]['ref_type'] === 'function') {
-                            newObj[a] = function (...args) {
-                                return obj[a]['ref'].applySync(undefined, args.map(arg => new ivm.ExternalCopy(arg).copyInto()));
-                            }
-                        } else {
-                            if(obj[a]['ref_type'] === 'object') {
-                                newObj[a] = obj[a]['ref'].copySync();
+                        if(obj[a]) {
+                            if(obj[a]['ref_type'] === 'function') {
+                                newObj[a] = function (...args) {
+                                    return obj[a]['ref'].applySync(undefined, args.map(arg => new ivm.ExternalCopy(arg).copyInto()));
+                                }
                             } else {
-                                newObj[a] = obj[a];
+                                if(obj[a]['ref_type'] === 'object') {
+                                    newObj[a] = obj[a]['ref'].copySync();
+                                } else {
+                                    newObj[a] = obj[a];
+                                }
                             }
                         }
                     }

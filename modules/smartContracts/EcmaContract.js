@@ -435,6 +435,23 @@ class EcmaContract {
 
                     }
                 }, ...args);
+            },
+            _getContractProperty: function (contract, property, state) {
+                let sync = vmSync();
+                state.calledFrom = state.contractAddress;
+                state.contractAddress = contract;
+                that.getContractProperty(contract, 'contract.' + property, function (err, result) {
+                    if(err) {
+                        sync.return(err);
+                    } else {
+                        if(!result) {
+                            sync.return(false);
+                        } else {
+                            sync.return(result);
+                        }
+
+                    }
+                });
             }
         });
 
@@ -482,6 +499,19 @@ class EcmaContract {
                     return waitForReturn();
                 },
                 /**
+                 * Returns property value from another contract
+                 * @param contract
+                 * @param property
+                 * @return {*}
+                 */
+                getContractProperty: function (contract, property) {
+                    if(contract === state.contractAddress) {
+                        throw 'You can\'t call method from himself';
+                    }
+                    _contracts._getContractProperty(contract, property, state);
+                    return waitForReturn();
+                },
+                /**
                  * Get parent caller address
                  * @return {*}
                  */
@@ -517,7 +547,6 @@ class EcmaContract {
                     }
                 }
             };
-
         });
 
         vm.injectSource(__dirname + '/internalModules/mockdate.js');
@@ -541,6 +570,9 @@ class EcmaContract {
         vm.injectSource(__dirname + '/internalModules/TokenContract.js');
         vm.injectSource(__dirname + '/internalModules/Event.js');
         vm.injectSource(__dirname + '/internalModules/BlockchainArray.js');
+        vm.injectSource(__dirname + '/internalModules/ContractConnector.js');
+        vm.injectSource(__dirname + '/internalModules/TokenContractConnector.js');
+
     }
 
     /**
