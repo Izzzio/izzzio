@@ -9,6 +9,7 @@ const KeyValue = require('./keyvalue');
 const levelup = require('levelup');
 const memdown = require('memdown');
 const leveldown = require('leveldown');
+const utils = require('./utils');
 
 /**
  * Blockchain manager object
@@ -38,6 +39,8 @@ class Blockchain {
 
     put(key, value, callback) {
         let that = this;
+        value = JSON.stringify(value);
+        value = utils.hexString2Unicode(value);
         that.db.put(key, value, callback);
     }
 

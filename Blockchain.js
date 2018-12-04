@@ -295,7 +295,7 @@ function Blockchain(config) {
         }
         blockHandler.changeMaxBlock(maxBlock);
         transactor.changeMaxBlock(maxBlock);
-        blockchain.put(Number(index), JSON.stringify(block), function () {
+        blockchain.put(Number(index), block, function () {
             if(!noHandle) {
                 blockHandler.handleBlock(block, cb);
             } else {
