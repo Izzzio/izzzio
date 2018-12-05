@@ -18,6 +18,9 @@ class TestContract extends TokenContract {
     };
 
     get contract() {
-        return this.contract;
+        return {
+            ticker: TICKER,
+            owner: OWNER
+        };
     }
 }
