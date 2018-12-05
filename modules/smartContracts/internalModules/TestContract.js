@@ -9,11 +9,6 @@ const TICKER = 'TESTICKER';
  */
 class TestContract extends TokenContract {
     init (totalEmission = EMISSION) {
-        this.contract = {
-            name: TOKEN_NAME,
-            ticker: TICKER,
-            owner: OWNER
-        };
         super.init(totalEmission);
     };
 
