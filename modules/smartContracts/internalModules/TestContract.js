@@ -25,3 +25,5 @@ class TestContract extends TokenContract {
         };
     }
 }
+
+global.registerContract(TestContract);
