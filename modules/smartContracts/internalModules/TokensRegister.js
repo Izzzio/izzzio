@@ -15,7 +15,6 @@
      */
     environment.TokensRegister = function (name) {
         this.db = new KeyValue(name);
-        this.allowed = new KeyValue();
      
         /**
          * Validate input number
@@ -229,11 +228,11 @@
             amount = new BigNumber(amount);
 
             let allowanceKey = String(owner + "_" + spender);
-            if (!this.allowed.get(allowanceKey)) {
-                this.allowed.put(allowanceKey, amount);
+            if (!this.db.get(allowanceKey)) {
+                this.db.put(allowanceKey, amount);
             } else {
-                let actualAmount = new BigNumber(this.allowed.get(allowanceKey));
-                this.allowed.put(allowanceKey, amount.plus(actualAmount));
+                let actualAmount = new BigNumber(this.db.get(allowanceKey));
+                this.db.put(allowanceKey, amount.plus(actualAmount));
             }
             return this.allowed.get(allowanceKey);
         };
