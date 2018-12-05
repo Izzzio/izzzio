@@ -16,4 +16,8 @@ class TestContract extends TokenContract {
         };
         super.init(totalEmission);
     };
+
+    get contract() {
+        return this.contract;
+    }
 }
