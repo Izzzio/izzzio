@@ -19,6 +19,7 @@ class TestContract extends TokenContract {
 
     get contract() {
         return {
+            name: TOKEN_NAME,
             ticker: TICKER,
             owner: OWNER
         };
