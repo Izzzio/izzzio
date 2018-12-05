@@ -14,7 +14,7 @@
      * @constructor
      */
     environment.TokensRegister = function (name) {
-        this.db = new KeyValue(name);.
+        this.db = new KeyValue(name);
         this.allowed = new KeyValue();
      
         /**
