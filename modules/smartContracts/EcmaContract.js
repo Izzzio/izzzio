@@ -372,6 +372,8 @@ class EcmaContract {
                  * @return {*}
                  */
                 emit: function (event, args) {
+                    let state = global.getState();
+
                     assert.true(Array.isArray(args), 'Event arguments must be an array');
                     assert.true(args.length <= 10, 'Event can take 10 arguments maximum');
                     assert.true(typeof  event === 'string', 'Event name must be a string');
@@ -403,7 +405,7 @@ class EcmaContract {
                         });
                     } else {
                         if(!result) {
-                            sync.fails(false);
+                            sync.return(false);
                         } else {
                             sync.return(result);
                         }
@@ -428,7 +430,7 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.fails(false);
+                            sync.return(false);
                         } else {
                             sync.return(result);
                         }
@@ -445,7 +447,7 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.fails(false);
+                            sync.return(false);
                         } else {
                             sync.return(result);
                         }
@@ -468,6 +470,8 @@ class EcmaContract {
                  * @return {*}
                  */
                 callMethodDeploy: function (contract, method, args) {
+                    let state = global.getState();
+
                     if(contract === state.contractAddress) {
                         throw 'You can\'t call method from himself';
                     }
@@ -492,6 +496,8 @@ class EcmaContract {
                  * @return {*}
                  */
                 callMethodRollback: function (contract, method, args) {
+                    let state = global.getState();
+
                     if(contract === state.contractAddress) {
                         throw 'You can\'t call method from himself';
                     }
@@ -505,6 +511,8 @@ class EcmaContract {
                  * @return {*}
                  */
                 getContractProperty: function (contract, property) {
+                    let state = global.getState();
+
                     if(contract === state.contractAddress) {
                         throw 'You can\'t call method from himself';
                     }
@@ -516,6 +524,8 @@ class EcmaContract {
                  * @return {*}
                  */
                 caller: function () {
+                    let state = global.getState();
+
                     if(typeof state.calledFrom !== 'undefined') {
                         return state.calledFrom;
                     }
@@ -533,6 +543,8 @@ class EcmaContract {
                  * @return {boolean}
                  */
                 isDeploy() {
+                    let state = global.getState();
+
                     return typeof state !== 'undefined' && state.deploy;
                 },
                 /**
@@ -540,6 +552,8 @@ class EcmaContract {
                  * @return {number}
                  */
                 callingIndex() {
+                    let state = global.getState();
+
                     if(typeof state.callingIndex === 'undefined') {
                         return 0
                     } else {
@@ -553,6 +567,8 @@ class EcmaContract {
         vm.injectScript('new ' + function () {
             let _MockDate = MockDate;
             global.updateDateMock = function () {
+                let state = global.getState();
+
                 if(typeof state.block !== 'undefined' && typeof state.block.timestamp !== undefined) {
                     _MockDate.set(new Date(state.block.timestamp));
                 } else {

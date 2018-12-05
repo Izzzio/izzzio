@@ -166,6 +166,15 @@ class VM {
             let randomSeed = _randomSeed;
             _randomSeed = undefined;
 
+            let _state = global.state;
+            /**
+             * Safe state method
+             * @return {state}
+             */
+            global.getState = function () {
+                return _state;
+            };
+
             /**
              * IO functions
              */
@@ -191,6 +200,8 @@ class VM {
              * @param contract
              */
             global.registerContract = function registerContract(contract) {
+                //Save current state before run contract
+                _state = global.state;
                 global.contract = new contract();
                 global.Contract = contract;
             };
@@ -203,6 +214,7 @@ class VM {
                 global[objName] = decodeReferences(global[objName]);
                 return true;
             };
+
 
         });
         bootstrap.runSync(context);
