@@ -255,12 +255,12 @@ class EcmaContract {
             getById: function (id, state) {
                 let sync = vmSync();
                 if(state.block.index <= id) {
-                    return sync.return(false);
+                    return sync.fails(false);
                 }
 
                 that.blockchain.getBlockById(id, function (err, block) {
                     if(err) {
-                        sync.return(false);
+                        sync.fails(false);
                     } else {
                         sync.return(block);
                     }
@@ -299,7 +299,7 @@ class EcmaContract {
                     if(!err) {
                         sync.return(val);
                     } else {
-                        sync.return(false);
+                        sync.fails(false);
                     }
                 });
 
@@ -403,7 +403,7 @@ class EcmaContract {
                         });
                     } else {
                         if(!result) {
-                            sync.return(false);
+                            sync.fails(false);
                         } else {
                             sync.return(result);
                         }
@@ -428,7 +428,7 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.return(false);
+                            sync.fails(false);
                         } else {
                             sync.return(result);
                         }
@@ -445,7 +445,7 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.return(false);
+                            sync.fails(false);
                         } else {
                             sync.return(result);
                         }
