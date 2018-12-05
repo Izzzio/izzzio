@@ -65,27 +65,41 @@ class KeyValue {
      */
     get(key, options, callback) {
         let that = this;
-        if(typeof options === 'function') {
+        let result = {
+            error: true,
+            value: undefined
+        };
+        key = String(key) || null;
+        options = options || null;
+        callback = callback || null;
+
+        if (typeof options === 'function') {
             callback = options;
         }
-        key = String(key);
 
         switch (that.type) {
             case STORAGE_TYPE.MEMORY:
-                if(typeof callback !== 'undefined') {
-                    if(typeof that.memKeyValue[key] !== 'undefined') {
-                        callback(null, that.memKeyValue[key]);
-                    } else {
-                        callback(true, undefined);
-                    }
+                let block = that.memKeyValue[key];
+                if (typeof block !== 'undefined') {
+                    result.error = null;
+                    result.value = block;
                 }
                 break;
             case STORAGE_TYPE.LEVELDB:
-                that.levelup.get(key, options, callback);
+                that.levelup.get(key, options, function(err, block){
+                    result.error = err; //var `err` always exist
+                    if(!result.error){
+                        result.value = block;
+                    }
+                });
                 break;
         }
 
-
+        if (typeof callback !== 'undefined') {
+            callback(result.error, result.value);
+        } else {
+            return result;
+        }
     }
 
     /**
@@ -117,8 +131,6 @@ class KeyValue {
                 that.levelup.put(key, value, callback);
                 break;
         }
-
-
     }
 
     /**
@@ -141,8 +153,6 @@ class KeyValue {
                 that.levelup.del(key, options, callback);
                 break;
         }
-
-
     }
 
 

@@ -34,7 +34,13 @@ class Blockchain {
 
     get(key, callback) {
         let that = this;
-        that.db.get(key, callback);
+        let block = null;
+        block = that.db.get(key);
+        if(!block.error){
+            block.value = utils.unicode2HexString(block.value);
+            block.value = JSON.parse(block.value);
+        }
+        callback(block.error, block.value);
     }
 
     put(key, value, callback) {
