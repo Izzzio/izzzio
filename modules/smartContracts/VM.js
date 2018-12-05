@@ -102,6 +102,15 @@ class VM {
     }
 
     /**
+     * Set internal read-only state
+     * @param state
+     */
+    setState(state){
+        this.state = state;
+        this.setObjectGlobal('state', state);
+    }
+
+    /**
      * Creates context for iZ3 Smart Contracts
      * @param randomSeed
      * @return {*}
@@ -123,6 +132,9 @@ class VM {
         jail.setSync('system', this.objToReference({
             processMessages: function () {
                 return true;
+            },
+            getState: function () {
+                return that.objToReference(that.state);
             }
         }));
         jail.setSync('_randomSeed', randomSeed);
@@ -173,6 +185,13 @@ class VM {
              */
             global.getState = function () {
                 return _state;
+            };
+
+            /**
+             * Update state from global object
+             */
+            global.updateState = function(){
+              _state = decodeReferences(system.getState());
             };
 
             /**

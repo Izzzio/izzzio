@@ -106,10 +106,11 @@ class EcmaContract {
             vm.setTimingLimits(10000);
             vm.setCpuLimit(10000);
             vm.compileScript(code, state);
-            vm.setObjectGlobal('state', state);
+            //vm.setObjectGlobal('state', state);
+            vm.setState(state);
             this._setupVmFunctions(vm, db);
             vm.execute();
-            vm.runContextMethod("updateDateMock");
+            vm.runContextMethod("updateExternalState");
             vm.runContextMethodAsync('contract.init', function (err) {
                 if(err) {
                     throw 'Contract initialization error ' + err;
@@ -467,10 +468,15 @@ class EcmaContract {
                  * @param {string} contract Contract address
                  * @param {string} method   Method name
                  * @param {array}  args     Arguments array
+                 * @param {object}  extendState     Extended state
                  * @return {*}
                  */
-                callMethodDeploy: function (contract, method, args) {
+                callMethodDeploy: function (contract, method, args, extendState = {}) {
                     let state = global.getState();
+
+                    state.extend = extendState;
+
+                    console.log(state);
 
                     if(contract === state.contractAddress) {
                         throw 'You can\'t call method from himself';
@@ -493,11 +499,12 @@ class EcmaContract {
                  * @param contract
                  * @param method
                  * @param args
+                 * @param {object}  extendState     Extended state
                  * @return {*}
                  */
-                callMethodRollback: function (contract, method, args) {
+                callMethodRollback: function (contract, method, args, extendState = {}) {
                     let state = global.getState();
-
+                    state.extend = extendState;
                     if(contract === state.contractAddress) {
                         throw 'You can\'t call method from himself';
                     }
@@ -548,6 +555,18 @@ class EcmaContract {
                     return typeof state !== 'undefined' && state.deploy;
                 },
                 /**
+                 * Returns extended state object
+                 * @return {*}
+                 */
+                getExtendedState() {
+                    let state = global.getState();
+                    if(typeof state['extend'] === 'undefined') {
+                        return {};
+                    }
+
+                    return state.extend;
+                },
+                /**
                  * Get index of contract calling chain
                  * @return {number}
                  */
@@ -566,7 +585,9 @@ class EcmaContract {
         vm.injectSource(__dirname + '/internalModules/mockdate.js');
         vm.injectScript('new ' + function () {
             let _MockDate = MockDate;
-            global.updateDateMock = function () {
+            global.updateExternalState = function () {
+                global.updateState();
+
                 let state = global.getState();
 
                 if(typeof state.block !== 'undefined' && typeof state.block.timestamp !== undefined) {
@@ -613,8 +634,9 @@ class EcmaContract {
                             cb(err);
                             return;
                         }
-                        instance.vm.setObjectGlobal('state', state);
-                        instance.vm.runContextMethod("updateDateMock");
+                        //instance.vm.setObjectGlobal('state', state);
+                        instance.vm.setState(state);
+                        instance.vm.runContextMethod("updateExternalState");
                         instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
@@ -670,8 +692,9 @@ class EcmaContract {
                             cb(err);
                             return;
                         }
-                        instance.vm.setObjectGlobal('state', state);
-                        instance.vm.runContextMethod("updateDateMock");
+                        //instance.vm.setObjectGlobal('state', state);
+                        instance.vm.setState(state);
+                        instance.vm.runContextMethod("updateExternalState");
                         instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
@@ -718,8 +741,9 @@ class EcmaContract {
                             cb(err);
                             return;
                         }
-                        instance.vm.setObjectGlobal('state', state);
-                        instance.vm.runContextMethod("updateDateMock");
+                        //instance.vm.setObjectGlobal('state', state);
+                        instance.vm.setState(state);
+                        instance.vm.runContextMethod("updateExternalState");
                         instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
@@ -862,7 +886,7 @@ class EcmaContract {
         deployBlock = this.blockchain.wallet.signBlock(deployBlock);
 
         this.blockchain.wallet.createId(deployBlock.pubkey);
-        if(this.blockchain.wallet.id !== deployBlock.state.from){
+        if(this.blockchain.wallet.id !== deployBlock.state.from) {
             logger.error('Contract deploy check author error');
             return;
         }
@@ -893,7 +917,7 @@ class EcmaContract {
         callBlock = this.blockchain.wallet.signBlock(callBlock);
 
         this.blockchain.wallet.createId(callBlock.pubkey);
-        if(this.blockchain.wallet.id !== state.from){
+        if(this.blockchain.wallet.id !== state.from) {
             logger.error('Contract method deploy check author error');
             return;
         }
@@ -1094,8 +1118,7 @@ class EcmaContract {
      */
     _handleContractCall(address, method, args, state, block, callback) {
         let that = this;
-        if ((method === 'contract.deploy') || (method === 'deploy'))
-        {
+        if((method === 'contract.deploy') || (method === 'deploy')) {
             //logger.error('Calling deploy method of contract is not allowed');
             return callback('Calling deploy method of contract is not allowed');
         }
