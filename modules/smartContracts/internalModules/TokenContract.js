@@ -29,6 +29,19 @@ class TokenContract extends Contract {
     }
 
     /**
+     * Returns caller
+     * @return {*}
+     * @private
+     */
+    _getSender() {
+        if(contracts.isChild()) {
+            return contracts.caller();
+        }
+
+        return global.getState().from;
+    }
+
+    /**
      * Get balance of wallet
      * @param address
      * @return {*}
@@ -52,8 +65,9 @@ class TokenContract extends Contract {
      * @param amount
      */
     transfer(to, amount) {
-        this.wallets.transfer(state.from, to, amount);
-        this.TransferEvent.emit(state.from, to, new BigNumber(amount));
+        let from = this._getSender();
+        this.wallets.transfer(from, to, amount);
+        this.TransferEvent.emit(from, to, new BigNumber(amount));
     }
 
     /**
@@ -61,8 +75,9 @@ class TokenContract extends Contract {
      * @param amount
      */
     burn(amount) {
-        this.wallets.burn(state.from, amount);
-        this.BurnEvent.emit(state.from, new BigNumber(amount));
+        let from = this._getSender();
+        this.wallets.burn(from, amount);
+        this.BurnEvent.emit(from, new BigNumber(amount));
     }
 
     /**
@@ -70,9 +85,10 @@ class TokenContract extends Contract {
      * @param amount
      */
     mint(amount) {
+        let from = this._getSender();
         this.assertOwnership('Minting available only for contract owner');
         assert.true(this.mintable, 'Token is not mintable');
-        this.wallets.mint(state.from, amount);
-        this.MintEvent.emit(state.from, new BigNumber(amount));
+        this.wallets.mint(from, amount);
+        this.MintEvent.emit(from, new BigNumber(amount));
     }
 }

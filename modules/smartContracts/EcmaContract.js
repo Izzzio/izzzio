@@ -413,7 +413,7 @@ class EcmaContract {
                         });
                     } else {
                         if(!result) {
-                            sync.return(false);
+                            sync.return(true);
                         } else {
                             sync.return(result);
                         }
@@ -438,7 +438,7 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.return(false);
+                            sync.return(true);
                         } else {
                             sync.return(result);
                         }
@@ -455,7 +455,7 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.return(false);
+                            sync.return(true);
                         } else {
                             sync.return(result);
                         }
@@ -698,17 +698,20 @@ class EcmaContract {
                         instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                                that._nextCallings = [];
                                 cb(err);
                                 return;
                             }
                             try {
                                 that.events.rollback(instance.vm.state.contractAddress, state.block.index, function () {
                                     instance.db.rollback(function () {
+                                        that._nextCallings = [];
                                         cb(null, result);
                                     });
                                 });
                             } catch (e) {
                                 instance.db.rollback(function () {
+                                    that._nextCallings = [];
                                     cb(null, result);
                                 });
                             }
@@ -719,6 +722,7 @@ class EcmaContract {
 
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                    that._nextCallings = [];
                     cb(err);
                 }
             }
@@ -732,6 +736,7 @@ class EcmaContract {
      * @param state
      * @param cb
      * @param args
+     * @deprecated
      */
 
     callContractMethodDeploy(address, method, state, cb, ...args) {
@@ -805,6 +810,7 @@ class EcmaContract {
                         instance.vm.runContextMethodAsync('contract.' + method, async function (err, result) {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                                that._nextCallings = [];
                                 cb(err);
                                 return;
                             }
@@ -823,6 +829,7 @@ class EcmaContract {
 
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                    that._nextCallings = [];
                     cb(err);
                 }
             }
