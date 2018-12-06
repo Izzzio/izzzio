@@ -105,7 +105,7 @@ class VM {
      * Set internal read-only state
      * @param state
      */
-    setState(state){
+    setState(state) {
         this.state = state;
         this.setObjectGlobal('state', state);
     }
@@ -184,14 +184,14 @@ class VM {
              * @return {state}
              */
             global.getState = function () {
-                return _state;
+                return  Object.assign({}, _state);
             };
 
             /**
              * Update state from global object
              */
-            global.updateState = function(){
-              _state = decodeReferences(system.getState());
+            global.updateState = function () {
+                _state = decodeReferences(system.getState());
             };
 
             /**
@@ -359,6 +359,26 @@ class VM {
             }
             that._stopCPULimitTimer(cpuLimiter);
             cb(reason);
+        });
+    }
+
+    /**
+     * Run async method as promise
+     * @param context
+     * @param cb
+     * @param args
+     * @return {Promise<any>}
+     */
+    runContextMethodAsyncPromise(context, cb, ...args) {
+        let that = this;
+        return new Promise((resolve, reject) => {
+            that.runContextMethod(context, function (err, result) {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            }, args)
         });
     }
 

@@ -9,9 +9,9 @@
 class TokenContractConnector extends ContractConnector {
     constructor(address) {
         super(address);
-        this.registerMethod('balanceOf', '_balanceOf');
-        this.registerMethod('totalSupply', '_totalSupply');
-        this.registerMethod('contract', '_contract');
+        this.registerDeployMethod('balanceOf', '_balanceOf');
+        this.registerDeployMethod('totalSupply', '_totalSupply');
+
 
         this.registerDeployMethod('transfer', '_transfer');
         this.registerDeployMethod('mint', '_mint');
