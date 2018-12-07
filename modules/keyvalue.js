@@ -65,40 +65,24 @@ class KeyValue {
      */
     get(key, options, callback) {
         let that = this;
-        let result = {
-            error: true,
-            value: undefined
-        };
-        key = String(key) || null;
-        options = options || null;
-        callback = callback || null;
-
-        if (typeof options === 'function') {
+        if(typeof options === 'function') {
             callback = options;
         }
+        key = String(key);
 
         switch (that.type) {
             case STORAGE_TYPE.MEMORY:
-                let block = that.memKeyValue[key];
-                if (typeof block !== 'undefined') {
-                    result.error = null;
-                    result.value = block;
+                if(typeof callback !== 'undefined') {
+                    if(typeof that.memKeyValue[key] !== 'undefined') {
+                        callback(null, that.memKeyValue[key]);
+                    } else {
+                        callback(true, undefined);
+                    }
                 }
                 break;
             case STORAGE_TYPE.LEVELDB:
-                that.levelup.get(key, options, function(err, block){
-                    result.error = err; //var `err` always exist
-                    if(!result.error){
-                        result.value = block;
-                    }
-                });
+                that.levelup.get(key, options, callback);
                 break;
-        }
-
-        if (typeof callback !== 'undefined') {
-            callback(result.error, result.value);
-        } else {
-            return result;
         }
     }
 
