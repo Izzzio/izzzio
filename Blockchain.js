@@ -1104,7 +1104,7 @@ function Blockchain(config) {
     function getLatestBlock(callback) {
         blockchain.get(maxBlock, function (err, val) {
             if(!err) {
-                callback(JSON.parse(val));
+                callback(val);
             } else {
                 callback(false);
             }

@@ -194,7 +194,8 @@ class BlockHandler {
                 try {
                     result = that.exBlockhainGet.sync(that, i);
                     if(prevBlock !== null) {
-                        if(JSON.parse(prevBlock).hash !== JSON.parse(result).previousHash) {
+                        //if(JSON.parse(prevBlock).hash !== JSON.parse(result).previousHash) {
+                        if(prevBlock.hash !== result.previousHash) {
                             if(that.config.program.autofix) {
                                 logger.info('Autofix: Delete chain data after ' + i + ' block');
 
