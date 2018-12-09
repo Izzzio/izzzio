@@ -161,7 +161,7 @@ class BlockHandler {
     }
 
     exBlockHandler(result, callback) {
-        this.handleBlock(JSON.parse(result), callback)
+        this.handleBlock(result, callback)
     }
 
     /**

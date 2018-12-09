@@ -35,18 +35,12 @@ class Blockchain {
     get(key, callback) {
         let that = this;
         that.db.get(key, function(error, block){
-
-            //console.log('GET key: '+key);
-
             if(!error){
                 try {
                     let value = utils.unicode2HexString(block);
                     value = JSON.parse(value);
                     block = value;
                 } catch(e) {
-
-                    //console.log(e.stack);
-
                     block = JSON.parse(block);
                 }
             }
@@ -55,9 +49,6 @@ class Blockchain {
     }
 
     put(key, value, callback) {
-
-        //console.log('PUT key: '+key);
-
         let that = this;
         value = JSON.stringify(value);
         value = utils.hexString2Unicode(value);
