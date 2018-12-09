@@ -94,7 +94,6 @@ class Transactor {
                     }
                     return;// cb();
                 }
-                block = JSON.parse(block);
                 if(block.hash !== i.block.hash) {
                     logger.warning('Transactor: Block ' + i.block.index + ' was rejected and replaced.');
                     i.repeats++;

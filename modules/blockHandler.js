@@ -215,13 +215,11 @@ class BlockHandler {
                                     cb();
                                 }
 
-
                                 return;
-                                break;
                             } else {
                                 logger.disable = false;
-                                console.log(JSON.parse(prevBlock));
-                                console.log(JSON.parse(result));
+                                console.log(prevBlock);
+                                console.log(result);
                                 logger.fatal('Saved chain corrupted in block ' + i + '. Remove wallets and blocks dirs for resync. Also you can use --autofix');
                                 process.exit(1);
                             }
@@ -271,7 +269,7 @@ class BlockHandler {
                 }
                 let block;
                 try {
-                    block = JSON.parse(val);
+                    block = val;
                     block.data = JSON.parse(block.data);
                 } catch (e) {
                     return cb(false);
