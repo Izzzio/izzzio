@@ -202,6 +202,7 @@ class Cryptography {
             signedData = _sign.sign(key).toString(inputOutputFormat);
         }
         signedData = signedData.replace('\r\n', ''); //delete wrong symbols
+        signedData = '*'+this.utils.hexString2Unicode(signedData);
         return {data: data, sign: signedData};
     }
 
@@ -217,6 +218,13 @@ class Cryptography {
             sign = data.sign;
             data = data.data;
         }
+
+        let tmp = sign.split('*');
+        if(tmp[1]){
+            sign = this.utils.unicode2HexString(tmp[1]);
+        }
+
+
         let result;
         if(this.gostSign) {
             let bData, bKey, bSign;

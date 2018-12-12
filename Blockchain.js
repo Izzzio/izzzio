@@ -62,8 +62,9 @@ function Blockchain(config) {
     const Transactor = require('./modules/transactor');
     const MessagesDispatcher = require('./modules/messagesDispatcher');
     const Frontend = require('./modules/frontend');
-    const app = express();
+    const utils = require('./modules/utils');
 
+    const app = express();
 
     storj.put('app', app);
     storj.put('config', config);
@@ -789,14 +790,24 @@ function Blockchain(config) {
      */
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
         //return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
-        return cryptography.hash(
+
+
+        if(data.sign){
+            let tmp = data.sign.split('*');
+            if(tmp[1]){
+                data.sign = utils.unicode2HexString(tmp[1]);
+            }
+        }
+
+
+        return utils.hexString2Unicode(cryptography.hash(
             String(index) +
             previousHash +
             String(timestamp) +
             String(startTimestamp) +
             String(sign) +
             JSON.stringify(data)
-        ).toString();
+        ).toString());
     }
 
     /**
