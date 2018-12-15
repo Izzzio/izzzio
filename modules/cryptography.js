@@ -218,14 +218,14 @@ class Cryptography {
             sign = data.sign;
             data = data.data;
         }
+        let result;
 
-        let tmp = sign.split('*');
-        if(tmp[1]){
-            sign = this.utils.unicode2HexString(tmp[1]);
+        let signParts = sign.split('*');
+        if(signParts[1]){
+            //sign compressed => need decompress
+            sign = this.utils.unicode2HexString(signParts[1]);
         }
 
-
-        let result;
         if(this.gostSign) {
             let bData, bKey, bSign;
             bData = this.data2Buffer(data);
