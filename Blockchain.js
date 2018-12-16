@@ -791,9 +791,9 @@ function Blockchain(config) {
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
         //return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
         if(data.sign){
-            let signParts = data.sign.split('*');
+            let signParts = data.sign.split('~~~');
             if(signParts[1]){
-                //sign compressed => need decompress
+                //data compressed => need decompress
                 data.sign = utils.unicode2HexString(signParts[1]);
             }
         }

@@ -34,14 +34,23 @@ class Blockchain {
 
     get(key, callback) {
         let that = this;
-        that.db.get(key, function(error, block){
-            if(!error){
-                try {
-                    let value = utils.unicode2HexString(block);
-                    value = JSON.parse(value);
-                    block = value;
-                } catch(e) {
-                    block = JSON.parse(block);
+        that.db.get(key, function (error, block) {
+            if (!error) {
+                let blockOrigin = block;
+                try{
+                    if(typeof block === 'string'){
+                        let parts = block.split('~~~');
+                        if(parts[1]){
+                            //data compressed => need decompress
+                            block = utils.unicode2HexString(parts[1]);
+                        }
+                        block = JSON.parse(block);
+                    }
+                } catch (e) {
+                    logger.error('Error prepare block getted from db.');
+                    //console.log(blockOrigin);
+                    //console.log(block);
+                    //console.log(e);
                 }
             }
             callback(error, block);
@@ -50,8 +59,16 @@ class Blockchain {
 
     put(key, value, callback) {
         let that = this;
+        let valueOrigin = value;
+
         value = JSON.stringify(value);
         value = utils.hexString2Unicode(value);
+        if(!value){
+            value = valueOrigin;
+        } else {
+            value = '~~~'+value;
+        }
+
         that.db.put(key, value, callback);
     }
 
