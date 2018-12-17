@@ -209,7 +209,7 @@ class Cryptography {
         if(!signedData){
             signedData = signedDataOrigin;
         } else {
-            signedData = '~~~' + signedData;
+            signedData = '*'+signedData;
         }
         return {data: data, sign: signedData};
     }
@@ -228,10 +228,9 @@ class Cryptography {
         }
         let result;
 
-        let parts = sign.split('~~~');
-        if(parts[1]){
+        if(sign.charAt(0) === '*'){
             //data compressed => need decompress
-            sign = this.utils.unicode2HexString(parts[1]);
+            sign = this.utils.unicode2HexString(sign.substr(1));
         }
 
         if(this.gostSign) {

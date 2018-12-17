@@ -39,10 +39,10 @@ class Blockchain {
                 let blockOrigin = block;
                 try{
                     if(typeof block === 'string'){
-                        let parts = block.split('~~~');
-                        if(parts[1]){
+                        if(block.charAt(0) === '*'){
                             //data compressed => need decompress
-                            block = utils.unicode2HexString(parts[1]);
+                            block = block.substr(1);
+                            block = utils.unicode2HexString(block);
                         }
                         block = JSON.parse(block);
                     }
@@ -60,15 +60,13 @@ class Blockchain {
     put(key, value, callback) {
         let that = this;
         let valueOrigin = value;
-
         value = JSON.stringify(value);
         value = utils.hexString2Unicode(value);
         if(!value){
             value = valueOrigin;
         } else {
-            value = '~~~'+value;
+            value = '*'+value;
         }
-
         that.db.put(key, value, callback);
     }
 

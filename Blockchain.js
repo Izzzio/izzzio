@@ -791,21 +791,36 @@ function Blockchain(config) {
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
         //return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
         if(data.sign){
-            let signParts = data.sign.split('~~~');
-            if(signParts[1]){
+            if(data.sign.charAt(0) === '*'){
                 //data compressed => need decompress
-                data.sign = utils.unicode2HexString(signParts[1]);
+                data.sign = utils.unicode2HexString(data.sign.substr(1));
             }
         }
 
-        return utils.hexString2Unicode(cryptography.hash(
+        let hash = cryptography.hash(
             String(index) +
             previousHash +
             String(timestamp) +
             String(startTimestamp) +
             String(sign) +
             JSON.stringify(data)
-        ).toString());
+        ).toString();
+
+
+        let hashMinified = hash;
+        /*
+        let hashMinified = utils.hexString2Unicode(hash);
+        if(!hashMinified){
+            hashMinified = hash;
+        } else {
+            hashMinified = '*'+hashMinified;
+
+            console.log("===================================");
+
+        }
+        */
+
+        return hashMinified;
     }
 
     /**
