@@ -806,19 +806,12 @@ function Blockchain(config) {
             JSON.stringify(data)
         ).toString();
 
-
-        let hashMinified = hash;
-        /*
         let hashMinified = utils.hexString2Unicode(hash);
         if(!hashMinified){
             hashMinified = hash;
         } else {
             hashMinified = '*'+hashMinified;
-
-            console.log("===================================");
-
         }
-        */
 
         return hashMinified;
     }
