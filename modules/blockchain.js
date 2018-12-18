@@ -59,7 +59,6 @@ class Blockchain {
 
     put(key, value, callback) {
         let that = this;
-        let valueOrigin = value;
         value = JSON.stringify(value);
         that.db.put(key, value, callback);
     }
