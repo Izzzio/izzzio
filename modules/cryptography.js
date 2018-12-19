@@ -188,7 +188,6 @@ class Cryptography {
      */
     sign(data, key) {
         let signedData;
-        let signedDataOrigin;
         if(this.gostSign) {
             let bData, bKey;
             //prepare data for processing
@@ -204,13 +203,13 @@ class Cryptography {
         }
         signedData = signedData.replace('\r\n', ''); //delete wrong symbols
 
-        signedDataOrigin = signedData;
-        signedData = this.utils.hexString2Unicode(signedData);
-        if(!signedData){
-            signedData = signedDataOrigin;
-        } else {
-            signedData = '*'+signedData;
+        if(this.config.compressHexData){
+            let signMinified = this.utils.hexString2Unicode(signedData);
+            if(false !== signMinified){
+                signedData = signMinified;
+            }
         }
+
         return {data: data, sign: signedData};
     }
 
@@ -228,9 +227,9 @@ class Cryptography {
         }
         let result;
 
-        if(sign.charAt(0) === '*'){
+        if(this.config.compressHexData){
             //data compressed => need decompress
-            sign = this.utils.unicode2HexString(sign.substr(1));
+            sign = this.utils.unicode2HexString(sign);
         }
 
         if(this.gostSign) {

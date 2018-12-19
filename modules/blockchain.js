@@ -36,19 +36,10 @@ class Blockchain {
         let that = this;
         that.db.get(key, function (error, block) {
             if (!error) {
-                let blockOrigin = block;
                 try{
-                    if(typeof block === 'string'){
-                        if(block.charAt(0) === '*'){
-                            //data compressed => need decompress
-                            block = block.substr(1);
-                            block = utils.unicode2HexString(block);
-                        }
-                        block = JSON.parse(block);
-                    }
+                    block = JSON.parse(block);
                 } catch (e) {
                     logger.error('Error prepare block getted from db.');
-                    //console.log(blockOrigin);
                     //console.log(block);
                     //console.log(e);
                 }
