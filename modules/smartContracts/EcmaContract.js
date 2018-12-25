@@ -968,14 +968,16 @@ class EcmaContract {
     /**
      * Deploy contract with current wallet
      * @param {string} code
+     * @param {string} resourceRent
      * @param {Function} cb
      */
-    deployContract(code, cb) {
+    deployContract(code, resourceRent, cb) {
         let that = this;
         code = uglifyJs.minify(code).code;
         let deployBlock = new EcmaContractDeployBlock(code, {
             randomSeed: random.int(0, 10000),
-            from: this.blockchain.wallet.id
+            from: this.blockchain.wallet.id,
+            resourceRent: String(resourceRent)
         });
         deployBlock = this.blockchain.wallet.signBlock(deployBlock);
 
@@ -987,13 +989,35 @@ class EcmaContract {
             return;
         }
 
-        this.blockchain.generateNextBlockAuto(deployBlock, function (generatedBlock) {
-            that.blockchain.addBlock(generatedBlock, function () {
-                that.blockchain.broadcastLastBlock();
-                cb({block: generatedBlock, address: generatedBlock.index});
-            })
-        });
+        function generateBlock() {
+            that.blockchain.generateNextBlockAuto(deployBlock, function (generatedBlock) {
+                that.blockchain.addBlock(generatedBlock, function () {
+                    that.blockchain.broadcastLastBlock();
+                    cb({block: generatedBlock, address: generatedBlock.index});
+                })
+            });
+        }
 
+        that.blockchain.getLatestBlock(function (latestBlock) {
+
+            if(!that.config.ecmaContract.masterContract || latestBlock.index < that.config.ecmaContract.masterContract) {
+                logger.info('Delpoying contract without master contract');
+                generateBlock();
+            } else {
+                logger.info('Delpoying contract with master contract ' + that.config.ecmaContract.masterContract);
+                that.callContractMethodRollback(that.config.ecmaContract.masterContract, 'processDeploy', {
+                    deployState: deployBlock.state,
+                    code: code
+                }, function (err, result) {
+                    if(err) {
+                        throw  err;
+                    }
+
+                    generateBlock();
+                });
+            }
+
+        });
     }
 
     /**
@@ -1159,8 +1183,11 @@ class EcmaContract {
     _handleContractDeploy(address, code, state, block, callback) {
         let that = this;
 
-
+        /**
+         * Initiate and run contract
+         */
         function addNewContract() {
+
             state.block = block;
             state.contractAddress = address;
             let contract = {code: code, state: state};
@@ -1191,13 +1218,39 @@ class EcmaContract {
 
         }
 
+        /**
+         * Check deploy if master contract defined
+         */
+        function checkDeployByMaster() {
+            that.blockchain.getLatestBlock(function (latestBlock) {
+
+                if(!that.config.ecmaContract.masterContract || latestBlock.index < that.config.ecmaContract.masterContract) {
+                    addNewContract()
+                } else {
+                    that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'processDeploy', {
+                        deployState: state,
+                        code: code
+                    }, function (err, result) {
+                        if(err) {
+                            logger.error('Contract deploy handling error ' + err);
+                            callback(true);
+                        } else {
+                            addNewContract();
+                        }
+                    });
+                }
+
+            });
+        }
+
+        //Checking for contract already created
         this.contracts.get(address, function (err, contract) {
             if(err) {
-                addNewContract();
+                checkDeployByMaster();
             } else {
                 let oldContract = JSON.parse(contract);
                 that.destroyContractByAddress(address, function () {
-                    addNewContract();
+                    checkDeployByMaster();
                 });
             }
         });
@@ -1262,6 +1315,7 @@ class EcmaContract {
     _handleBlock(blockData, block, callback) {
         let that = this;
         let verifyBlock = {};
+        let testWallet = new Wallet(false, that.config);
 
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
@@ -1274,7 +1328,9 @@ class EcmaContract {
                     return
                 }
 
-                if(!this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey)) {
+                //Checking sign and wallet id equals
+                testWallet.createId(blockData.pubkey);
+                if(!this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey) || blockData.state.from !== testWallet.id) {
                     logger.error('Contract invalid sign in block ' + block.index);
                     callback(true);
                     return
@@ -1282,6 +1338,7 @@ class EcmaContract {
 
                 this._handleContractDeploy(block.index, blockData.ecmaCode, blockData.state, block, callback);
                 break;
+
             case EcmaContractCallBlock.blockType:
                 verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state);
                 if(verifyBlock.data !== blockData.data) {
@@ -1290,7 +1347,9 @@ class EcmaContract {
                     return
                 }
 
-                if(!this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey)) {
+                //Checking sign and wallet id equals
+                testWallet.createId(blockData.pubkey);
+                if(!this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey) || blockData.state.from !== testWallet.id) {
                     logger.error('Contract invalid sign in block ' + block.index);
                     callback(true);
                     return
@@ -1393,11 +1452,12 @@ class EcmaContract {
         app.post('/contracts/ecma/deployContract', async function (req, res) {
             try {
                 let src = req.body.source;
+                let resourceRent = req.body.resourceRent;
                 if(typeof src === 'undefined' || src.length === 0) {
                     res.send({error: true, message: 'Empty source'});
                     return;
                 }
-                that.deployContract(src, function (deployedContract) {
+                that.deployContract(src, resourceRent, function (deployedContract) {
                     res.send({result: deployedContract});
                 });
             } catch (e) {
