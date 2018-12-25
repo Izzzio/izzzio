@@ -1007,7 +1007,8 @@ class EcmaContract {
                 logger.info('Delpoying contract with master contract ' + that.config.ecmaContract.masterContract);
                 that.callContractMethodRollback(that.config.ecmaContract.masterContract, 'processDeploy', {
                     deployState: deployBlock.state,
-                    code: code
+                    code: code,
+                    contractAddress: latestBlock.index + 1
                 }, function (err, result) {
                     if(err) {
                         throw  err;
@@ -1224,12 +1225,13 @@ class EcmaContract {
         function checkDeployByMaster() {
             that.blockchain.getLatestBlock(function (latestBlock) {
 
-                if(!that.config.ecmaContract.masterContract || latestBlock.index < that.config.ecmaContract.masterContract) {
+                if(!that.config.ecmaContract.masterContract || latestBlock.index < that.config.ecmaContract.masterContract || block.index === that.config.ecmaContract.masterContract) {
                     addNewContract()
                 } else {
                     that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'processDeploy', {
                         deployState: state,
-                        code: code
+                        code: code,
+                        contractAddress: block.index
                     }, function (err, result) {
                         if(err) {
                             logger.error('Contract deploy handling error ' + err);
@@ -1270,7 +1272,6 @@ class EcmaContract {
     _handleContractCall(address, method, args, state, block, callback) {
         let that = this;
         if((method === 'contract.deploy') || (method === 'deploy')) {
-            //logger.error('Calling deploy method of contract is not allowed');
             return callback('Calling deploy method of contract is not allowed');
         }
         state.block = block;

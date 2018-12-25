@@ -1,4 +1,3 @@
-
 const emission = 9999999999;
 const tokenName = 'izzzio main';
 const tickerName = 'ZZZ';
@@ -17,6 +16,11 @@ class mainToken extends TokenContract {
 
     init() {
         super.init(emission);
+        /**
+         * Resource rents info
+         * @type {KeyValue}
+         */
+        this.resourceRents = new KeyValue('resourceRents');
     }
 
     /**
@@ -75,6 +79,22 @@ class mainToken extends TokenContract {
         return !isNaN(parseFloat(address)) && isFinite(address);
     }
 
+    /**
+     * Process new contract deployment
+     */
+    processDeploy() {
+        let state = global.getState();
+        let contractAddress = state.contractAddress;
+        let sender = state.deployState.from;
+        let resourceRent = state.deployState.resourceRent;
+
+
+        if(Number(resourceRent) !== 0) {
+            //Transfer rent payment for system account
+            this.wallets.transfer(sender, contractOwner, resourceRent);
+        }
+        this.resourceRents.put(contractAddress, resourceRent);
+    }
 }
 
 global.registerContract(mainToken);
