@@ -126,16 +126,6 @@ class mainToken extends TokenContract {
     }
 
     /**
-     * @deprecated
-     * @param to
-     * @param amount
-     */
-    transfer(to, amount) {
-        console.log('Transfer ', amount, 'to', to, 'from', this._getSender());
-        super.transfer(to, amount);
-    }
-
-    /**
      * Checks address type actuality
      * TODO: Check block aviable
      * @param {string} address contract address
@@ -163,8 +153,6 @@ class mainToken extends TokenContract {
 
         //Saving rent information
         this.resourceRents.put(contractAddress, resourceRent);
-
-        console.log('AVIABLE RESOURCES', this.checkContractLimits(contractAddress));
     }
 
     /**
