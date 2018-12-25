@@ -11,6 +11,7 @@ const storj = require('../instanceStorage');
 const logger = new (require('../logger'))('ECMAContract');
 const random = require('../random');
 const EventsDB = require('./EventsDB');
+const Wallet = require('../wallet');
 
 const EcmaContractDeployBlock = require('./blocks/EcmaContractDeployBlock');
 const EcmaContractCallBlock = require('./blocks/EcmaContractCallBlock');
@@ -384,7 +385,7 @@ class EcmaContract {
 
                     assert.true(Array.isArray(args), 'Event arguments must be an array');
                     assert.true(args.length <= 10, 'Event can take 10 arguments maximum');
-                    assert.true(typeof  event === 'string', 'Event name must be a string');
+                    assert.true(typeof event === 'string', 'Event name must be a string');
                     _events._emit(event, args, state.block, state.contractAddress);
                     return waitForReturn();
                 }
@@ -978,8 +979,10 @@ class EcmaContract {
         });
         deployBlock = this.blockchain.wallet.signBlock(deployBlock);
 
-        this.blockchain.wallet.createId(deployBlock.pubkey);
-        if(this.blockchain.wallet.id !== deployBlock.state.from) {
+        let testWallet = new Wallet(false, this.config);
+
+        testWallet.createId(deployBlock.pubkey);
+        if(testWallet.id !== deployBlock.state.from) {
             logger.error('Contract deploy check author error');
             return;
         }
@@ -1003,14 +1006,17 @@ class EcmaContract {
      */
     deployContractMethod(address, method, args, state, cb) {
         let that = this;
+
         state.from = this.blockchain.wallet.id;
         state.contractAddress = address;
 
         let callBlock = new EcmaContractCallBlock(address, method, args, state);
         callBlock = this.blockchain.wallet.signBlock(callBlock);
 
-        this.blockchain.wallet.createId(callBlock.pubkey);
-        if(this.blockchain.wallet.id !== state.from) {
+        let testWallet = new Wallet(false, this.config);
+
+        testWallet.createId(callBlock.pubkey);
+        if(testWallet.id !== state.from) {
             logger.error('Contract method deploy check author error');
             return;
         }
