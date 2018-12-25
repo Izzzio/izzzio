@@ -10,8 +10,13 @@
  */
 
 
-const TARGET_NETWORK_SPEED = 100; // blocks per second
-const MINIMAL_COMPLEXITY = 0.02; //minimal network complexity
+const TARGET_NETWORK_SPEED = 100;                       // blocks per second
+const MINIMAL_COMPLEXITY = 0.1;                         //minimal network complexity
+const MAX_HASH_SIGMA = 'ffffff';                        //Maximum hash sigma
+
+//******************************* Auto calculated ****************************************
+const MAX_HASH_SIGMA_INT = Number.parseInt(MAX_HASH_SIGMA, 16);//Minimal complexity sigma
+const HASH_SIGMA_LENGTH = MAX_HASH_CHECK.length;                    //How many symbols form hash use for validation
 
 /**
  * Blockchain object
@@ -37,6 +42,7 @@ function isValidNewBlock(newBlock, previousBlock) {
 
     let complexity = getComplexity(newBlock.timestamp, previousBlock.timestamp);
     complexity = complexity < MINIMAL_COMPLEXITY ? MINIMAL_COMPLEXITY : complexity;
+    complexity = Math.round(complexity * 10000) / 10000;
 
 
     if(previousBlock.index + 1 !== newBlock.index) {
@@ -95,7 +101,10 @@ function getComplexity(currentBlockTime, previousBlockTime) {
  * @returns {boolean}
  */
 function isValidHash(hash, complexity) {
-    return blockchain.config.blockHashFilter.blockEndls.indexOf(hash.slice(-4)) !== -1;
+    let hashSigma = hash.slice(-HASH_SIGMA_LENGTH);
+    hashSigma = Number.parseInt(hashSigma, 16);
+
+    return hashSigma <= Math.round(MAX_HASH_SIGMA_INT * (1 - complexity));
 }
 
 
