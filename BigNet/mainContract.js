@@ -192,6 +192,9 @@ class mainToken extends TokenContract {
     }
 
 
+    /**
+     * TODO: Remove in release
+     */
     test(){
         console.log('TEST CALL');
         console.log(contracts.callMethodDeploy('5','balanceOf',[CONTRACT_OWNER]));
