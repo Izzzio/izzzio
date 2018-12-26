@@ -41,18 +41,6 @@ const config = {
     httpServer: 'localhost',            //Адрес биндинга RPC и интерфейса
     rpcPassword: getid() + getid(),
     initialPeers: [                     //Стартовые узлы, для синхронизации с сетью
-        'ws://node1.bitcoen.io:6013',
-        'wss://bitcoen.io/blockchain',
-        'ws://node2.bitcoen.io:6013',
-        'ws://node3.bitcoen.io:6013',
-        'ws://node4.bitcoen.io:6013',
-        'ws://node5.bitcoen.io:6013',
-        'ws://node6.bitcoen.io:6013',
-        'ws://node7.bitcoen.io:6013',
-        'ws://node8.bitcoen.io:6013',
-        'ws://node9.bitcoen.io:6013',
-        'ws://node10.bitcoen.io:6013',
-        //'ws://localhost:6013',
     ],
     allowMultipleConnectionsFromIp: true,//False - если в сети много зацикливаний, True - если используется прокси для коннекта
     maxPeers: 80,                       //Рекомендуемое число 15-20
@@ -122,10 +110,11 @@ const config = {
 
     //SmartContracts
     ecmaContract: {
-        enabled: true,
-        allowDebugMessages: false,
-        contractInstanceCacheLifetime: 10000,
-        ramLimit: 32
+        enabled: true,                          //Система обработки онтрактов включена
+        allowDebugMessages: false,              //Разрешает вывод сообщений смарт окнтрактам
+        contractInstanceCacheLifetime: 10000,   //Время жизни экземпляра виртуальной машины контракта
+        //ramLimit: 32,                           //Макс. ограничение ОЗУ для контрактов. Может быть заменено @deprecated
+        masterContract: 5                       //Главный контракт в системе. Реализует функционал токена
     },
 
     //Cryptography
@@ -232,8 +221,8 @@ if(program.generateWallets) {
 
 global.PATH.mainDir = __dirname;
 //check how appEntry is written
-if (global.PATH.configDir) {
-    if (config.appEntry) {
+if(global.PATH.configDir) {
+    if(config.appEntry) {
         //try to find app file near the config
         let fullPathToAppEntry = '';
         let existenceFlag = false;
@@ -246,7 +235,7 @@ if (global.PATH.configDir) {
 
         }
         //if only filename written
-        if (!existenceFlag) {
+        if(!existenceFlag) {
             try {
                 let fullPathToAppEntry = global.PATH.configDir + path.sep + config.appEntry;
                 fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
