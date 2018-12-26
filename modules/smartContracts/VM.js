@@ -48,7 +48,6 @@ class VM {
                     return;
                 }
                 let cpuTime = that.getCpuTime() - lastCPU;
-                //console.log(cpuTime);
                 if(cpuTime > that.cpuLimit) { //What we wanna do with time limit?
                     clearInterval(_cpuTimer.timer);
                     _cpuTimer.falled = true;

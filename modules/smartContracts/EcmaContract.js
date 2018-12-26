@@ -12,13 +12,16 @@ const logger = new (require('../logger'))('ECMAContract');
 const random = require('../random');
 const EventsDB = require('./EventsDB');
 const Wallet = require('../wallet');
+const moment = require('moment');
 
 const EcmaContractDeployBlock = require('./blocks/EcmaContractDeployBlock');
 const EcmaContractCallBlock = require('./blocks/EcmaContractCallBlock');
 const uglifyJs = require("uglify-es");
 const ContractConnector = require('./connectors/ContractConnector');
 
-const DEFAULT_LIMITS = {ram: 256, timeLimit: 10000, callLimit: 10000};
+const CALLS_LIMITER_THRESHOLD = 60000;
+const MAXIMUM_TIME_LIMIT = 30000;
+const DEFAULT_LIMITS = {ram: 256, timeLimit: MAXIMUM_TIME_LIMIT, callLimit: 10000};
 
 /**
  * EcmaScript Smart contracts handler
@@ -61,6 +64,13 @@ class EcmaContract {
         this._nextCallings = [];
 
         /**
+         * Contain contracts calls for detecting calling limits by CALLS_LIMITER_THRESHOLD
+         * @type {{}}
+         * @private
+         */
+        this._lastestContractsCalls = {};
+
+        /**
          * @var {BlockHandler} this.blockHandler
          */
         this.blockHandler = storj.get('blockHandler');
@@ -96,6 +106,42 @@ class EcmaContract {
         return storj.get('blockchainObject')
     }
 
+
+    /**
+     * Check and control contract calls limits
+     * @param address
+     * @param timestamp
+     * @param limit
+     * @return {boolean}
+     */
+    checkOrAddCallingLimitsControl(address, timestamp, limit) {
+        timestamp = Number(timestamp);
+        let limitCount = 1;
+        for (let stamp in this._lastestContractsCalls) {
+            if(!this._lastestContractsCalls.hasOwnProperty(stamp)) {
+                continue;
+            }
+
+            if((stamp < (timestamp - CALLS_LIMITER_THRESHOLD)) || stamp > timestamp) {
+                delete this._lastestContractsCalls[stamp];
+                continue;
+            }
+
+            if(String(address) === String(this._lastestContractsCalls[stamp])) {
+                limitCount++;
+            }
+
+        }
+
+        if(limitCount > limit) {
+            return false;
+        }
+
+        this._lastestContractsCalls[timestamp] = address;
+
+        return true;
+    }
+
     /**
      * Get contract limits
      * @param address
@@ -104,25 +150,24 @@ class EcmaContract {
     getContractLimits(address, cb) {
         let that = this;
 
-
         if(!this.config.ecmaContract.masterContract) {
             cb(DEFAULT_LIMITS);
             return;
         }
 
-        that.blockchain.getLatestBlock(function (latestBlock) {
-            if(latestBlock.index <= that.config.ecmaContract.masterContract) {
+        if(Number(address) <= that.config.ecmaContract.masterContract) {
+            cb(DEFAULT_LIMITS);
+            return;
+        }
+
+        that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'checkContractLimits', {}, function (err, result) {
+            if(err || !result) {
                 cb(DEFAULT_LIMITS);
                 return;
             }
-            that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'checkContractLimits', {}, function (err, result) {
-                if(err || !result) {
-                    cb(DEFAULT_LIMITS);
-                    return;
-                }
-                cb(JSON.parse(result));
-            }, address);
-        });
+            cb(JSON.parse(result));
+        }, address);
+
     }
 
     /**
@@ -860,7 +905,6 @@ class EcmaContract {
                             if(that._nextCallings.length === 0) {
                                 cb(null, result);
                             } else {
-                                //console.log('Detected next callings. Calling');
                                 let nextCall = that._nextCallings.shift();
                                 await that.callContractMethodDeployWaitPromise(nextCall.contract, nextCall.method, nextCall.state, ...nextCall.args);
                                 cb(null, result);
@@ -1311,39 +1355,54 @@ class EcmaContract {
      * @private
      */
     _handleContractCall(address, method, args, state, block, callback) {
+
         let that = this;
         if((method === 'contract.deploy') || (method === 'deploy')) {
+            logger.error('Calling deploy method of contract is not allowed');
             return callback('Calling deploy method of contract is not allowed');
         }
-        state.block = block;
-        state.randomSeed = block.index;
-        state.contractAddress = address;
 
-        let callstack = [];
-        callstack.push(address);
-        callstack.push(method);
-        callstack.push(state);
-        callstack.push(function (err, result) {
+        //Check call limits
+        that.getContractLimits(address, function (limits) {
 
-            if(err) {
-                that.rollbackAndClearContractsChain(state, function () {
-
-                    logger.error('Contracts calling chain falls with error: ' + err);
-                    callback(err);
-                });
-            } else {
-                that.deployAndClearContractsChain(state, function () {
-                    callback(true);
-                });
+            if(!that.checkOrAddCallingLimitsControl(address, block.timestamp, limits.callLimit)) {
+                logger.error('Contract ' + address + ' calling limits exceed');
+                return callback('Contract ' + address + ' calling limits exceed');
             }
+
+
+            state.block = block;
+            state.randomSeed = block.index;
+            state.contractAddress = address;
+
+            let callstack = [];
+            callstack.push(address);
+            callstack.push(method);
+            callstack.push(state);
+            callstack.push(function (err, result) {
+
+                if(err) {
+                    that.rollbackAndClearContractsChain(state, function () {
+
+                        logger.error('Contracts calling chain falls with error: ' + err);
+                        callback(err);
+                    });
+                } else {
+                    that.deployAndClearContractsChain(state, function () {
+                        callback(true);
+                    });
+                }
+
+            });
+            for (let a in args) {
+                if(args.hasOwnProperty(a)) {
+                    callstack.push(args[a]);
+                }
+            }
+            that.callContractMethodDeployWait.apply(that, callstack);
 
         });
-        for (let a in args) {
-            if(args.hasOwnProperty(a)) {
-                callstack.push(args[a]);
-            }
-        }
-        this.callContractMethodDeployWait.apply(this, callstack);
+
 
     }
 
@@ -1358,6 +1417,7 @@ class EcmaContract {
         let that = this;
         let verifyBlock = {};
         let testWallet = new Wallet(false, that.config);
+
 
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
