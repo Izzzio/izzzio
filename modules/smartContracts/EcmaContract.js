@@ -12,6 +12,7 @@ const logger = new (require('../logger'))('ECMAContract');
 const random = require('../random');
 const EventsDB = require('./EventsDB');
 const Wallet = require('../wallet');
+const moment = require('moment');
 
 const EcmaContractDeployBlock = require('./blocks/EcmaContractDeployBlock');
 const EcmaContractCallBlock = require('./blocks/EcmaContractCallBlock');
@@ -20,7 +21,8 @@ const ContractConnector = require('./connectors/ContractConnector');
 
 const CALLS_LIMITER_THRESHOLD = 60000;
 const MAXIMUM_TIME_LIMIT = 30000;
-const DEFAULT_LIMITS = {ram: 256, timeLimit: MAXIMUM_TIME_LIMIT, callLimit: 10000};
+const MAXIMUM_VM_RAM = 256;
+const DEFAULT_LIMITS = {ram: MAXIMUM_VM_RAM, timeLimit: MAXIMUM_TIME_LIMIT, callLimit: 10000};
 
 /**
  * EcmaScript Smart contracts handler
@@ -111,9 +113,10 @@ class EcmaContract {
      * @param address
      * @param timestamp
      * @param limit
+     * @param test If we need just check limits
      * @return {boolean}
      */
-    checkOrAddCallingLimitsControl(address, timestamp, limit) {
+    checkOrAddCallingLimitsControl(address, timestamp, limit, test = false) {
         timestamp = Number(timestamp);
         let limitCount = 1;
         for (let stamp in this._lastestContractsCalls) {
@@ -136,8 +139,10 @@ class EcmaContract {
             return false;
         }
 
-        this._lastestContractsCalls[timestamp] = address;
 
+        if(!test) {
+            this._lastestContractsCalls[timestamp] = address;
+        }
         return true;
     }
 
@@ -183,7 +188,7 @@ class EcmaContract {
         function createInstance(limits) {
             let contractInfo = {};
             let vm = new VM({
-                ramLimit: limits.ram,//that.config.ecmaContract.ramLimit,
+                ramLimit: limits.ram,
                 logging: that.config.ecmaContract.allowDebugMessages,
                 logPrefix: 'Contract ' + address + ': ',
             });
@@ -1116,26 +1121,37 @@ class EcmaContract {
     deployContractMethod(address, method, args, state, cb) {
         let that = this;
 
-        state.from = this.blockchain.wallet.id;
-        state.contractAddress = address;
+        that.getContractLimits(address, function (limits) {
 
-        let callBlock = new EcmaContractCallBlock(address, method, args, state);
-        callBlock = this.blockchain.wallet.signBlock(callBlock);
+            if(!that.checkOrAddCallingLimitsControl(address, moment().utc().valueOf(), limits.callLimit, true)) {
+                logger.error('Contract ' + address + ' calling limits exceed');
+                return cb('Contract ' + address + ' calling limits exceed');
+            }
 
-        let testWallet = new Wallet(false, this.config);
+            state.from = that.blockchain.wallet.id;
+            state.contractAddress = address;
 
-        testWallet.createId(callBlock.pubkey);
-        if(testWallet.id !== state.from) {
-            logger.error('Contract method deploy check author error');
-            return;
-        }
+            let callBlock = new EcmaContractCallBlock(address, method, args, state);
+            callBlock = that.blockchain.wallet.signBlock(callBlock);
 
-        this.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
-            that.blockchain.addBlock(generatedBlock, function () {
-                that.blockchain.broadcastLastBlock();
-                cb(generatedBlock);
-            })
+            let testWallet = new Wallet(false, that.config);
+
+            testWallet.createId(callBlock.pubkey);
+            if(testWallet.id !== state.from) {
+                logger.error('Contract method deploy check author error');
+                cb('Contract method deploy check author error');
+                return;
+            }
+
+            that.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
+                that.blockchain.addBlock(generatedBlock, function () {
+                    that.blockchain.broadcastLastBlock();
+                    cb(generatedBlock);
+                })
+            });
         });
+
+
     }
 
     /**
@@ -1364,7 +1380,7 @@ class EcmaContract {
         //Check call limits
         that.getContractLimits(address, function (limits) {
 
-            if(!that.checkOrAddCallingLimitsControl(address, block.timestamp, limits.callLimit)) {
+            if(!that.checkOrAddCallingLimitsControl(address, block.timestamp, limits.callLimit, false)) {
                 logger.error('Contract ' + address + ' calling limits exceed');
                 return callback('Contract ' + address + ' calling limits exceed');
             }
