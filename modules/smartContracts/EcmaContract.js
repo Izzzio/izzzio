@@ -12,7 +12,6 @@ const logger = new (require('../logger'))('ECMAContract');
 const random = require('../random');
 const EventsDB = require('./EventsDB');
 const Wallet = require('../wallet');
-const moment = require('moment');
 
 const EcmaContractDeployBlock = require('./blocks/EcmaContractDeployBlock');
 const EcmaContractCallBlock = require('./blocks/EcmaContractCallBlock');
