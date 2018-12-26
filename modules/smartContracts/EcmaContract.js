@@ -18,6 +18,8 @@ const EcmaContractCallBlock = require('./blocks/EcmaContractCallBlock');
 const uglifyJs = require("uglify-es");
 const ContractConnector = require('./connectors/ContractConnector');
 
+const DEFAULT_LIMITS = {ram: 256, timeLimit: 10000, callLimit: 10000};
+
 /**
  * EcmaScript Smart contracts handler
  */
@@ -95,6 +97,35 @@ class EcmaContract {
     }
 
     /**
+     * Get contract limits
+     * @param address
+     * @param cb
+     */
+    getContractLimits(address, cb) {
+        let that = this;
+
+
+        if(!this.config.ecmaContract.masterContract) {
+            cb(DEFAULT_LIMITS);
+            return;
+        }
+
+        that.blockchain.getLatestBlock(function (latestBlock) {
+            if(latestBlock.index <= that.config.ecmaContract.masterContract) {
+                cb(DEFAULT_LIMITS);
+                return;
+            }
+            that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'checkContractLimits', {}, function (err, result) {
+                if(err || !result) {
+                    cb(DEFAULT_LIMITS);
+                    return;
+                }
+                cb(JSON.parse(result));
+            }, address);
+        });
+    }
+
+    /**
      * Create contract instance by code
      * @param address
      * @param code
@@ -103,47 +134,57 @@ class EcmaContract {
      * @return {{vm: VM, db: KeyValueInstancer}}
      */
     createContractInstance(address, code, state, cb) {
-        let contractInfo = {};
-        let vm = new VM({
-            ramLimit: this.config.ecmaContract.ramLimit,
-            logging: this.config.ecmaContract.allowDebugMessages,
-            logPrefix: 'Contract ' + address + ': ',
-        });
-        let db = new TransactionalKeyValue(this.config.workDir + '/contractsRuntime/' + address);
-        try {
-            vm.setTimingLimits(10000);
-            vm.setCpuLimit(10000);
-            vm.compileScript(code, state);
-            vm.setState(state);
-            this._setupVmFunctions(vm, db);
-            vm.execute();
-            vm.runContextMethod("updateExternalState");
-            vm.runContextMethodAsync('contract.init', function (err) {
-                if(err) {
-                    throw 'Contract initialization error ' + err;
-                }
-                if(typeof cb === 'function') {
-                    cb({vm: vm, db: db, info: contractInfo});
-                }
+        let that = this;
+
+        function createInstance(limits) {
+            let contractInfo = {};
+            let vm = new VM({
+                ramLimit: limits.ram,//that.config.ecmaContract.ramLimit,
+                logging: that.config.ecmaContract.allowDebugMessages,
+                logPrefix: 'Contract ' + address + ': ',
             });
+            let db = new TransactionalKeyValue(that.config.workDir + '/contractsRuntime/' + address);
+            try {
+                vm.setTimingLimits(limits.timeLimit + 10000);
+                vm.setCpuLimit(limits.timeLimit + 500);
+                vm.compileScript(code, state);
+                vm.setState(state);
+                that._setupVmFunctions(vm, db);
+                vm.execute();
+                vm.runContextMethod("updateExternalState");
+                vm.runContextMethodAsync('contract.init', function (err) {
+                    if(err) {
+                        throw 'Contract initialization error ' + err;
+                    }
+                    if(typeof cb === 'function') {
+                        cb({vm: vm, db: db, info: contractInfo, limits: limits});
+                    }
+                });
 
 
-            state.deploy = false;
+                state.deploy = false;
 
-        } catch (e) {
-            vm.destroy();
-            logger.error('Contract ' + address + ' deployed with error. ' + e);
-            throw e;
+            } catch (e) {
+                vm.destroy();
+                logger.error('Contract ' + address + ' deployed with error. ' + e);
+                throw e;
+            }
+
+
+            try {
+                contractInfo = vm.getContextProperty('contract.contract')
+            } catch (e) {
+            }
+
         }
 
 
-        try {
-            contractInfo = vm.getContextProperty('contract.contract')
-        } catch (e) {
-        }
+        this.getContractLimits(address, function (limits) {
+            createInstance(limits);
+        });
 
 
-        return {vm: vm, db: db, info: contractInfo};
+        //  return {vm: vm, db: db, info: contractInfo};
     }
 
     /**

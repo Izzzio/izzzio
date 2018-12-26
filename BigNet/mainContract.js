@@ -152,7 +152,7 @@ class mainToken extends TokenContract {
         }
 
         //Saving rent information
-        this.resourceRents.put(contractAddress, resourceRent);
+        this.resourceRents.put(String(contractAddress), resourceRent);
     }
 
     /**
@@ -184,12 +184,19 @@ class mainToken extends TokenContract {
      * @param address
      */
     checkContractLimits(address) {
-        let resourcesAmount = this.resourceRents.get(address);
+        let resourcesAmount = this.resourceRents.get(String(address));
         if(!resourcesAmount) {
             return false;
         }
+        return JSON.stringify(this.calculateResources(resourcesAmount));
+    }
 
-        return this.calculateResources(resourcesAmount);
+
+    test(){
+        console.log('TEST CALL');
+        console.log(contracts.callMethodDeploy('5','balanceOf',[CONTRACT_OWNER]));
+        console.log(contracts.callMethodDeploy('5','checkContractLimits',['6']));
+        console.log('RESULT GRANTED');
     }
 }
 
