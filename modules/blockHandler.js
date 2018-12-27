@@ -464,7 +464,8 @@ class BlockHandler {
      */
     handleTransaction(blockData, block, callback) {
         if (this.config.disableInternalToken) { //выключаем обработку, если запрещены монеты в конфиге
-            return;
+            callback();
+            return false;
         }
         const that = this;
         if(blockData.amount <= 0) {
