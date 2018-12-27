@@ -316,6 +316,9 @@ class TransactionIndex {
     handleTransaction(block, transactionHash, blockData, cb) {
         //do nothing if internal transactions
         if (this.config.disableInternalToken){
+            if(typeof cb !== 'undefined') {
+                cb();
+            }
             return;
         }
         if(this.indexDisabled) {
