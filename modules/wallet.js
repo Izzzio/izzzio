@@ -11,12 +11,13 @@ const keypair = require('keypair');
 const NodeRSA = require('node-rsa');
 
 const fs = require('fs');
-const CryptoJS = require("crypto-js");
+//const CryptoJS = require("crypto-js");
 const Transaction = require("./blocks/transaction");
 const WalletRegister = require("./blocks/walletRegister");
 const moment = require('moment');
 const formatToken = require('./formatToken');
-
+const storj = require('./instanceStorage');
+const cryptography = storj.get('cryptography');
 
 const logger = new (require('./logger'))();
 
@@ -101,7 +102,7 @@ let Wallet = function (walletFile, config) {
         if(key[key.length - 1] !== "\n") {
             key += "\n";
         }
-        return key.replace(new RegExp("\n\n", 'g'),"\n");
+        return key.replace(new RegExp("\n\n", 'g'), "\n");
     }
 
     if(typeof walletFile !== 'undefined' && walletFile) {
@@ -130,21 +131,7 @@ let Wallet = function (walletFile, config) {
      * Generates new data for wallet
      */
     wallet.generate = function () {
-        /* let exp = Math.round(Math.random() * 65536);
-         exp = exp % 2 === 0 ? exp + 1 : exp;
-         wallet.log('Info: Generate wallet with EXP ' + exp);
-         wallet.keysPair = keypair({bits: 2048, e: exp});*/
-
-        /* let key = NodeRSA({b: 2048, environment: 'node'});
-
-         wallet.keysPair.public = key.exportKey('public');
-         wallet.keysPair.private = key.exportKey('private');*/
-        wallet.keysPair = keypair({bits: 2048});
-
-        //1.0.4b bug workaround
-        wallet.keysPair.private = repairKey(wallet.keysPair.private);
-        wallet.keysPair.public = repairKey(wallet.keysPair.public);
-        //1.0.4b bug workaround
+        wallet.keysPair = cryptography.generateKeyPair();
 
         wallet.log('Info: Generated');
         this.createId();
@@ -154,10 +141,14 @@ let Wallet = function (walletFile, config) {
     /**
      * Generate wallet ID
      */
-    wallet.createId = function () {
-        wallet.id = CryptoJS.SHA256(wallet.keysPair.public + Math.random()).toString();
+    wallet.createId = function (publicKey) {
+        publicKey = publicKey || wallet.keysPair.public;
+        if(typeof config.signFunction === "undefined" || 0 === config.signFunction.length) {
+            wallet.id = cryptography.hash(String(publicKey)).toString();
+        } else {
+            wallet.id = publicKey;
+        }
     };
-
 
     if(typeof walletFile === 'undefined') {
         //wallet.generate();
@@ -189,11 +180,7 @@ let Wallet = function (walletFile, config) {
      */
     wallet.signData = function (data, key) {
         key = typeof key === 'undefined' ? wallet.keysPair.private : key;
-        key = repairKey(key);
-        const sign = crypto.createSign(SIGN_TYPE);
-        sign.update(data);
-        let signKey = sign.sign(key).toString('hex');
-        return {data: data, sign: signKey};
+        return cryptography.sign(data, key);
     };
 
     /**
@@ -204,21 +191,8 @@ let Wallet = function (walletFile, config) {
      * @returns {boolean}
      */
     wallet.verifyData = function (data, sign, key) {
-        if(typeof  data === 'object') {
-            sign = data.sign;
-            data = data.data;
-        }
-        const verify = crypto.createVerify(SIGN_TYPE);
-        verify.update(data);
-
         key = typeof key === 'undefined' ? wallet.keysPair.public : key;
-
-        //NO WORKAROUND HERE! OLD TRANSACTIONS MAY STAY BAD!
-        //1.0.4b bug workaround
-        //key = repairKey(key);
-        //1.0.4b bug workaround
-
-        return verify.verify(key, sign, 'hex');
+        return cryptography.verify(data, sign, key);
     };
 
     /**
@@ -303,6 +277,10 @@ let Wallet = function (walletFile, config) {
      * @param {Boolean} keyringed
      */
     wallet.transact = function (to, amount, fromTimestamp, keyringed) {
+        //запрещаем транзакции если установлен флаг
+        if(config.disableInternalToken) {
+            return false;
+        }
         to = String(to);
         amount = Number(amount);
 
@@ -336,7 +314,6 @@ let Wallet = function (walletFile, config) {
         wallet.log('Info: Wallet balance: ' + formatToken(wallet.balance, config.precision));
         wallet.save();
     };
-
 
     /**
      * Self validate signing

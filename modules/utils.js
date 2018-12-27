@@ -28,9 +28,8 @@ module.exports = {
             waitForSync();
         }, 10);
     },
-
     /**
-     * Преобразует 16 ричное число с длиной кратной 4 в строку символов UTF-8
+     * convert hex number string to utf-16
      * @param str
      * @return {*}
      */
@@ -54,7 +53,7 @@ module.exports = {
         return code;
     },
     /**
-     * Преобразует строку UTF-8 в строку с 16 ричным числом
+     * convert utf-16 string to hex
      * @param uniStr
      * @return {string}
      */

@@ -11,11 +11,18 @@ const storj = require('../instanceStorage');
 const logger = new (require('../logger'))('ECMAContract');
 const random = require('../random');
 const EventsDB = require('./EventsDB');
+const Wallet = require('../wallet');
+const moment = require('moment');
 
 const EcmaContractDeployBlock = require('./blocks/EcmaContractDeployBlock');
 const EcmaContractCallBlock = require('./blocks/EcmaContractCallBlock');
 const uglifyJs = require("uglify-es");
 const ContractConnector = require('./connectors/ContractConnector');
+
+const CALLS_LIMITER_THRESHOLD = 60000;
+const MAXIMUM_TIME_LIMIT = 30000;
+const MAXIMUM_VM_RAM = 256;
+const DEFAULT_LIMITS = {ram: MAXIMUM_VM_RAM, timeLimit: MAXIMUM_TIME_LIMIT, callLimit: 10000};
 
 /**
  * EcmaScript Smart contracts handler
@@ -49,6 +56,20 @@ class EcmaContract {
          * @private
          */
         this._instanceCallstack = [];
+
+        /**
+         * Next methods calls for delayed calling
+         * @type {Array}
+         * @private
+         */
+        this._nextCallings = [];
+
+        /**
+         * Contain contracts calls for detecting calling limits by CALLS_LIMITER_THRESHOLD
+         * @type {{}}
+         * @private
+         */
+        this._lastestContractsCalls = {};
 
         /**
          * @var {BlockHandler} this.blockHandler
@@ -86,6 +107,73 @@ class EcmaContract {
         return storj.get('blockchainObject')
     }
 
+
+    /**
+     * Check and control contract calls limits
+     * @param address
+     * @param timestamp
+     * @param limit
+     * @param test If we need just check limits
+     * @return {boolean}
+     */
+    checkOrAddCallingLimitsControl(address, timestamp, limit, test = false) {
+        timestamp = Number(timestamp);
+        let limitCount = 1;
+        for (let stamp in this._lastestContractsCalls) {
+            if(!this._lastestContractsCalls.hasOwnProperty(stamp)) {
+                continue;
+            }
+
+            if((stamp < (timestamp - CALLS_LIMITER_THRESHOLD)) || stamp > timestamp) {
+                delete this._lastestContractsCalls[stamp];
+                continue;
+            }
+
+            if(String(address) === String(this._lastestContractsCalls[stamp])) {
+                limitCount++;
+            }
+
+        }
+
+        if(limitCount > limit) {
+            return false;
+        }
+
+
+        if(!test) {
+            this._lastestContractsCalls[timestamp] = address;
+        }
+        return true;
+    }
+
+    /**
+     * Get contract limits
+     * @param address
+     * @param cb
+     */
+    getContractLimits(address, cb) {
+        let that = this;
+
+        if(!this.config.ecmaContract.masterContract) {
+            cb(DEFAULT_LIMITS);
+            return;
+        }
+
+        if(Number(address) <= that.config.ecmaContract.masterContract) {
+            cb(DEFAULT_LIMITS);
+            return;
+        }
+
+        that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'checkContractLimits', {}, function (err, result) {
+            if(err || !result) {
+                cb(DEFAULT_LIMITS);
+                return;
+            }
+            cb(JSON.parse(result));
+        }, address);
+
+    }
+
     /**
      * Create contract instance by code
      * @param address
@@ -95,47 +183,57 @@ class EcmaContract {
      * @return {{vm: VM, db: KeyValueInstancer}}
      */
     createContractInstance(address, code, state, cb) {
-        let contractInfo = {};
-        let vm = new VM({
-            ramLimit: this.config.ecmaContract.ramLimit,
-            logging: this.config.ecmaContract.allowDebugMessages,
-            logPrefix: 'Contract ' + address + ': ',
-        });
-        let db = new TransactionalKeyValue(this.config.workDir + '/contractsRuntime/' + address);
-        try {
-            vm.setTimingLimits(10000);
-            vm.setCpuLimit(10000);
-            vm.compileScript(code, state);
-            vm.setObjectGlobal('state', state);
-            this._setupVmFunctions(vm, db);
-            vm.execute();
-            vm.runContextMethod("updateDateMock");
-            vm.runContextMethodAsync('contract.init', function (err) {
-                if(err) {
-                    throw 'Contract initialization error ' + err;
-                }
-                if(typeof cb === 'function') {
-                    cb({vm: vm, db: db, info: contractInfo});
-                }
+        let that = this;
+
+        function createInstance(limits) {
+            let contractInfo = {};
+            let vm = new VM({
+                ramLimit: limits.ram,
+                logging: that.config.ecmaContract.allowDebugMessages,
+                logPrefix: 'Contract ' + address + ': ',
             });
+            let db = new TransactionalKeyValue(that.config.workDir + '/contractsRuntime/' + address);
+            try {
+                vm.setTimingLimits(limits.timeLimit + 10000);
+                vm.setCpuLimit(limits.timeLimit + 500);
+                vm.compileScript(code, state);
+                vm.setState(state);
+                that._setupVmFunctions(vm, db);
+                vm.execute();
+                vm.runContextMethod("updateExternalState");
+                vm.runContextMethodAsync('contract.init', function (err) {
+                    if(err) {
+                        throw 'Contract initialization error ' + err;
+                    }
+                    if(typeof cb === 'function') {
+                        cb({vm: vm, db: db, info: contractInfo, limits: limits});
+                    }
+                });
 
 
-            state.deploy = false;
+                state.deploy = false;
 
-        } catch (e) {
-            vm.destroy();
-            logger.error('Contract ' + address + ' deployed with error. ' + e);
-            throw e;
+            } catch (e) {
+                vm.destroy();
+                logger.error('Contract ' + address + ' deployed with error. ' + e);
+                throw e;
+            }
+
+
+            try {
+                contractInfo = vm.getContextProperty('contract.contract')
+            } catch (e) {
+            }
+
         }
 
 
-        try {
-            contractInfo = vm.getContextProperty('contract.contract')
-        } catch (e) {
-        }
+        this.getContractLimits(address, function (limits) {
+            createInstance(limits);
+        });
 
 
-        return {vm: vm, db: db, info: contractInfo};
+        //  return {vm: vm, db: db, info: contractInfo};
     }
 
     /**
@@ -248,6 +346,7 @@ class EcmaContract {
             }
         });
 
+
         /**
          * Contract Key-Value DB
          */
@@ -255,12 +354,12 @@ class EcmaContract {
             getById: function (id, state) {
                 let sync = vmSync();
                 if(state.block.index <= id) {
-                    return sync.return(false);
+                    return sync.fails(false);
                 }
 
                 that.blockchain.getBlockById(id, function (err, block) {
                     if(err) {
-                        sync.return(false);
+                        sync.fails(false);
                     } else {
                         sync.return(block);
                     }
@@ -299,7 +398,7 @@ class EcmaContract {
                     if(!err) {
                         sync.return(val);
                     } else {
-                        sync.return(false);
+                        sync.fails(false);
                     }
                 });
 
@@ -372,9 +471,11 @@ class EcmaContract {
                  * @return {*}
                  */
                 emit: function (event, args) {
+                    let state = global.getState();
+
                     assert.true(Array.isArray(args), 'Event arguments must be an array');
                     assert.true(args.length <= 10, 'Event can take 10 arguments maximum');
-                    assert.true(typeof  event === 'string', 'Event name must be a string');
+                    assert.true(typeof event === 'string', 'Event name must be a string');
                     _events._emit(event, args, state.block, state.contractAddress);
                     return waitForReturn();
                 }
@@ -403,7 +504,7 @@ class EcmaContract {
                         });
                     } else {
                         if(!result) {
-                            sync.return(false);
+                            sync.return(true);
                         } else {
                             sync.return(result);
                         }
@@ -428,13 +529,43 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.return(false);
+                            sync.return(true);
                         } else {
                             sync.return(result);
                         }
 
                     }
                 }, ...args);
+            },
+            _getContractProperty: function (contract, property, state) {
+                let sync = vmSync();
+                state.calledFrom = state.contractAddress;
+                state.contractAddress = contract;
+                that.getContractProperty(contract, 'contract.' + property, function (err, result) {
+                    if(err) {
+                        sync.return(err);
+                    } else {
+                        if(!result) {
+                            sync.return(true);
+                        } else {
+                            sync.return(result);
+                        }
+
+                    }
+                });
+            },
+            /**
+             * Add method for delayed calling
+             * @param contract
+             * @param method
+             * @param args
+             * @param state
+             * @private
+             */
+            _addDelayedCall: function (contract, method, args, state) {
+                state.calledFrom = state.contractAddress;
+                state.contractAddress = contract;
+                that._nextCallings.push({contract: contract, method: method, args: args, state: state});
             }
         });
 
@@ -448,11 +579,17 @@ class EcmaContract {
                  * @param {string} contract Contract address
                  * @param {string} method   Method name
                  * @param {array}  args     Arguments array
+                 * @param {object}  extendState     Extended state
                  * @return {*}
                  */
-                callMethodDeploy: function (contract, method, args) {
-                    if(contract === state.contractAddress) {
-                        throw 'You can\'t call method from himself';
+                callMethodDeploy: function (contract, method, args, extendState = {}) {
+                    let state = global.getState();
+
+                    state.extend = extendState;
+                    state.delayedMethod = false;
+
+                    if((contract === state.contractAddress || this.caller() === contract) && !this.isDelayedCall()) {
+                        throw 'callMethodDeploy: You can\'t call method from himself1';
                     }
                     if(typeof state.callingIndex === 'undefined') {
                         state.callingIndex = 0;
@@ -468,17 +605,70 @@ class EcmaContract {
                 },
 
                 /**
+                 * Call another contract method with deploy
+                 * @param {string} contract Contract address
+                 * @param {string} method   Method name
+                 * @param {array}  args     Arguments array
+                 * @param {object}  extendState     Extended state
+                 * @return {*}
+                 */
+                callDelayedMethodDeploy: function (contract, method, args, extendState = {}) {
+                    let state = global.getState();
+
+                    state.extend = extendState;
+                    state.delayedMethod = true;
+
+                    if((contract === state.contractAddress || this.caller() === contract) && !this.isDelayedCall()) {
+                        throw 'callDelayedMethodDeploy: You can\'t call method from himself2';
+                    }
+                    if(typeof state.callingIndex === 'undefined') {
+                        state.callingIndex = 0;
+                    } else {
+                        state.callingIndex++;
+                    }
+                    _contracts._addDelayedCall(contract, method, args, state);
+                    return true;
+                },
+
+                /**
                  * Call another contract method with rollback
                  * @param contract
                  * @param method
                  * @param args
+                 * @param {object}  extendState     Extended state
                  * @return {*}
                  */
-                callMethodRollback: function (contract, method, args) {
-                    if(contract === state.contractAddress) {
+                callMethodRollback: function (contract, method, args, extendState = {}) {
+                    let state = global.getState();
+                    state.extend = extendState;
+                    state.delayedMethod = false;
+                    if((contract === state.contractAddress || this.caller() === contract) && !this.isDelayedCall()) {
+                        throw 'callMethodRollback: You can\'t call method from himself';
+                    }
+
+                    if(typeof state.callingIndex === 'undefined') {
+                        state.callingIndex = 0;
+                    } else {
+                        state.callingIndex++;
+                    }
+
+                    _contracts._callMethodRollback(contract, method, args, state);
+                    return waitForReturn();
+                },
+                /**
+                 * Returns property value from another contract
+                 * @param contract
+                 * @param property
+                 * @return {*}
+                 */
+                getContractProperty: function (contract, property) {
+                    let state = global.getState();
+                    state.delayedMethod = false;
+
+                    if((contract === state.contractAddress || this.caller() === contract) && !this.isDelayedCall()) {
                         throw 'You can\'t call method from himself';
                     }
-                    _contracts._callMethodRollback(contract, method, args, state);
+                    _contracts._getContractProperty(contract, property, state);
                     return waitForReturn();
                 },
                 /**
@@ -486,6 +676,8 @@ class EcmaContract {
                  * @return {*}
                  */
                 caller: function () {
+                    let state = global.getState();
+
                     if(typeof state.calledFrom !== 'undefined') {
                         return state.calledFrom;
                     }
@@ -503,13 +695,33 @@ class EcmaContract {
                  * @return {boolean}
                  */
                 isDeploy() {
+                    let state = global.getState();
+
                     return typeof state !== 'undefined' && state.deploy;
+                },
+                isDelayedCall() {
+                    let state = global.getState();
+                    return typeof state.delayedMethod !== 'undefined' && state.delayedMethod;
+                },
+                /**
+                 * Returns extended state object
+                 * @return {*}
+                 */
+                getExtendedState() {
+                    let state = global.getState();
+                    if(typeof state['extend'] === 'undefined') {
+                        return {};
+                    }
+
+                    return state.extend;
                 },
                 /**
                  * Get index of contract calling chain
                  * @return {number}
                  */
                 callingIndex() {
+                    let state = global.getState();
+
                     if(typeof state.callingIndex === 'undefined') {
                         return 0
                     } else {
@@ -517,13 +729,16 @@ class EcmaContract {
                     }
                 }
             };
-
         });
 
         vm.injectSource(__dirname + '/internalModules/mockdate.js');
         vm.injectScript('new ' + function () {
             let _MockDate = MockDate;
-            global.updateDateMock = function () {
+            global.updateExternalState = function () {
+                global.updateState();
+
+                let state = global.getState();
+
                 if(typeof state.block !== 'undefined' && typeof state.block.timestamp !== undefined) {
                     _MockDate.set(new Date(state.block.timestamp));
                 } else {
@@ -541,6 +756,9 @@ class EcmaContract {
         vm.injectSource(__dirname + '/internalModules/TokenContract.js');
         vm.injectSource(__dirname + '/internalModules/Event.js');
         vm.injectSource(__dirname + '/internalModules/BlockchainArray.js');
+        vm.injectSource(__dirname + '/internalModules/ContractConnector.js');
+        vm.injectSource(__dirname + '/internalModules/TokenContractConnector.js');
+
     }
 
     /**
@@ -565,22 +783,26 @@ class EcmaContract {
                             cb(err);
                             return;
                         }
-                        instance.vm.setObjectGlobal('state', state);
-                        instance.vm.runContextMethod("updateDateMock");
+
+                        instance.vm.setState(state);
+                        instance.vm.runContextMethod("updateExternalState");
                         instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                                that._nextCallings = [];
                                 cb(err);
                                 return;
                             }
                             try {
                                 that.events.rollback(instance.vm.state.contractAddress, state.block.index, function () {
                                     instance.db.rollback(function () {
+                                        that._nextCallings = [];
                                         cb(null, result);
                                     });
                                 });
                             } catch (e) {
                                 instance.db.rollback(function () {
+                                    that._nextCallings = [];
                                     cb(null, result);
                                 });
                             }
@@ -591,6 +813,7 @@ class EcmaContract {
 
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                    that._nextCallings = [];
                     cb(err);
                 }
             }
@@ -604,6 +827,7 @@ class EcmaContract {
      * @param state
      * @param cb
      * @param args
+     * @deprecated
      */
 
     callContractMethodDeploy(address, method, state, cb, ...args) {
@@ -622,8 +846,9 @@ class EcmaContract {
                             cb(err);
                             return;
                         }
-                        instance.vm.setObjectGlobal('state', state);
-                        instance.vm.runContextMethod("updateDateMock");
+
+                        instance.vm.setState(state);
+                        instance.vm.runContextMethod("updateExternalState");
                         instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
@@ -670,25 +895,55 @@ class EcmaContract {
                             cb(err);
                             return;
                         }
-                        instance.vm.setObjectGlobal('state', state);
-                        instance.vm.runContextMethod("updateDateMock");
-                        instance.vm.runContextMethodAsync('contract.' + method, function (err, result) {
+
+                        instance.vm.setState(state);
+                        instance.vm.runContextMethod("updateExternalState");
+                        instance.vm.runContextMethodAsync('contract.' + method, async function (err, result) {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                                that._nextCallings = [];
                                 cb(err);
                                 return;
                             }
 
-                            cb(null, result);
+                            if(that._nextCallings.length === 0) {
+                                cb(null, result);
+                            } else {
+                                let nextCall = that._nextCallings.shift();
+                                await that.callContractMethodDeployWaitPromise(nextCall.contract, nextCall.method, nextCall.state, ...nextCall.args);
+                                cb(null, result);
+                            }
 
                         }, ...args);
                     });
 
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
+                    that._nextCallings = [];
                     cb(err);
                 }
             }
+        });
+    }
+
+    /**
+     * Deploy method promise version
+     * @param address
+     * @param method
+     * @param state
+     * @param args
+     * @return {Promise<any>}
+     */
+    callContractMethodDeployWaitPromise(address, method, state, ...args) {
+        let that = this;
+        return new Promise((resolve, reject) => {
+            that.callContractMethodDeployWait(address, method, state, function (err, result) {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            }, ...args);
         });
     }
 
@@ -802,24 +1057,57 @@ class EcmaContract {
     /**
      * Deploy contract with current wallet
      * @param {string} code
+     * @param {string} resourceRent
      * @param {Function} cb
      */
-    deployContract(code, cb) {
+    deployContract(code, resourceRent, cb) {
         let that = this;
         code = uglifyJs.minify(code).code;
         let deployBlock = new EcmaContractDeployBlock(code, {
             randomSeed: random.int(0, 10000),
-            from: this.blockchain.wallet.id
+            from: this.blockchain.wallet.id,
+            resourceRent: String(resourceRent)
         });
         deployBlock = this.blockchain.wallet.signBlock(deployBlock);
 
-        this.blockchain.generateNextBlockAuto(deployBlock, function (generatedBlock) {
-            that.blockchain.addBlock(generatedBlock, function () {
-                that.blockchain.broadcastLastBlock();
-                cb({block: generatedBlock, address: generatedBlock.index});
-            })
-        });
+        let testWallet = new Wallet(false, this.config);
 
+        testWallet.createId(deployBlock.pubkey);
+        if(testWallet.id !== deployBlock.state.from) {
+            logger.error('Contract deploy check author error');
+            return;
+        }
+
+        function generateBlock() {
+            that.blockchain.generateNextBlockAuto(deployBlock, function (generatedBlock) {
+                that.blockchain.addBlock(generatedBlock, function () {
+                    that.blockchain.broadcastLastBlock();
+                    cb({block: generatedBlock, address: generatedBlock.index});
+                })
+            });
+        }
+
+        that.blockchain.getLatestBlock(function (latestBlock) {
+
+            if(!that.config.ecmaContract.masterContract || latestBlock.index < that.config.ecmaContract.masterContract) {
+                logger.info('Delpoying contract without master contract');
+                generateBlock();
+            } else {
+                logger.info('Delpoying contract with master contract ' + that.config.ecmaContract.masterContract);
+                that.callContractMethodRollback(that.config.ecmaContract.masterContract, 'processDeploy', {
+                    deployState: deployBlock.state,
+                    code: code,
+                    contractAddress: latestBlock.index + 1
+                }, function (err, result) {
+                    if(err) {
+                        throw  err;
+                    }
+
+                    generateBlock();
+                });
+            }
+
+        });
     }
 
     /**
@@ -832,17 +1120,38 @@ class EcmaContract {
      */
     deployContractMethod(address, method, args, state, cb) {
         let that = this;
-        state.from = this.blockchain.wallet.id;
-        state.contractAddress = address;
 
-        let callBlock = new EcmaContractCallBlock(address, method, args, state);
-        callBlock = this.blockchain.wallet.signBlock(callBlock);
-        this.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
-            that.blockchain.addBlock(generatedBlock, function () {
-                that.blockchain.broadcastLastBlock();
-                cb(generatedBlock);
-            })
+        that.getContractLimits(address, function (limits) {
+
+            if(!that.checkOrAddCallingLimitsControl(address, moment().utc().valueOf(), limits.callLimit, true)) {
+                logger.error('Contract ' + address + ' calling limits exceed');
+                return cb('Contract ' + address + ' calling limits exceed');
+            }
+
+            state.from = that.blockchain.wallet.id;
+            state.contractAddress = address;
+
+            let callBlock = new EcmaContractCallBlock(address, method, args, state);
+            callBlock = that.blockchain.wallet.signBlock(callBlock);
+
+            let testWallet = new Wallet(false, that.config);
+
+            testWallet.createId(callBlock.pubkey);
+            if(testWallet.id !== state.from) {
+                logger.error('Contract method deploy check author error');
+                cb('Contract method deploy check author error');
+                return;
+            }
+
+            that.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
+                that.blockchain.addBlock(generatedBlock, function () {
+                    that.blockchain.broadcastLastBlock();
+                    cb(generatedBlock);
+                })
+            });
         });
+
+
     }
 
     /**
@@ -880,7 +1189,6 @@ class EcmaContract {
 
         if(typeof this._contractInstanceCache[address] === 'undefined') {
             this.createContractInstance(address, code, state, function (instance) {
-
                 let timer = setTimeout(function () {
                     destroyInstanceTimer(instance);
                 }, that._contractInstanceCacheLifetime);
@@ -976,8 +1284,11 @@ class EcmaContract {
     _handleContractDeploy(address, code, state, block, callback) {
         let that = this;
 
-
+        /**
+         * Initiate and run contract
+         */
         function addNewContract() {
+
             state.block = block;
             state.contractAddress = address;
             let contract = {code: code, state: state};
@@ -1008,13 +1319,40 @@ class EcmaContract {
 
         }
 
+        /**
+         * Check deploy if master contract defined
+         */
+        function checkDeployByMaster() {
+            that.blockchain.getLatestBlock(function (latestBlock) {
+
+                if(!that.config.ecmaContract.masterContract || latestBlock.index < that.config.ecmaContract.masterContract || block.index === that.config.ecmaContract.masterContract) {
+                    addNewContract()
+                } else {
+                    that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'processDeploy', {
+                        deployState: state,
+                        code: code,
+                        contractAddress: block.index
+                    }, function (err, result) {
+                        if(err) {
+                            logger.error('Contract deploy handling error ' + err);
+                            callback(true);
+                        } else {
+                            addNewContract();
+                        }
+                    });
+                }
+
+            });
+        }
+
+        //Checking for contract already created
         this.contracts.get(address, function (err, contract) {
             if(err) {
-                addNewContract();
+                checkDeployByMaster();
             } else {
                 let oldContract = JSON.parse(contract);
                 that.destroyContractByAddress(address, function () {
-                    addNewContract();
+                    checkDeployByMaster();
                 });
             }
         });
@@ -1032,37 +1370,54 @@ class EcmaContract {
      * @private
      */
     _handleContractCall(address, method, args, state, block, callback) {
+
         let that = this;
+        if((method === 'contract.deploy') || (method === 'deploy')) {
+            logger.error('Calling deploy method of contract is not allowed');
+            return callback('Calling deploy method of contract is not allowed');
+        }
 
-        state.block = block;
-        state.randomSeed = block.index;
-        state.contractAddress = address;
+        //Check call limits
+        that.getContractLimits(address, function (limits) {
 
-        let callstack = [];
-        callstack.push(address);
-        callstack.push(method);
-        callstack.push(state);
-        callstack.push(function (err, result) {
-
-            if(err) {
-                that.rollbackAndClearContractsChain(state, function () {
-
-                    logger.error('Contracts calling chain falls with error: ' + err);
-                    callback(err);
-                });
-            } else {
-                that.deployAndClearContractsChain(state, function () {
-                    callback(true);
-                });
+            if(!that.checkOrAddCallingLimitsControl(address, block.timestamp, limits.callLimit, false)) {
+                logger.error('Contract ' + address + ' calling limits exceed');
+                return callback('Contract ' + address + ' calling limits exceed');
             }
+
+
+            state.block = block;
+            state.randomSeed = block.index;
+            state.contractAddress = address;
+
+            let callstack = [];
+            callstack.push(address);
+            callstack.push(method);
+            callstack.push(state);
+            callstack.push(function (err, result) {
+
+                if(err) {
+                    that.rollbackAndClearContractsChain(state, function () {
+
+                        logger.error('Contracts calling chain falls with error: ' + err);
+                        callback(err);
+                    });
+                } else {
+                    that.deployAndClearContractsChain(state, function () {
+                        callback(true);
+                    });
+                }
+
+            });
+            for (let a in args) {
+                if(args.hasOwnProperty(a)) {
+                    callstack.push(args[a]);
+                }
+            }
+            that.callContractMethodDeployWait.apply(that, callstack);
 
         });
-        for (let a in args) {
-            if(args.hasOwnProperty(a)) {
-                callstack.push(args[a]);
-            }
-        }
-        this.callContractMethodDeployWait.apply(this, callstack);
+
 
     }
 
@@ -1076,6 +1431,8 @@ class EcmaContract {
     _handleBlock(blockData, block, callback) {
         let that = this;
         let verifyBlock = {};
+        let testWallet = new Wallet(false, that.config);
+
 
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
@@ -1088,7 +1445,9 @@ class EcmaContract {
                     return
                 }
 
-                if(!this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey)) {
+                //Checking sign and wallet id equals
+                testWallet.createId(blockData.pubkey);
+                if(!this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey) || blockData.state.from !== testWallet.id) {
                     logger.error('Contract invalid sign in block ' + block.index);
                     callback(true);
                     return
@@ -1096,6 +1455,7 @@ class EcmaContract {
 
                 this._handleContractDeploy(block.index, blockData.ecmaCode, blockData.state, block, callback);
                 break;
+
             case EcmaContractCallBlock.blockType:
                 verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state);
                 if(verifyBlock.data !== blockData.data) {
@@ -1104,7 +1464,9 @@ class EcmaContract {
                     return
                 }
 
-                if(!this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey)) {
+                //Checking sign and wallet id equals
+                testWallet.createId(blockData.pubkey);
+                if(!this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey) || blockData.state.from !== testWallet.id) {
                     logger.error('Contract invalid sign in block ' + block.index);
                     callback(true);
                     return
@@ -1207,11 +1569,12 @@ class EcmaContract {
         app.post('/contracts/ecma/deployContract', async function (req, res) {
             try {
                 let src = req.body.source;
+                let resourceRent = req.body.resourceRent;
                 if(typeof src === 'undefined' || src.length === 0) {
                     res.send({error: true, message: 'Empty source'});
                     return;
                 }
-                that.deployContract(src, function (deployedContract) {
+                that.deployContract(src, resourceRent, function (deployedContract) {
                     res.send({result: deployedContract});
                 });
             } catch (e) {

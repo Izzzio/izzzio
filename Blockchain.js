@@ -28,9 +28,15 @@ function Blockchain(config) {
     const logger = new (require('./modules/logger'))();
     const getid = require('./modules/getid');
     const fs = require('fs-extra');
+    //Instance storage
+    const storj = require('./modules/instanceStorage');
 
+    //Cryptography
+    const Cryptography = require('./modules/cryptography');
+    const cryptography = new Cryptography(config);
+    storj.put('cryptography', cryptography);
     //Crypto
-    const CryptoJS = require("crypto-js");
+    //const CryptoJS = require("crypto-js");
 
     //Networking
     const express = require("express");
@@ -48,7 +54,6 @@ function Blockchain(config) {
     const moment = require('moment');
     const url = require('url');
 
-
     //Blockchain
     const Block = require('./modules/block');
     const Signable = require('./modules/blocks/signable');
@@ -59,10 +64,11 @@ function Blockchain(config) {
     const Frontend = require('./modules/frontend');
     const app = express();
 
-    //Instance storage
-    const storj = require('./modules/instanceStorage');
+
     storj.put('app', app);
     storj.put('config', config);
+
+
 
     //Subsystems
     const blockController = new (require('./modules/blockchain'))();
@@ -105,9 +111,6 @@ function Blockchain(config) {
     console.log('Message bus address: ' + config.recieverAddress);
     console.log('');
 
-
-    let nodeMetaInfo = new NodeMetaInfo(config);
-
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
     logger.info('Wallet address ' + wallet.getAddress(false));
@@ -117,6 +120,7 @@ function Blockchain(config) {
     }
     console.log('');
 
+    let nodeMetaInfo = new NodeMetaInfo(config);
 
     /**
      * База данных блоков
@@ -784,7 +788,8 @@ function Blockchain(config) {
      * @returns {*|string|a}
      */
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
-        return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
+        //return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
+        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
     }
 
     /**
@@ -1430,6 +1435,7 @@ function Blockchain(config) {
              }
          }*/
 
+
         for (let a = validators.length - 1; a > -1; a--) {
             if(validators.hasOwnProperty(a)) {
                 if(validators[a].isReady()) {
@@ -1448,6 +1454,7 @@ function Blockchain(config) {
      * @return {boolean}
      */
     function isReadyForTransaction() {
+
         if(blockHandler.syncInProgress) {
             return false;
         }
@@ -1515,6 +1522,9 @@ function Blockchain(config) {
      * где precision это максимальная точность при операциях с не дробными монетами
      */
     function coinEmission() {
+        if (config.disableInternalToken) {
+            return;
+        }
         if(!blockHandler.isKeyFromKeyring(wallet.keysPair.public)) {
             logger.error("The selected key does not belong to the keychain! Emission corrupted.");
             return;

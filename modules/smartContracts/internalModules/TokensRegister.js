@@ -217,6 +217,26 @@
             this.deposit(address, amount);
         };
 
+        /**
+         * Establish allowance and approve mechanism
+         * @param owner allowance establisher
+         * @param spender
+         * @param amount
+         */
+       /* this.approve = function (owner, spender, amount) {
+            this.validateNumber(amount);
+            amount = new BigNumber(amount);
+
+            const ALLOWANCE_KEY = String(owner) + "_" + String(spender);
+            if(!this.db.get(ALLOWANCE_KEY)) {
+                this.db.put(ALLOWANCE_KEY, amount);
+            } else {
+                let actualAmount = new BigNumber(this.db.get(ALLOWANCE_KEY));
+                this.db.put(ALLOWANCE_KEY, amount.plus(actualAmount));
+            }
+            return this.db.get(ALLOWANCE_KEY);
+        };*/
+
 
         return this;
     };

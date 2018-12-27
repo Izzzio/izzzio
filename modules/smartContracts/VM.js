@@ -48,7 +48,6 @@ class VM {
                     return;
                 }
                 let cpuTime = that.getCpuTime() - lastCPU;
-                //console.log(cpuTime);
                 if(cpuTime > that.cpuLimit) { //What we wanna do with time limit?
                     clearInterval(_cpuTimer.timer);
                     _cpuTimer.falled = true;
@@ -102,6 +101,15 @@ class VM {
     }
 
     /**
+     * Set internal read-only state
+     * @param state
+     */
+    setState(state) {
+        this.state = state;
+        this.setObjectGlobal('state', state);
+    }
+
+    /**
      * Creates context for iZ3 Smart Contracts
      * @param randomSeed
      * @return {*}
@@ -123,6 +131,9 @@ class VM {
         jail.setSync('system', this.objToReference({
             processMessages: function () {
                 return true;
+            },
+            getState: function () {
+                return that.objToReference(that.state);
             }
         }));
         jail.setSync('_randomSeed', randomSeed);
@@ -140,15 +151,17 @@ class VM {
                 let newObj = {};
                 for (let a in obj) {
                     if(obj.hasOwnProperty(a)) {
-                        if(obj[a]['ref_type'] === 'function') {
-                            newObj[a] = function (...args) {
-                                return obj[a]['ref'].applySync(undefined, args.map(arg => new ivm.ExternalCopy(arg).copyInto()));
-                            }
-                        } else {
-                            if(obj[a]['ref_type'] === 'object') {
-                                newObj[a] = obj[a]['ref'].copySync();
+                        if(obj[a]) {
+                            if(obj[a]['ref_type'] === 'function') {
+                                newObj[a] = function (...args) {
+                                    return obj[a]['ref'].applySync(undefined, args.map(arg => new ivm.ExternalCopy(arg).copyInto()));
+                                }
                             } else {
-                                newObj[a] = obj[a];
+                                if(obj[a]['ref_type'] === 'object') {
+                                    newObj[a] = obj[a]['ref'].copySync();
+                                } else {
+                                    newObj[a] = obj[a];
+                                }
                             }
                         }
                     }
@@ -163,6 +176,22 @@ class VM {
             _ivm = undefined;
             let randomSeed = _randomSeed;
             _randomSeed = undefined;
+
+            let _state = global.state;
+            /**
+             * Safe state method
+             * @return {state}
+             */
+            global.getState = function () {
+                return  Object.assign({}, _state);
+            };
+
+            /**
+             * Update state from global object
+             */
+            global.updateState = function () {
+                _state = decodeReferences(system.getState());
+            };
 
             /**
              * IO functions
@@ -189,6 +218,8 @@ class VM {
              * @param contract
              */
             global.registerContract = function registerContract(contract) {
+                //Save current state before run contract
+                _state = global.state;
                 global.contract = new contract();
                 global.Contract = contract;
             };
@@ -201,6 +232,7 @@ class VM {
                 global[objName] = decodeReferences(global[objName]);
                 return true;
             };
+
 
         });
         bootstrap.runSync(context);
@@ -326,6 +358,26 @@ class VM {
             }
             that._stopCPULimitTimer(cpuLimiter);
             cb(reason);
+        });
+    }
+
+    /**
+     * Run async method as promise
+     * @param context
+     * @param cb
+     * @param args
+     * @return {Promise<any>}
+     */
+    runContextMethodAsyncPromise(context, cb, ...args) {
+        let that = this;
+        return new Promise((resolve, reject) => {
+            that.runContextMethod(context, function (err, result) {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            }, args)
         });
     }
 
