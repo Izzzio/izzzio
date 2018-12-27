@@ -65,14 +65,31 @@ class VoteContract extends TokenContract {
         return this._vote.voteResults;
     }
 
-    makeChoice(from, variant)
+    /**
+     * check if this user can vote(if he hasn't voted yet)
+     * @returns {boolean}
+     */
+    userCanVote() {
+        let sender = this._getSender();
+        if (this._vote.members.indexOf(this.sender) > -1) {
+            return false;
+        } else {
+            return true;
+        }
+    }
 
     transfer(to, amount, from = state.from) {
         this.wallets.transfer(from, to, amount);
         this.TransferEvent.emit(from, to, new BigNumber(amount));
     }
 
+    get sumOfVotes () {
+        return this.voteResults.reduce((a, b) => a + b);
+    }
 
+    checkDeadlines() {
+        return this._vote.deadVotesline > this.sumOfVotes && this.this._vote.deadTimeline > Date.now();
+    }
 
 
     // /**
