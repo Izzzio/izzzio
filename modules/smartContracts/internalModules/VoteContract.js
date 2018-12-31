@@ -145,7 +145,6 @@ class VoteContract extends TokenContract {
         }
     }
 
-
 }
 
 global.registerContract(VoteContract);
