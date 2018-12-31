@@ -19,16 +19,18 @@ class VoteContract extends TokenContract {
     init(options, initialEmission = EMISSION, mintable = false) {
 
         super.init();
+        this._vote = {};
         this._vote.subject = options.subject;                //тема голосования
         this._vote.variants = [...options.variants];         //варианты
         this._vote.deadTimeline = options.deadTimeline;      //время окончания
         this._vote.deadVotesline = options.deadVotesline;    //порог голосов
         this._vote.fee = options.fee;                        //стоимость голоса
         this._vote.members = [];                             //список голосов
-        this._vote.voteResults= [];                          //результаты голосования
+        this._vote.voteResults = [];                          //результаты голосования: ключ - адрес голосующего, значение - выбранный вариант
         this.voteState(0);                                        //состояние голосования
 
         this.VoteEvent = new Event('Vote', 'string', 'number'); //кто и за какой вариант проголосовал
+        this.ChangeVoteState = new Event('ChangeVoteState', 'string');
     }
 
     get contract() {
@@ -39,17 +41,33 @@ class VoteContract extends TokenContract {
         };
     }
 
+    _transfer(from, to, amount) {
+        this.wallets.transfer(from, to, amount);
+        this.TransferEvent.emit(from, to, new BigNumber(amount));
+    }
+
+    /**
+     * method to make voting started
+     */
     startVoting() {
         this.voteState(1);
     }
 
-    endVoting() {
+    /**
+     * method to stop voting
+     */
+    _endVoting() {
         this.voteState(2);
     }
 
+    /**
+     * set necessary state
+     * @param ind
+     */
     set voteState(ind) {
         if (ind >= 0 && ind < STATE.length && this._vote) {
             this._vote.state = STATE[ind];
+            this.ChangeVoteState.emit(STATE[ind]);
         }
     }
 
@@ -62,50 +80,70 @@ class VoteContract extends TokenContract {
      * @returns {*|Array}
      */
     get voteResults() {
-        return this._vote.voteResults;
+        let arr = [];
+        for (let v of this._vote.voteResults)
+        {
+            arr[v] = arr[v] ? arr[v] + 1 : 1;
+        }
+        return arr;
     }
 
     /**
-     * check if this user can vote(if he hasn't voted yet)
+     * check if this user can vote(if he hasn't voted yet and voting started)
      * @returns {boolean}
      */
-    userCanVote() {
-        let sender = this._getSender();
-        if (this._vote.members.indexOf(this.sender) > -1) {
-            return false;
-        } else {
+    _userCanVote() {
+        return !this._vote.voteResults[this._getSender()] && this.voteState === STATE[1];
+    }
+
+    /**
+     * get whole sum of votes
+     * @returns {number}
+     */
+    get _sumOfVotes () {
+        return this.voteResults.reduce((a, b) => a + b, 0);
+    }
+
+    /**
+     * check deadlines of the voting. if we have at least one deadline, then stop voting and return funds
+     * @returns {boolean} true if everything is fine, false if deadline exist
+     */
+    _checkDeadlines() {
+        if (this._vote.deadVotesline > this._sumOfVotes && this.this._vote.deadTimeline > Date.now()){
             return true;
+        } else {
+            this._returnFunds();
+            return false;
         }
     }
 
-    transfer(to, amount, from = state.from) {
-        this.wallets.transfer(from, to, amount);
-        this.TransferEvent.emit(from, to, new BigNumber(amount));
+    /**
+     * return funds when voting ends
+     * @private
+     */
+    _returnFunds(from = this.contract.ticker) {
+        //stopping voting
+        this._endVoting();
+        for (let address in this._vote.voteResults) {
+            this._transfer(from, address, this._vote.fee);
+        }
     }
 
-    get sumOfVotes () {
-        return this.voteResults.reduce((a, b) => a + b);
+    /**
+     * make vote for necessary variant
+     * @param variant {number}
+     * @param address
+     */
+    makeVote(variant, address = this.contract.ticker) {
+        if (this._checkDeadlines() && this._userCanVote())
+        {
+            let sender = this._getSender();
+            this._transfer(sender, address, this._vote.fee);
+            this._vote.voteResults[sender] = variant;
+            this.VoteEvent.emit(sender, variant);
+            this._checkDeadlines();
+        }
     }
-
-    checkDeadlines() {
-        return this._vote.deadVotesline > this.sumOfVotes && this.this._vote.deadTimeline > Date.now();
-    }
-
-
-    // /**
-    //  * Make transfer to external contract
-    //  * @param address
-    //  * @param amount
-    //  * @param method
-    //  * @param args
-    //  */
-    // makeTransferToExternal(address, amount, method, args) {
-    //     this.transfer(address, amount);
-    //     let connector = new TokenContractConnector(address);
-    //     connector.registerDeployMethod(method, method);
-    //     return connector[method](args);
-    // }
-
 
 
 }
