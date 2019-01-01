@@ -65,6 +65,14 @@ const RESOURCES_PRICE = {
     callLimit: 1
 };
 
+/**
+ * Contract call fee
+ * @type {number}
+ */
+const FEE = 0.001;
+
+const FEE_ADDRESS = 'SOME-RSA-KEY';
+
 class mainToken extends TokenContract {
 
     /**
@@ -85,6 +93,11 @@ class mainToken extends TokenContract {
          * @type {KeyValue}
          */
         this.resourceRents = new KeyValue('resourceRents');
+        this.orderStorage = new KeyValue('orderStorage');
+    }
+
+    takeComission(amount) {
+        this.transfer(FEE_ADDRESS, amount);        
     }
 
     /**
@@ -132,6 +145,86 @@ class mainToken extends TokenContract {
      */
     checkContractAddress(address) {
         return !isNaN(parseFloat(address)) && isFinite(address);
+    }
+
+    /**
+     * TODO:
+     * исправить логическую уязвимость
+     * заказ БЕЗ оплаты
+     * стандарт заказа
+     */
+    processOrderConsumer(sellerContractAddress, type, amount) {
+        assert.true(this.checkContractAddress(sellerContractAddress), 'Invalid address');
+        const state = global.getState();
+        addressFrom = state.from;
+
+        sellerContractAddress = String(sellerContractAddress);
+
+        //Пока не оплатит или не получит отказ встречным методом, ЕСТЬ ЛОГИЧЕСКАЯ УЯЗВИМОСТЬ: что если на заказ не придет ответ?
+        if (!!this.orderStorage.get(addressFrom) == true) {
+            throw "you have already ordered";
+        }
+
+        //Пригодится при заморозке
+        this.orderStorage.put(addressFrom, amount);
+
+        global.contracts.callDelayedMethodDeploy(sellerContractAddress, "order", [type, amount]);
+    }
+
+    /**
+     * TODO
+     * стандарт ответа на заказ
+     */
+    processOrderSeller(consumerContractAddress, args) {
+        assert.true(this.checkContractAddress(consumerContractAddress), 'Invalid address');
+        const state = global.getState();
+        const addressFrom = state.from;
+
+        consumerContractAddress = String(consumerContractAddress);
+        let consumerDebt = new BigNumber( this.orderStorage.get(consumerContractAddress) );
+        let consumerDebtAdded = new BigNumber(0);
+
+        consumerDebtAdded = consumerDebt.plus(consumerDebt.multipliedBy(FEE));
+        this.transferToOwner(consumerDebtAdded);
+        this._sendToContract(addressFrom, consumerDebt);
+        this.takeComission(consumerDebtAdded.minus(consumerDebt));
+        
+        this.orderStorage.del(consumerContractAddress);
+        global.contracts.callDelayedMethodDeploy(consumerContractAddress, "orderResponse", args);
+    }
+
+    /**
+     * TODO: спецификация/стандарт методов для покупателей и продавцов
+     */
+    processDirectSell(sellerContractAddress, type, amount) {
+        assert.true(this.checkContractAddress(sellerContractAddress), 'Invalid address');
+        const state = global.getState();
+        const addressFrom = state.from;
+
+        const oldBalance = this.balanceOf(sellerContractAddress);
+
+        sellerContractAddress = String(sellerContractAddress);
+        amount = new BigNumber(amount);
+        let amountAdded = new BigNumber(0);
+
+        amountAdded = amount.plus(amount.multipliedBy(FEE));
+        this.transferToOwner(amountAdded);
+        this._sendToContract(sellerContractAddress, amount);
+        this.takeComission(amountAdded.minus(amount));
+        
+
+        //если  у него есть директ ретёрн.
+        let callToSellerResult = global.contracts.callDelayedMethodDeploy(sellerContractAddress, "directSell", [type, amount], {            
+            type: 'pay',
+            amount: amount.toString(),
+            balance: this.balanceOf(sellerContractAddress),
+            oldBalance: oldBalance,
+            ticker: this.contract.ticker,
+            contractName: this.contract.name
+        });
+        //ответ покупателю
+        global.contracts.callDelayedMethodDeploy(addressFrom, "directBuy", callToSellerResult);
+
     }
 
     /**

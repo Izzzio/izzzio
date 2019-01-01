@@ -42,6 +42,15 @@ class TokenContract extends Contract {
     }
 
     /**
+     * Returns token address
+     * @return {*}
+     * @private
+     */
+    _getTokenAddress() {
+        return global.getstate().contractAddress;
+    }
+
+    /**
      * Get balance of wallet
      * @param address
      * @return {*}
@@ -90,5 +99,15 @@ class TokenContract extends Contract {
         assert.true(this.mintable, 'Token is not mintable');
         this.wallets.mint(from, amount);
         this.MintEvent.emit(from, new BigNumber(amount));
+    }
+
+    /**
+     * Raw transfering used in a mainTokeт
+     * @param {*} amount 
+     */
+    transferToOwner(amount) {
+        let from = this._getSender();
+        let to = this._getTokenAddress(); 
+        this.wallets.transfer(from, to, amount);
     }
 }
