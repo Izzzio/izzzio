@@ -149,8 +149,7 @@ class mainToken extends TokenContract {
 
     /**
      * TODO:
-     * исправить логическую уязвимость
-     * заказ БЕЗ оплаты
+     * исправить логическую уязвимость в виде ответа на заказ: что если его вообще не будет? - обсуждаем.
      * стандарт заказа
      */
     processOrderConsumer(sellerContractAddress, type, amount) {
@@ -160,13 +159,13 @@ class mainToken extends TokenContract {
 
         sellerContractAddress = String(sellerContractAddress);
 
-        //Пока не оплатит или не получит отказ встречным методом, ЕСТЬ ЛОГИЧЕСКАЯ УЯЗВИМОСТЬ: что если на заказ не придет ответ?
-        if (!!this.orderStorage.get(addressFrom) == true) {
-            throw "you have already ordered";
+        let ordersArray = this.orderStorage.get(addressFrom);
+        if (!!ordersArray == false) {
+            this.orderStorage.put(addressFrom, []);
         }
 
-        //Пригодится при заморозке
-        this.orderStorage.put(addressFrom, amount);
+        let order = {type: type, amount: amount};
+        ordersArray.push(order);
 
         global.contracts.callDelayedMethodDeploy(sellerContractAddress, "order", [type, amount]);
     }
@@ -175,7 +174,7 @@ class mainToken extends TokenContract {
      * TODO
      * стандарт ответа на заказ
      */
-    processOrderSeller(consumerContractAddress, args) {
+    processOrderSeller(consumerContractAddress, orderNumber, response) {
         assert.true(this.checkContractAddress(consumerContractAddress), 'Invalid address');
         const state = global.getState();
         const addressFrom = state.from;
@@ -188,9 +187,10 @@ class mainToken extends TokenContract {
         this.transferToOwner(consumerDebtAdded);
         this._sendToContract(addressFrom, consumerDebt);
         this.takeComission(consumerDebtAdded.minus(consumerDebt));
-        
-        this.orderStorage.del(consumerContractAddress);
-        global.contracts.callDelayedMethodDeploy(consumerContractAddress, "orderResponse", args);
+
+        let ordersArray = this.orderStorage.get(consumerContractAddress);
+        delete ordersArray[orderNumber];
+        global.contracts.callDelayedMethodDeploy(consumerContractAddress, "orderResponse", response);
     }
 
     /**
