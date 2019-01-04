@@ -42,15 +42,6 @@ class TokenContract extends Contract {
     }
 
     /**
-     * Returns token address
-     * @return {*}
-     * @private
-     */
-    _getTokenAddress() {
-        return global.getstate().contractAddress;
-    }
-
-    /**
      * Get balance of wallet
      * @param address
      * @return {*}
