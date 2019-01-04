@@ -1,9 +1,9 @@
 
 const OWNER = false;
-const EMISSION = 0;
 const TOKEN_NAME = 'VOTETOKEN';
 const TICKER = 'VOTETICKER';
 const STATE = ['waiting', 'started', 'ended'];
+const MAIN_TOKEN_ADDRESS = '5';
 
 /**
  * token contract for vote
@@ -16,7 +16,7 @@ class MainVoteContract extends Contract {
      * @param {BigNumber| Number| String} initialEmission Amount of initial emission
      * @param {Boolean} mintable  Can mintable by owner in feature?
      */
-    init(options, initialEmission = EMISSION, mintable = false) {
+    init(options) {
 
         super.init();
         this.vote = new KeyValue('vote');
@@ -32,18 +32,9 @@ class MainVoteContract extends Contract {
         }
         this.putKeyValue('votesCount', 0);                            //число проголосовавших
 
-
         this.VoteEvent = new Event('Vote', 'string', 'number'); //кто и за какой вариант проголосовал
         this.ChangeVoteState = new Event('ChangeVoteState', 'string');
-        this.TransferEvent = new Event('Transfer', 'string', 'string', 'number');
-        this.MintEvent = new Event('Mint', 'string', 'number');
 
-        this.mintable = mintable;
-        this.wallets = new TokensRegister(this.contract.ticker);
-        if(Number(initialEmission) > 0 && contracts.isDeploy()) { //Calls on deploying
-            this.wallets.mint(this.contract.owner, initialEmission);
-            this.MintEvent.emit(this.contract.owner, new BigNumber(initialEmission));
-        }
         this._voteState(0);                                        //состояние голосования
     }
 
@@ -149,7 +140,7 @@ class MainVoteContract extends Contract {
         this._endVoting();
         //return funds to each address
         for (let address in this.voteMembers) {
-            this._transfer(from, address, getKeyValue('fee'));
+            this._transfer(from, address, this.getKeyValue('fee'));
         }
     }
 
@@ -165,15 +156,16 @@ class MainVoteContract extends Contract {
      * @param variant {number}
      * @param address
      */
-    makeVote(variant, address = this.contract.ticker) {
+    processPayment(variant, address = this.contract.ticker) {
         //check if there was payment
         this.assertPayment();
         let payment = this.payProcess();
+        assert.assert(MAIN_TOKEN_ADDRESS === payment.caller, 'Wrong main token address');
+        let sender = this._getSender();
         //check other conditions
-        this._userCanVote(payment.calledFrom);
+        this._userCanVote(sender);
         if (this._checkDeadlines())
         {
-            let sender = payment.calledFrom;
             //check if it is enought money
             assert.assert(new BigNumber(this.getKeyValue('fee')) === payment.amount, 'Wrong payment amount');
             this.voteMembers[sender] = variant;
