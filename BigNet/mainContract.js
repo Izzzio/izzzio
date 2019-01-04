@@ -93,11 +93,16 @@ class mainToken extends TokenContract {
          * @type {KeyValue}
          */
         this.resourceRents = new KeyValue('resourceRents');
-        this.orderStorage = new KeyValue('orderStorage');
+        this.orderInfoStorage = new BlockchainObject('orderInfoStorage');
     }
-
-    takeComission(amount) {
-        this.transfer(FEE_ADDRESS, amount);        
+    
+    /**
+     * Comission taking method, uses raw transfer method 
+     * @param {string} from fee payer address
+     * @param {number} amount paying fee amount. calculated in a contract method
+     */
+    takeComission(from, amount) {
+        this.wallets.transfer(from, FEE_ADDRESS, amount);        
     }
 
     /**
@@ -158,14 +163,20 @@ class mainToken extends TokenContract {
         addressFrom = state.from;
 
         sellerContractAddress = String(sellerContractAddress);
-
-        let ordersArray = this.orderStorage.get(addressFrom);
-        if (!!ordersArray == false) {
-            this.orderStorage.put(addressFrom, []);
-        }
+        addressFrom = String(addressFrom); //нужно вообще?
 
         let order = {type: type, amount: amount};
-        ordersArray.push(order);
+        
+        let _keyOrders = sellerContractAddress + '_' + addressFrom;
+        let ordersNumber = this.orderInfoStorage.get(_keyOrders + '_orders');
+        if (!!ordersNumber == false) {
+            this.orderInfoStorage.set(_keyOrders + '_1', order);
+            this.orderInfoStorage.set(_keyOrders + '_orders', 1);
+        } else {
+            let newOrderNumber = new BigNumber(ordersNumber) + 1;
+            this.orderInfoStorage.set(_keyOrders + '_' + newOrderNumber, order);
+            this.orderInfoStorage.set(_keyOrders + '_orders', newOrderNumber);
+        }
 
         global.contracts.callDelayedMethodDeploy(sellerContractAddress, "order", [type, amount]);
     }
@@ -180,16 +191,17 @@ class mainToken extends TokenContract {
         const addressFrom = state.from;
 
         consumerContractAddress = String(consumerContractAddress);
-        let consumerDebt = new BigNumber( this.orderStorage.get(consumerContractAddress) );
+        addressFrom = String(addressFrom);
+        let _keyOrders = addressFrom + '_' + consumerContractAddress;
+        let consumerDebt = new BigNumber( this.orderInfoStorage.get(_keyOrders + '_' + orderNumber).amount );
         let consumerDebtAdded = new BigNumber(0);
 
         consumerDebtAdded = consumerDebt.plus(consumerDebt.multipliedBy(FEE));
-        this.transferToOwner(consumerDebtAdded);
         this._sendToContract(addressFrom, consumerDebt);
-        this.takeComission(consumerDebtAdded.minus(consumerDebt));
+        this.wallets.transfer(addressFrom, state.contractAddress, consumerDebtAdded);
+        this.takeComission(addressFrom, consumerDebtAdded.minus(consumerDebt));
 
-        let ordersArray = this.orderStorage.get(consumerContractAddress);
-        delete ordersArray[orderNumber];
+        this.orderInfoStorage.set(_keyOrders + '_' + orderNumber, false);
         global.contracts.callDelayedMethodDeploy(consumerContractAddress, "orderResponse", response);
     }
 
@@ -208,12 +220,10 @@ class mainToken extends TokenContract {
         let amountAdded = new BigNumber(0);
 
         amountAdded = amount.plus(amount.multipliedBy(FEE));
-        this.transferToOwner(amountAdded);
         this._sendToContract(sellerContractAddress, amount);
-        this.takeComission(amountAdded.minus(amount));
+        this.wallets.transfer(sellerContractAddress, amountAdded);
+        this.takeComission(sellerContractAddress, amountAdded.minus(amount));
         
-
-        //если  у него есть директ ретёрн.
         let callToSellerResult = global.contracts.callDelayedMethodDeploy(sellerContractAddress, "directSell", [type, amount], {            
             type: 'pay',
             amount: amount.toString(),
@@ -222,7 +232,7 @@ class mainToken extends TokenContract {
             ticker: this.contract.ticker,
             contractName: this.contract.name
         });
-        //ответ покупателю
+
         global.contracts.callDelayedMethodDeploy(addressFrom, "directBuy", callToSellerResult);
 
     }
