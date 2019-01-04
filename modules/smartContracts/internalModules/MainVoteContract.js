@@ -175,7 +175,7 @@ class MainVoteContract extends Contract {
         {
             let sender = payment.calledFrom;
             //check if it is enought money
-            assert.assert(new BigNumber(this.getKeyValue('fee') === payment.amount), 'Wrong payment amount');
+            assert.assert(new BigNumber(this.getKeyValue('fee')) === payment.amount, 'Wrong payment amount');
             this.voteMembers[sender] = variant;
             this.voteResults[variant] = this.voteResults[variant] ? this.voteResults[variant]++ : 1;
             this.VoteEvent.emit(sender, variant);
