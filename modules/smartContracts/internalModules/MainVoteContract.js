@@ -20,22 +20,22 @@ class MainVoteContract extends Contract {
 
         super.init();
         this.vote = new KeyValue('vote');
-        this.putKeyValue('subject', options.subject);                //тема голосования
-        this.putKeyValue('deadTimeline', options.deadTimeline);      //время окончания
-        this.putKeyValue('deadVotesline', options.deadVotesline);    //порог голосов
-        this.putKeyValue('fee', options.fee);                        //стоимость голоса
+        this._putKeyValue('subject', options.subject);                //тема голосования
+        this._putKeyValue('deadTimeline', options.deadTimeline);      //время окончания
+        this._putKeyValue('deadVotesline', options.deadVotesline);    //порог голосов
+        this._putKeyValue('fee', options.fee);                        //стоимость голоса
         this.voteMembers = new BlockchainArray('voteMembers');       //список голосов: ключ - адрес голосующего, значение - выбранный вариант
         this.voteResults = new BlockchainArray('voteResults');       //результаты голосования: ключ - вариант голосования, значение - количество голосов
         this.variants = new BlockchainArray('variants');          //варианты
         for (let v of options.variants) {
             this.variants.push(v);
         }
-        this.putKeyValue('votesCount', 0);                            //число проголосовавших
+        this._putKeyValue('votesCount', 0);                            //число проголосовавших
 
         this.VoteEvent = new Event('Vote', 'string', 'number'); //кто и за какой вариант проголосовал
         this.ChangeVoteState = new Event('ChangeVoteState', 'string');
 
-        this._voteState(0);                                        //состояние голосования
+        this._voteState = 0;                                        //состояние голосования
     }
 
     get contract() {
@@ -59,12 +59,12 @@ class MainVoteContract extends Contract {
         return global.getState().from;
     }
 
-    putKeyValue(key, value) {
+    _putKeyValue(key, value) {
         //помещает в хранилище vote ключ - значение
         this.vote.put(key, value)
     };
 
-    getKeyValue(key) {
+    _getKeyValue(key) {
         //получает значения под ключом
         this.vote.get(key)
     };
@@ -78,14 +78,14 @@ class MainVoteContract extends Contract {
      * method to make voting started
      */
     startVoting() {
-        this._voteState(1);
+        this._voteState = 1;
     }
 
     /**
      * method to stop voting
      */
     _endVoting() {
-        this._voteState(2);
+        this._voteState = 2;
     }
 
     /**
@@ -94,7 +94,7 @@ class MainVoteContract extends Contract {
      */
     set _voteState(ind) {
         if (ind >= 0 && ind < STATE.length) {
-            this.putKeyValue('state', STATE[ind]);
+            this._putKeyValue('state', STATE[ind]);
             this.ChangeVoteState.emit(STATE[ind]);
         }
     }
@@ -103,7 +103,7 @@ class MainVoteContract extends Contract {
      * get current state of voting
      */
     get _voteState() {
-        return this.getKeyValue('state');
+        return this._getKeyValue('state');
     }
 
     /**
@@ -135,13 +135,28 @@ class MainVoteContract extends Contract {
      * return funds when voting ends
      * @private
      */
-    _returnFunds(from = this.contract.ticker) {
+    _returnFunds() {
         //stopping voting
         this._endVoting();
+        //create connector to main token
+        let mainTokenConnector = new TokenContractConnector(MAIN_TOKEN_ADDRESS);
         //return funds to each address
         for (let address in this.voteMembers) {
-            this._transfer(from, address, this.getKeyValue('fee'));
+            mainTokenConnector.transfer(address, this._getKeyValue('fee'));
         }
+    }
+
+    /**
+     * Add info about new vote
+     * @param sender
+     * @param variant
+     * @private
+     */
+    _addVote(sender, variant) {
+        this.voteMembers[sender] = variant;
+        this.voteResults[variant] = this.voteResults[variant] ? this.voteResults[variant]++ : 1;
+        let count = new BigNumber(this._getKeyValue('votesCount')) + 1;
+        this._putKeyValue('votesCount', count);
     }
 
     /**
@@ -154,12 +169,12 @@ class MainVoteContract extends Contract {
     /**
      * make vote for necessary variant
      * @param variant {number}
-     * @param address
      */
-    processPayment(variant, address = this.contract.ticker) {
+    processPayment(variant) {
         //check if there was payment
         this.assertPayment();
         let payment = this.payProcess();
+        //check if this sender token is legal
         assert.assert(MAIN_TOKEN_ADDRESS === payment.caller, 'Wrong main token address');
         let sender = this._getSender();
         //check other conditions
@@ -167,9 +182,8 @@ class MainVoteContract extends Contract {
         if (this._checkDeadlines())
         {
             //check if it is enought money
-            assert.assert(new BigNumber(this.getKeyValue('fee')) === payment.amount, 'Wrong payment amount');
-            this.voteMembers[sender] = variant;
-            this.voteResults[variant] = this.voteResults[variant] ? this.voteResults[variant]++ : 1;
+            assert.assert(new BigNumber(this._getKeyValue('fee')) === payment.amount, 'Wrong payment amount');
+            this._addVote(sender, variant);
             this.VoteEvent.emit(sender, variant);
             this._checkDeadlines();
         }
