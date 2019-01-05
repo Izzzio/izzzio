@@ -13,8 +13,6 @@ class MainVoteContract extends Contract {
     /**
      * Initialization method with emission
      * @param {*} options Details of the voting
-     * @param {BigNumber| Number| String} initialEmission Amount of initial emission
-     * @param {Boolean} mintable  Can mintable by owner in feature?
      */
     init(options) {
 
