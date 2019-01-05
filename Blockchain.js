@@ -790,10 +790,14 @@ function Blockchain(config) {
      */
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
         //return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
-        if(data.sign && config.compressHexData){
+
+
+        /*if(data.sign && config.compressHexData){
             //data compressed => need decompress
             data.sign = utils.unicode2HexString(data.sign);
         }
+        */
+
 
         let hash = cryptography.hash(
             String(index) +
@@ -804,12 +808,16 @@ function Blockchain(config) {
             JSON.stringify(data)
         ).toString();
 
+
+        /*
         if(config.compressHexData){
             let hashMinified = utils.hexString2Unicode(hash);
             if(false !== hashMinified){
                 hash = hashMinified;
             }
         }
+        */
+
 
         return hash;
     }

@@ -203,12 +203,15 @@ class Cryptography {
         }
         signedData = signedData.replace('\r\n', ''); //delete wrong symbols
 
+
+        /*
         if(this.config.compressHexData){
             let signMinified = this.utils.hexString2Unicode(signedData);
             if(false !== signMinified){
                 signedData = signMinified;
             }
         }
+        */
 
         return {data: data, sign: signedData};
     }
@@ -227,10 +230,14 @@ class Cryptography {
         }
         let result;
 
+
+        /*
         if(this.config.compressHexData){
             //data compressed => need decompress
             sign = this.utils.unicode2HexString(sign);
         }
+        */
+
 
         if(this.gostSign) {
             let bData, bKey, bSign;
