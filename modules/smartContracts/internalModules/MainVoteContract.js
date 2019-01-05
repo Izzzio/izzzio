@@ -111,8 +111,8 @@ class MainVoteContract extends Contract {
      * @returns {boolean} true if everything is fine, false if deadline exist
      */
     _checkDeadlines() {
-        let votesCount = new BigNumber(getKeyValue('votesCount'));
-        let deadVotesline = new BigNumber(getKeyValue('deadVotesline'));
+        let votesCount = new BigNumber(this._getKeyValue('votesCount'));
+        let deadVotesline = new BigNumber(this._getKeyValue('deadVotesline'));
         let deadTimeline =new Date('deadTimeline');
         if (deadVotesline > votesCount && deadTimeline > Date.now()){
             return true;
@@ -128,7 +128,7 @@ class MainVoteContract extends Contract {
      * @private
      */
     _userCanVote(user) {
-        assert.assert(!this.voteMembers[user] && this.voteState === STATE[1], "You can't take part at this vote");
+        assert.assert(!this.voteMembers[user] && this._voteState === STATE[1], "You can't take part at this vote");
     }
 
     /**
@@ -142,7 +142,7 @@ class MainVoteContract extends Contract {
         let mainTokenConnector = new TokenContractConnector(MAIN_TOKEN_ADDRESS);
         //return funds to each address
         for (let address in this.voteMembers) {
-            mainTokenConnector.transfer(address, this._getKeyValue('fee'));
+            mainTokenConnector.transfer(address, new BigNumber(this._getKeyValue('fee')));
         }
     }
 
