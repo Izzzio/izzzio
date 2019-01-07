@@ -202,7 +202,6 @@ class Cryptography {
             signedData = _sign.sign(key).toString(inputOutputFormat);
         }
         signedData = signedData.replace('\r\n', ''); //delete wrong symbols
-
         return {data: data, sign: signedData};
     }
 
@@ -219,7 +218,6 @@ class Cryptography {
             data = data.data;
         }
         let result;
-
         if(this.gostSign) {
             let bData, bKey, bSign;
             bData = this.data2Buffer(data);

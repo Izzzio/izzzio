@@ -62,7 +62,6 @@ function Blockchain(config) {
     const Transactor = require('./modules/transactor');
     const MessagesDispatcher = require('./modules/messagesDispatcher');
     const Frontend = require('./modules/frontend');
-
     const app = express();
 
     storj.put('app', app);
