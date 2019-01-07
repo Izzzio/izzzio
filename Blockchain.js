@@ -67,8 +67,6 @@ function Blockchain(config) {
     storj.put('app', app);
     storj.put('config', config);
 
-
-
     //Subsystems
     const blockController = new (require('./modules/blockchain'))();
     const NodeMetaInfo = require('./modules/NodeMetaInfo');
@@ -788,17 +786,7 @@ function Blockchain(config) {
      */
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
         //return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
-
-        let hash = cryptography.hash(
-            String(index) +
-            previousHash +
-            String(timestamp) +
-            String(startTimestamp) +
-            String(sign) +
-            JSON.stringify(data)
-        ).toString();
-
-        return hash;
+        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
     }
 
     /**
