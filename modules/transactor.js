@@ -95,22 +95,6 @@ class Transactor {
                     return;// cb();
                 }
 
-                if(that.blockchainObject.config.compressHexData){
-                    let previousHash = i.block.previousHash || false;
-                    let hash = i.block.hash || false;
-                    let sign = i.block.sign || false;
-
-                    if(previousHash && previousHash.length){
-                        i.block.previousHash = utils.unicode2HexString(previousHash);
-                    }
-                    if(hash && hash.length){
-                        i.block.hash = utils.unicode2HexString(hash);
-                    }
-                    if(sign && sign.length){
-                        i.block.sign = utils.unicode2HexString(sign);
-                    }
-                }
-
                 if(block.hash !== i.block.hash) {
                     logger.warning('Transactor: Block ' + i.block.index + ' was rejected and replaced.');
                     i.repeats++;
@@ -179,6 +163,12 @@ class Transactor {
              * @var {Block} block
              */
             logger.info('Transactor: Block ' + block.index + ' generated. Addes to watch list');
+
+            if(that.blockchainObject.config.compressHexData){
+                if(typeof block === 'object'){
+                    block = utils.decompressBlockPartsFromUnicode(block);
+                }
+            }
             that.transactions[index].block = block;
             that.transactions[index].watchlist = watchlist;
             that.transactions[index].index = index;
