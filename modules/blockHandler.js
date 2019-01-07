@@ -330,6 +330,7 @@ class BlockHandler {
                     logger.warning('Network without keyring');
                 }
 
+                that.wallet.keysPair.public = that.wallet.keysPair.public.replace(String.fromCharCode(10), "\\n");
                 if(that.isKeyFromKeyring(that.wallet.keysPair.public)) {
                     logger.warning('THRUSTED NODE. BE CAREFUL.');
                 }
