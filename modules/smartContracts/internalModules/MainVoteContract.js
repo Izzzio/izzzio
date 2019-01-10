@@ -67,11 +67,6 @@ class MainVoteContract extends Contract {
         this.vote.get(key)
     };
 
-    _transfer(from, to, amount) {
-        this.wallets.transfer(from, to, amount);
-        this.TransferEvent.emit(from, to, new BigNumber(amount));
-    }
-
     /**
      * method to make voting started
      */
