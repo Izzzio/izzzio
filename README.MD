@@ -7,9 +7,11 @@
 
 #### Dependencies
 
-**iZ³ platform** depends on Node.JS version >= 8.2.0
+**iZ³ platform** depends on Node.js version >= 8.2.0
 
 NPM version >= 5.3.0
+
+For now we recommend build iZ³ Node for Node.js >= 10
 
 **Building depends on:**
 
@@ -33,6 +35,31 @@ node main.js
 
 **If the building ends with an error, delete the node_modules directory before retrying**
 
+## Troubleshooting
+**If the building ends with an error, delete the node_modules directory before retrying**
+
+#### Windows.
+
+If the package installation fails, use
+
+```
+npm install --global --production windows-build-tools
+```
+This command will install Visual Studio 2017 build tools.
+
+Then:
+
+Control Panel -> Programs and Components -> Microsoft Visual Studio Installer(run change).
+
+In Visual Studio Installer window, find installed "Visual Studio Build Tools 2017" and click "Change".
+
+In "Visual C++ Build Tools" section.
+
+Check needed options in right panel:
+
+Make sure the "...VC++ 2015.3 v14.00(v140)" option is enabled.
+
+
 ## Contributing
 
 1. Fork it ( [https://github.com/Izzzio/iz3node/fork](https://github.com/Izzzio/iz3node/fork) )
@@ -44,3 +71,4 @@ node main.js
 ## Maintainers
 
 - [lailune](https://github.com/lailune) Andrey Nedobylsky - maintainer
+
