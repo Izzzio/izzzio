@@ -84,8 +84,6 @@ class KeyValue {
                 that.levelup.get(key, options, callback);
                 break;
         }
-
-
     }
 
     /**
@@ -117,8 +115,6 @@ class KeyValue {
                 that.levelup.put(key, value, callback);
                 break;
         }
-
-
     }
 
     /**
@@ -141,8 +137,6 @@ class KeyValue {
                 that.levelup.del(key, options, callback);
                 break;
         }
-
-
     }
 
 

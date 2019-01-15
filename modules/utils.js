@@ -74,5 +74,28 @@ module.exports = {
         }
 
         return str;
+    },
+
+    /**
+     * Decompress parts of block from utf-16 string to hex
+     * @param block
+     * @return {object}
+     */
+    decompressBlockPartsFromUnicode: function (block) {
+        let previousHash = block.previousHash || false;
+        let hash = block.hash || false;
+        let sign = block.sign || false;
+
+        if (previousHash && previousHash.length) {
+            block.previousHash = this.unicode2HexString(previousHash);
+        }
+        if (hash && hash.length) {
+            block.hash = this.unicode2HexString(hash);
+        }
+        if (sign && sign.length) {
+            block.sign = this.unicode2HexString(sign);
+        }
+
+        return block;
     }
 };

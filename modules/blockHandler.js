@@ -161,7 +161,7 @@ class BlockHandler {
     }
 
     exBlockHandler(result, callback) {
-        this.handleBlock(JSON.parse(result), callback)
+        this.handleBlock(result, callback)
     }
 
     /**
@@ -194,7 +194,7 @@ class BlockHandler {
                 try {
                     result = that.exBlockhainGet.sync(that, i);
                     if(prevBlock !== null) {
-                        if(JSON.parse(prevBlock).hash !== JSON.parse(result).previousHash) {
+                        if(prevBlock.hash !== result.previousHash) {
                             if(that.config.program.autofix) {
                                 logger.info('Autofix: Delete chain data after ' + i + ' block');
 
@@ -215,13 +215,11 @@ class BlockHandler {
                                     cb();
                                 }
 
-
                                 return;
-                                break;
                             } else {
                                 logger.disable = false;
-                                console.log(JSON.parse(prevBlock));
-                                console.log(JSON.parse(result));
+                                console.log(prevBlock);
+                                console.log(result);
                                 logger.fatal('Saved chain corrupted in block ' + i + '. Remove wallets and blocks dirs for resync. Also you can use --autofix');
                                 process.exit(1);
                             }
@@ -271,7 +269,7 @@ class BlockHandler {
                 }
                 let block;
                 try {
-                    block = JSON.parse(val);
+                    block = val;
                     block.data = JSON.parse(block.data);
                 } catch (e) {
                     return cb(false);
@@ -332,6 +330,7 @@ class BlockHandler {
                     logger.warning('Network without keyring');
                 }
 
+                that.wallet.keysPair.public = that.wallet.keysPair.public.replace(String.fromCharCode(10), "\\n");
                 if(that.isKeyFromKeyring(that.wallet.keysPair.public)) {
                     logger.warning('THRUSTED NODE. BE CAREFUL.');
                 }

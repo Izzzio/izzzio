@@ -183,10 +183,6 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
         return false;
     }
 
-    if(typeof blockData === 'object') {
-        blockData = JSON.stringify(blockData);
-    }
-
     blockchain.getLatestBlock(function (previousBlock) {
         if(!previousBlock) {
             return;

@@ -64,11 +64,8 @@ function Blockchain(config) {
     const Frontend = require('./modules/frontend');
     const app = express();
 
-
     storj.put('app', app);
     storj.put('config', config);
-
-
 
     //Subsystems
     const blockController = new (require('./modules/blockchain'))();
@@ -295,7 +292,7 @@ function Blockchain(config) {
         }
         blockHandler.changeMaxBlock(maxBlock);
         transactor.changeMaxBlock(maxBlock);
-        blockchain.put(Number(index), JSON.stringify(block), function () {
+        blockchain.put(Number(index), block, function () {
             if(!noHandle) {
                 blockHandler.handleBlock(block, cb);
             } else {
@@ -1097,7 +1094,7 @@ function Blockchain(config) {
     function getLatestBlock(callback) {
         blockchain.get(maxBlock, function (err, val) {
             if(!err) {
-                callback(JSON.parse(val));
+                callback(val);
             } else {
                 callback(false);
             }

@@ -5,7 +5,7 @@
 
 const storj = require('./instanceStorage');
 const logger = new (require('./logger'))();
-
+const utils = require('./utils');
 
 /**
  * Реализация тёщи, которая пилит блок, пока он не будет принят в сеть
@@ -94,7 +94,7 @@ class Transactor {
                     }
                     return;// cb();
                 }
-                block = JSON.parse(block);
+
                 if(block.hash !== i.block.hash) {
                     logger.warning('Transactor: Block ' + i.block.index + ' was rejected and replaced.');
                     i.repeats++;
@@ -163,6 +163,12 @@ class Transactor {
              * @var {Block} block
              */
             logger.info('Transactor: Block ' + block.index + ' generated. Addes to watch list');
+
+            if(that.blockchainObject.config.compressHexData){
+                if(typeof block === 'object'){
+                    block = utils.decompressBlockPartsFromUnicode(block);
+                }
+            }
             that.transactions[index].block = block;
             that.transactions[index].watchlist = watchlist;
             that.transactions[index].index = index;
