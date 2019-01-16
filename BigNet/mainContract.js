@@ -236,6 +236,7 @@ class mainToken extends TokenContract {
         global.contracts.callDelayedMethodDeploy(addressFrom, "directBuy", callToSellerResult);
 
     }
+
     
     /**
      * Process new contract deployment
