@@ -65,6 +65,14 @@ const RESOURCES_PRICE = {
     callLimit: 1
 };
 
+/**
+ * Contract call fee
+ * @type {number}
+ */
+const FEE = 0.001;
+
+const FEE_ADDRESS = 'SOME-RSA-KEY';
+
 class mainToken extends TokenContract {
 
     /**
@@ -85,6 +93,16 @@ class mainToken extends TokenContract {
          * @type {KeyValue}
          */
         this.resourceRents = new KeyValue('resourceRents');
+        this.orderInfoStorage = new BlockchainObject('orderInfoStorage');
+    }
+    
+    /**
+     * Comission taking method, uses raw transfer method 
+     * @param {string} from fee payer address
+     * @param {number} amount paying fee amount. calculated in a contract method
+     */
+    takeComission(from, amount) {
+        this.wallets.transfer(from, FEE_ADDRESS, amount);        
     }
 
     /**
@@ -132,6 +150,91 @@ class mainToken extends TokenContract {
      */
     checkContractAddress(address) {
         return !isNaN(parseFloat(address)) && isFinite(address);
+    }
+
+    /**
+     * TODO:
+     * исправить логическую уязвимость в виде ответа на заказ: что если его вообще не будет? - обсуждаем.
+     * стандарт заказа
+     */
+    processOrderConsumer(sellerContractAddress, type, amount) {
+        assert.true(this.checkContractAddress(sellerContractAddress), 'Invalid address');
+        const state = global.getState();
+        addressFrom = state.from;
+
+        sellerContractAddress = String(sellerContractAddress);
+        addressFrom = String(addressFrom); //нужно вообще?
+
+        let order = {type: type, amount: amount};
+        
+        let _keyOrders = sellerContractAddress + '_' + addressFrom;
+        let ordersNumber = this.orderInfoStorage.get(_keyOrders + '_orders');
+        if (!!ordersNumber == false) {
+            this.orderInfoStorage.set(_keyOrders + '_1', order);
+            this.orderInfoStorage.set(_keyOrders + '_orders', 1);
+        } else {
+            let newOrderNumber = new BigNumber(ordersNumber) + 1;
+            this.orderInfoStorage.set(_keyOrders + '_' + newOrderNumber, order);
+            this.orderInfoStorage.set(_keyOrders + '_orders', newOrderNumber);
+        }
+
+        global.contracts.callDelayedMethodDeploy(sellerContractAddress, "order", [type, amount]);
+    }
+
+    /**
+     * TODO
+     * стандарт ответа на заказ
+     */
+    processOrderSeller(consumerContractAddress, orderNumber, response) {
+        assert.true(this.checkContractAddress(consumerContractAddress), 'Invalid address');
+        const state = global.getState();
+        const addressFrom = state.from;
+
+        consumerContractAddress = String(consumerContractAddress);
+        addressFrom = String(addressFrom);
+        let _keyOrders = addressFrom + '_' + consumerContractAddress;
+        let consumerDebt = new BigNumber( this.orderInfoStorage.get(_keyOrders + '_' + orderNumber).amount );
+        let consumerDebtAdded = new BigNumber(0);
+
+        consumerDebtAdded = consumerDebt.plus(consumerDebt.multipliedBy(FEE));
+        this._sendToContract(addressFrom, consumerDebt);
+        this.wallets.transfer(addressFrom, state.contractAddress, consumerDebtAdded);
+        this.takeComission(addressFrom, consumerDebtAdded.minus(consumerDebt));
+
+        this.orderInfoStorage.set(_keyOrders + '_' + orderNumber, false);
+        global.contracts.callDelayedMethodDeploy(consumerContractAddress, "orderResponse", response);
+    }
+
+    /**
+     * TODO: спецификация/стандарт методов для покупателей и продавцов
+     */
+    processDirectSell(sellerContractAddress, type, amount) {
+        assert.true(this.checkContractAddress(sellerContractAddress), 'Invalid address');
+        const state = global.getState();
+        const addressFrom = state.from;
+
+        const oldBalance = this.balanceOf(sellerContractAddress);
+
+        sellerContractAddress = String(sellerContractAddress);
+        amount = new BigNumber(amount);
+        let amountAdded = new BigNumber(0);
+
+        amountAdded = amount.plus(amount.multipliedBy(FEE));
+        this._sendToContract(sellerContractAddress, amount);
+        this.wallets.transfer(sellerContractAddress, amountAdded);
+        this.takeComission(sellerContractAddress, amountAdded.minus(amount));
+        
+        let callToSellerResult = global.contracts.callDelayedMethodDeploy(sellerContractAddress, "directSell", [type, amount], {            
+            type: 'pay',
+            amount: amount.toString(),
+            balance: this.balanceOf(sellerContractAddress),
+            oldBalance: oldBalance,
+            ticker: this.contract.ticker,
+            contractName: this.contract.name
+        });
+
+        global.contracts.callDelayedMethodDeploy(addressFrom, "directBuy", callToSellerResult);
+
     }
 
     /**
