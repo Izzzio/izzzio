@@ -84,7 +84,7 @@ class mainToken extends TokenContract {
          * Resource rents info
          * @type {KeyValue}
          */
-        this.resourceRents = new KeyValue('resourceRents');
+        this._resourceRents = new KeyValue('_resourceRents');
     }
 
     /**
@@ -148,11 +148,11 @@ class mainToken extends TokenContract {
 
         if(Number(resourceRent) !== 0) {
             //Transfer rent payment for system account
-            this.wallets.transfer(sender, CONTRACT_OWNER, resourceRent);
+            this._wallets.transfer(sender, CONTRACT_OWNER, resourceRent);
         }
 
         //Saving rent information
-        this.resourceRents.put(String(contractAddress), resourceRent);
+        this._resourceRents.put(String(contractAddress), resourceRent);
     }
 
     /**
@@ -184,7 +184,7 @@ class mainToken extends TokenContract {
      * @param address
      */
     checkContractLimits(address) {
-        let resourcesAmount = this.resourceRents.get(String(address));
+        let resourcesAmount = this._resourceRents.get(String(address));
         if(!resourcesAmount) {
             return false;
         }

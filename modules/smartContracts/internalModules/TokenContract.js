@@ -16,15 +16,15 @@ class TokenContract extends Contract {
     init(initialEmission, mintable = false) {
 
         super.init();
-        this.TransferEvent = new Event('Transfer', 'string', 'string', 'number');
-        this.MintEvent = new Event('Mint', 'string', 'number');
-        this.BurnEvent = new Event('Burn', 'string', 'number');
+        this._TransferEvent = new Event('Transfer', 'string', 'string', 'number');
+        this._MintEvent = new Event('Mint', 'string', 'number');
+        this._BurnEvent = new Event('Burn', 'string', 'number');
 
-        this.mintable = mintable;
-        this.wallets = new TokensRegister(this.contract.ticker);
+        this._mintable = mintable;
+        this._wallets = new TokensRegister(this.contract.ticker);
         if(Number(initialEmission) > 0 && contracts.isDeploy()) { //Calls on deploying
-            this.wallets.mint(this.contract.owner, initialEmission);
-            this.MintEvent.emit(this.contract.owner, new BigNumber(initialEmission));
+            this._wallets.mint(this.contract.owner, initialEmission);
+            this._MintEvent.emit(this.contract.owner, new BigNumber(initialEmission));
         }
     }
 
@@ -47,7 +47,7 @@ class TokenContract extends Contract {
      * @return {*}
      */
     balanceOf(address) {
-        return this.wallets.balanceOf(address).toFixed();
+        return this._wallets.balanceOf(address).toFixed();
     }
 
 
@@ -56,7 +56,7 @@ class TokenContract extends Contract {
      * @return {*|BigNumber}
      */
     totalSupply() {
-        return this.wallets.totalSupply().toFixed();
+        return this._wallets.totalSupply().toFixed();
     }
 
     /**
@@ -66,8 +66,8 @@ class TokenContract extends Contract {
      */
     transfer(to, amount) {
         let from = this._getSender();
-        this.wallets.transfer(from, to, amount);
-        this.TransferEvent.emit(from, to, new BigNumber(amount));
+        this._wallets.transfer(from, to, amount);
+        this._TransferEvent.emit(from, to, new BigNumber(amount));
     }
 
     /**
@@ -76,8 +76,8 @@ class TokenContract extends Contract {
      */
     burn(amount) {
         let from = this._getSender();
-        this.wallets.burn(from, amount);
-        this.BurnEvent.emit(from, new BigNumber(amount));
+        this._wallets.burn(from, amount);
+        this._BurnEvent.emit(from, new BigNumber(amount));
     }
 
     /**
@@ -87,8 +87,8 @@ class TokenContract extends Contract {
     mint(amount) {
         let from = this._getSender();
         this.assertOwnership('Minting available only for contract owner');
-        assert.true(this.mintable, 'Token is not mintable');
-        this.wallets.mint(from, amount);
-        this.MintEvent.emit(from, new BigNumber(amount));
+        assert.true(this._mintable, 'Token is not mintable');
+        this._wallets.mint(from, amount);
+        this._MintEvent.emit(from, new BigNumber(amount));
     }
 }

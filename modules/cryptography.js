@@ -20,13 +20,16 @@
  * Class realises universal functions for cryptography in project
  */
 
+const inputOutputFormat = 'hex';
+const SIGN_TYPE = 'sha256';
+
 'use strict';
 const CryptoJS = require('crypto-js');
 
-const inputOutputFormat = 'hex';
-const SIGN_TYPE = 'sha256';
+
 const crypto = require('crypto');
 const keypair = require('keypair');
+const logger = new (require('./logger'))();
 
 const CodingFunctions = require('./codingFunctions');
 
@@ -55,8 +58,13 @@ class Cryptography {
         let GostSign, GostDigest;
         //If GOST cryptography enabled, require libraries
         if(this.config.hashFunction === 'STRIBOG' || this.config.hashFunction === 'STRIBOG512' || this.config.signFunction === 'GOST' || this.config.signFunction === 'GOST512') {
-            GostSign = require('./GOSTModules/gostSign');
-            GostDigest = require('./GOSTModules/gostDigest');
+            try {
+                GostSign = require('./GOSTModules/gostSign');
+                GostDigest = require('./GOSTModules/gostDigest');
+            }catch (e) {
+                logger.fatal('GOST crypto functions disabled in open source version');
+                process.exit();
+            }
         }
 
         this.coding = new CodingFunctions();
