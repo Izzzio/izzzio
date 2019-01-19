@@ -72,7 +72,7 @@ class mainToken extends TokenContract {
      * @return {{owner: string, ticker: string, name: string}}
      */
     get contract() {
-        return {name: TOKEN_NAME, ticker: TICKER, owner: CONTRACT_OWNER};
+        return {name: TOKEN_NAME, ticker: TICKER, owner: CONTRACT_OWNER, emission: EMISSION};
     }
 
     /**
