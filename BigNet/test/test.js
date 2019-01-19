@@ -91,6 +91,10 @@ class App extends DApp {
 
         assert.true(await mainToken.balanceOf(testRecipient) === '100', 'Invalid recipient balance after transfer');
         assert.true(await mainToken.balanceOf(this.getCurrentWallet().id) === String(contractInfo.emission - 100), 'Invalid owner balance after transfer');
+
+        await mainToken.burn(100);
+        assert.true(await mainToken.balanceOf(this.getCurrentWallet().id) === String(contractInfo.emission - 100 - 100), 'Invalid owner balance after burn');
+        assert.true(String(contractInfo.emission - 100) === await mainToken.totalSupply(), 'Invalid total supply after burn');
     }
 
     /**
@@ -101,6 +105,9 @@ class App extends DApp {
 
         await this.tokenTest();
 
+        console.log('');
+        console.log('');
+        console.log('');
         logger.info('Tests passed');
         process.exit();
     }
