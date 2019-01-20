@@ -1090,17 +1090,17 @@ class EcmaContract {
         that.blockchain.getLatestBlock(function (latestBlock) {
 
             if(!that.config.ecmaContract.masterContract || latestBlock.index < that.config.ecmaContract.masterContract) {
-                logger.info('Delpoying contract without master contract');
+                logger.info('Deploying contract without master contract');
                 generateBlock();
             } else {
-                logger.info('Delpoying contract with master contract ' + that.config.ecmaContract.masterContract);
+                logger.info('Deploying contract with master contract ' + that.config.ecmaContract.masterContract);
                 that.callContractMethodRollback(that.config.ecmaContract.masterContract, 'processDeploy', {
                     deployState: deployBlock.state,
                     code: code,
                     contractAddress: latestBlock.index + 1
                 }, function (err, result) {
                     if(err) {
-                        throw  err;
+                        throw err;
                     }
 
                     generateBlock();
