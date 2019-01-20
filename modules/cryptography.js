@@ -59,10 +59,10 @@ class Cryptography {
         //If GOST cryptography enabled, require libraries
         if(this.config.hashFunction === 'STRIBOG' || this.config.hashFunction === 'STRIBOG512' || this.config.signFunction === 'GOST' || this.config.signFunction === 'GOST512') {
             try {
-                GostSign = require('./GOSTModules/gostSign');
-                GostDigest = require('./GOSTModules/gostDigest');
-            }catch (e) {
-                logger.fatal('GOST crypto functions disabled in open source version');
+                GostSign = require('../plugins/GOSTModules/gostSign');
+                GostDigest = require('../plugins/GOSTModules/gostDigest');
+            } catch (e) {
+                logger.fatal('GOST plugin not found');
                 process.exit();
             }
         }
