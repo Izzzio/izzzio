@@ -148,6 +148,7 @@ Array.prototype.remove = function (from, to) {
 };
 
 global.PATH = {}; //object for saving paths
+global.PATH.configDir = path.dirname(program.config);
 
 try {
     let loadedConfig = JSON.parse(fs.readFileSync(program.config));
@@ -157,7 +158,7 @@ try {
         }
     }
 
-    global.PATH.configDir = process.cwd(); //setup config path to global var(undefined if no config)
+
     /*   try {
            fs.writeFileSync('config.json', JSON.stringify(config));
        } catch (e) {
