@@ -1,9 +1,12 @@
 
 const OWNER = false;
-const TOKEN_NAME = 'VOTETOKEN';
-const TICKER = 'VOTETICKER';
 const STATE = ['waiting', 'started', 'ended'];
 const MAIN_TOKEN_ADDRESS = '5';
+const SUBJECT = 'vote_subject';                 //тема голосования
+const DEADTIMELINE = '01.01.2020';              //время окончания
+const DEADVOTESLINE = 100;                      //порог голосов
+const FEE = 1;                                  //стоимость голоса
+const VARIANTS = ['first', 'second', 'third'];  //варианты голосования
 
 /**
  * token contract for vote
@@ -14,19 +17,18 @@ class MainVoteContract extends Contract {
      * Initialization method with emission
      * @param {*} options Details of the voting
      */
-    init(options) {
+    init() {
 
         super.init();
         this.vote = new KeyValue('vote');
-        this._putKeyValue('subject', options.subject);                //тема голосования
-        this._putKeyValue('deadTimeline', options.deadTimeline);      //время окончания
-        this._putKeyValue('deadVotesline', options.deadVotesline);    //порог голосов
-        this._putKeyValue('fee', options.fee);                        //стоимость голоса
-        this.voteMembers = new BlockchainArray('voteMembers');       //список голосов: ключ - адрес голосующего, значение - выбранный вариант
+        this.voteMembers = new BlockchainObject('voteMembers');       //список голосов: ключ - адрес голосующего, значение - выбранный вариант
         this.voteResults = new BlockchainArray('voteResults');       //результаты голосования: ключ - вариант голосования, значение - количество голосов
-        this.variants = new BlockchainArray('variants');          //варианты
+       /* this.variants = new BlockchainArray('variants');          //варианты
         for (let v of options.variants) {
             this.variants.push(v);
+        }*/
+        for (let v of this.contract.variants) {
+            this.voteResults.push(0);
         }
         this._putKeyValue('votesCount', 0);                            //число проголосовавших
 
@@ -38,9 +40,12 @@ class MainVoteContract extends Contract {
 
     get contract() {
         return {
-            name: TOKEN_NAME,
-            ticker: TICKER,
-            owner: OWNER
+            owner: OWNER,
+            subject: SUBJECT,
+            deadTimeLine: DEADTIMELINE,
+            deadVotesLine: DEADVOTESLINE,
+            fee: FEE,
+            variants: VARIANTS,
         };
     }
 
@@ -104,9 +109,9 @@ class MainVoteContract extends Contract {
      * @returns {boolean} true if everything is fine, false if deadline exist
      */
     _checkDeadlines() {
-        let votesCount = new BigNumber(this._getKeyValue('votesCount'));
-        let deadVotesline = new BigNumber(this._getKeyValue('deadVotesline'));
-        let deadTimeline =new Date('deadTimeline');
+        let votesCount = Number(this._getKeyValue('votesCount'));
+        let deadVotesline = Number(this.contract.deadVotesLine);
+        let deadTimeline =new Date(this.contract.deadTimeLine);
         if (deadVotesline > votesCount && deadTimeline > Date.now()){
             return true;
         } else {
@@ -148,7 +153,7 @@ class MainVoteContract extends Contract {
     _addVote(sender, variant) {
         this.voteMembers[sender] = variant;
         this.voteResults[variant] = this.voteResults[variant] ? this.voteResults[variant]++ : 1;
-        let count = new BigNumber(this._getKeyValue('votesCount')) + 1;
+        let count = Number(this._getKeyValue('votesCount')) + 1;
         this._putKeyValue('votesCount', count);
     }
 
@@ -175,7 +180,7 @@ class MainVoteContract extends Contract {
         if (this._checkDeadlines())
         {
             //check if it is enought money
-            assert.assert(new BigNumber(this._getKeyValue('fee')) === payment.amount, 'Wrong payment amount');
+            assert.assert(new BigNumber(this.contract.fee) === payment.amount, 'Wrong payment amount');
             this._addVote(sender, variant);
             this.VoteEvent.emit(sender, variant);
             this._checkDeadlines();
