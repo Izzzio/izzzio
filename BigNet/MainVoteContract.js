@@ -15,18 +15,20 @@ class MainVoteContract extends Contract {
 
     /**
      * Initialization method with emission
-     * @param {*} options Details of the voting
      */
     init() {
 
         super.init();
         this.vote = new KeyValue('vote');
-        this.voteMembers = new BlockchainObject('voteMembers');       //список голосов: ключ - адрес голосующего, значение - выбранный вариант
+        this.voteMembers = new BlockchainObject('voteMembers');       //список голосов: адрес голосующего + выбранный вариант
+        this.voteMembers.who = [];
+        this.voteMembers.variant = [];
         this.voteResults = new BlockchainArray('voteResults');       //результаты голосования: ключ - вариант голосования, значение - количество голосов
        /* this.variants = new BlockchainArray('variants');          //варианты
         for (let v of options.variants) {
             this.variants.push(v);
         }*/
+
         for (let v of this.contract.variants) {
             this.voteResults.push(0);
         }
@@ -47,6 +49,67 @@ class MainVoteContract extends Contract {
             fee: FEE,
             variants: VARIANTS,
         };
+    }
+
+    /**
+     * Add voting with his variant to arrays
+     * @param who
+     * @param variant
+     * @private
+     */
+    _pushVoteMember(who ,variant) {
+        this.voteMembers.who.push(who);
+        this.voteMembers.variant.push(variant);
+    }
+
+    /**
+     * Pop voting with his variant to arrays. Undefined if arrays are empty
+     * @returns {{who: string | undefined, variant: number | undefined}}
+     * @private
+     */
+    _popVoteMember() {
+        return {
+            who: this.voteMembers.who.pop(),
+            variant: this.voteMembers.variant.pop(),
+        }
+    }
+
+    /**
+     * Count of votings
+     * @returns {*}
+     * @private
+     */
+    _countVoteMember() {
+        return this.voteMembers.who.count();
+    }
+
+    /**
+     * Find voting by address and return its index. -1 if no such voting
+     * @param who
+     * @returns {number}
+     * @private
+     */
+    _findVoteMember(who) {
+        let count = this._countVoteMember();
+        for ( let i = 0; i < count; i++) {
+            if (this.voteMembers.who[i] === who) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * return voting info by index. {undefined, undefined} if no element with such index
+     * @param index
+     * @returns {{who: *, variant: *}}
+     * @private
+     */
+    _getVoteMemberByIndex(index) {
+        return {
+            who: this.voteMembers.who[index],
+            variant: this.voteMembers.variant[index],
+        }
     }
 
     /**
@@ -126,7 +189,7 @@ class MainVoteContract extends Contract {
      * @private
      */
     _userCanVote(user) {
-        assert.assert(!this.voteMembers[user] && this._voteState === STATE[1], "You can't take part at this vote");
+        assert.assert((this._findVoteMember(user) === -1) && this._voteState === STATE[1], "You can't take part at this vote");
     }
 
     /**
@@ -139,8 +202,12 @@ class MainVoteContract extends Contract {
         //create connector to main token
         let mainTokenConnector = new TokenContractConnector(MAIN_TOKEN_ADDRESS);
         //return funds to each address
-        for (let address in this.voteMembers) {
-            mainTokenConnector.transfer(address, new BigNumber(this._getKeyValue('fee')));
+        let count = this._countVoteMember();
+        for (let i = 0; i < count; i++) {
+            let address = this._getVoteMemberByIndex(i).who;
+            if (address) {
+                mainTokenConnector.transfer(address, new BigNumber(this._getKeyValue('fee')));
+            }
         }
     }
 
@@ -151,7 +218,11 @@ class MainVoteContract extends Contract {
      * @private
      */
     _addVote(sender, variant) {
-        this.voteMembers[sender] = variant;
+        //check if it possible variant(positive and less than count)
+        let variantsCount = this.contract.variants.length;
+        assert.assert((variant >= 0) && (variant < variantsCount));
+        
+        this._pushVoteMember(sender, variant);
         this.voteResults[variant] = this.voteResults[variant] ? this.voteResults[variant]++ : 1;
         let count = Number(this._getKeyValue('votesCount')) + 1;
         this._putKeyValue('votesCount', count);
