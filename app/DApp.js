@@ -203,6 +203,14 @@ class DApp {
     }
 
     /**
+     * Returns master contract address
+     * @return {number}
+     */
+    getMasterContractAddress(){
+        return that.getConfig().ecmaContract.masterContract
+    }
+
+    /**
      * Initiate Application start
      */
     init() {

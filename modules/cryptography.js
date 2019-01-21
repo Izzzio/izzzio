@@ -1,16 +1,38 @@
 /**
+ iZ³ | Izzzio blockchain - https://izzz.io
+
+ Copyright 2018 Izio Ltd (OOO "Изио")
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
+
+/**
  * Class realises universal functions for cryptography in project
  */
 
-'use strict';
-const CryptoJS = require('crypto-js');
-const GostSign = require('./GOSTModules/gostSign');
 const inputOutputFormat = 'hex';
 const SIGN_TYPE = 'sha256';
+
+'use strict';
+const CryptoJS = require('crypto-js');
+
+
 const crypto = require('crypto');
 const keypair = require('keypair');
-const GostDigest = require('./GOSTModules/gostDigest');
-const GostCoding = require('./GOSTModules/gostCoding');
+const logger = new (require('./logger'))();
+
+const CodingFunctions = require('./codingFunctions');
+
 
 /**
  * Repair bad generated key
@@ -27,38 +49,54 @@ function repairKey(key) {
 class Cryptography {
     constructor(config = {}) {
         this.utils = require('./utils');
-        this.coding = new GostCoding();
+
         this.config = config;
         this.config.hashFunction = this.config.hashFunction ? this.config.hashFunction.toUpperCase() : this.config.hashFunction;
         this.config.signFunction = this.config.signFunction ? this.config.signFunction.toUpperCase() : this.config.signFunction;
-        let ha, sa;
+
+
+        let GostSign, GostDigest;
+        //If GOST cryptography enabled, require libraries
+        if(this.config.hashFunction === 'STRIBOG' || this.config.hashFunction === 'STRIBOG512' || this.config.signFunction === 'GOST' || this.config.signFunction === 'GOST512') {
+            try {
+                GostSign = require('./GOSTModules/gostSign');
+                GostDigest = require('./GOSTModules/gostDigest');
+            }catch (e) {
+                logger.fatal('GOST crypto functions disabled in open source version');
+                process.exit();
+            }
+        }
+
+        this.coding = new CodingFunctions();
+
+        let hashOptions, signOptions;
         if(config) {
-            //настраиваем хэш
+            //Hash config
             switch (this.config.hashFunction) {
                 case 'STRIBOG':
-                    ha = {length: 256};
+                    hashOptions = {length: 256};
                     break;
                 case 'STRIBOG512':
-                    ha = {length: 512};
+                    hashOptions = {length: 512};
                     break;
             }
-            //настраиваем подпись
+            //Signature config
             switch (this.config.signFunction) {
                 case 'GOST':
-                    sa = {hash: "GOST R 34.11", length: 256};
+                    signOptions = {hash: "GOST R 34.11", length: 256};
                     break;
                 case 'GOST512':
-                    sa = {hash: "GOST R 34.11", length: 512, namedCurve: "T-512-A"};
+                    signOptions = {hash: "GOST R 34.11", length: 512, namedCurve: "T-512-A"};
                     break;
             }
         }
-        //проверяем параметры хэша
-        if(ha) {
-            this.gostDigest = new GostDigest(ha);
+        //Create digest
+        if(hashOptions) {
+            this.gostDigest = new GostDigest(hashOptions);
         }
-        //проверяем параметры подписи и ключей
-        if(sa) {
-            this.gostSign = new GostSign(sa);
+        //Create signer
+        if(signOptions) {
+            this.gostSign = new GostSign(signOptions);
         }
 
     }
@@ -213,7 +251,7 @@ class Cryptography {
      * @returns {boolean} true or false
      */
     verify(data, sign, key) {
-        if(typeof  data === 'object') {
+        if(typeof data === 'object') {
             sign = data.sign;
             data = data.data;
         }

@@ -739,7 +739,7 @@ class EcmaContract {
 
                 let state = global.getState();
 
-                if(typeof state.block !== 'undefined' && typeof state.block.timestamp !== undefined) {
+                if(typeof state.block !== 'undefined' && typeof state.block.timestamp !== 'undefined') {
                     _MockDate.set(new Date(state.block.timestamp));
                 } else {
                     _MockDate.set(new Date(0));
@@ -771,6 +771,11 @@ class EcmaContract {
      */
     callContractMethodRollback(address, method, state, cb, ...args) {
         let that = this;
+
+        if(method.indexOf('._') !== -1 || method[0] === '_') {
+            throw 'Calling private contract method in deploy method not allowed';
+        }
+
         this.getContractInstanceByAddress(address, function (err, instance) {
 
             if(err) {
@@ -831,7 +836,7 @@ class EcmaContract {
      */
 
     callContractMethodDeploy(address, method, state, cb, ...args) {
-        if(method.indexOf('contract._') !== -1) {
+        if(method.indexOf('._') !== -1 || method[0] === '_') {
             throw 'Calling private contract method in deploy method not allowed';
         }
 
@@ -879,7 +884,8 @@ class EcmaContract {
      */
     callContractMethodDeployWait(address, method, state, cb, ...args) {
         let that = this;
-        if(method.indexOf('contract._') !== -1) {
+
+        if(method.indexOf('._') !== -1 || method[0] === '_') {
             throw 'Calling private contract method in deploy method not allowed';
         }
 
