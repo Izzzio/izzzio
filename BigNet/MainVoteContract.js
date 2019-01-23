@@ -19,22 +19,18 @@ class MainVoteContract extends Contract {
     init() {
 
         super.init();
-        this.vote = new KeyValue('vote');
+        this._vote = new KeyValue('_vote');
         this._voteMembers = new BlockchainObject('_voteMembers');       //список голосов: адрес голосующего
         this._voteMembersArray = new BlockchainArray('_voteMembersArray'); //список голосов: массив адресов голосующих
-        this.voteResults = new BlockchainArray('voteResults');       //результаты голосования: ключ - вариант голосования, значение - количество голосов
-       /* this.variants = new BlockchainArray('variants');          //варианты
-        for (let v of options.variants) {
-            this.variants.push(v);
-        }*/
+        this._voteResults = new BlockchainArray('_voteResults');       //результаты голосования: ключ - вариант голосования, значение - количество голосов
 
         for (let v of this.contract.variants) {
-            this.voteResults.push(0);
+            this._voteResults.push(0);
         }
         this._putKeyValue('votesCount', 0);                            //число проголосовавших
 
-        this.VoteEvent = new Event('Vote', 'string', 'number'); //кто и за какой вариант проголосовал
-        this.ChangeVoteState = new Event('ChangeVoteState', 'string');
+        this._VoteEvent = new Event('Vote', 'string', 'number'); //кто и за какой вариант проголосовал
+        this._ChangeVoteState = new Event('ChangeVoteState', 'string');
 
         this._voteState = 0;                                        //состояние голосования
     }
@@ -75,19 +71,20 @@ class MainVoteContract extends Contract {
     }
 
     _putKeyValue(key, value) {
-        //помещает в хранилище vote ключ - значение
-        this.vote.put(key, value)
+        //помещает в хранилище _vote ключ - значение
+        this._vote.put(key, value)
     };
 
     _getKeyValue(key) {
         //получает значения под ключом
-        this.vote.get(key)
+        this._vote.get(key)
     };
 
     /**
      * method to make voting started
      */
     startVoting() {
+        assert.assert(this.contract.owner === global.getState().from, 'Restricted access');
         this._voteState = 1;
     }
 
@@ -103,10 +100,13 @@ class MainVoteContract extends Contract {
      * @param ind
      */
     set _voteState(ind) {
-        if (ind >= 0 && ind < STATE.length) {
+        if (ind >= 0 && ind < STATE.length && this._voteState !== STATE[2]) {
             this._putKeyValue('state', STATE[ind]);
-            this.ChangeVoteState.emit(STATE[ind]);
+            this._ChangeVoteState.emit(STATE[ind]);
+        } else {
+            assert.assert(false, 'Wrong parameters or vote was ended')
         }
+
     }
 
     /**
@@ -172,7 +172,7 @@ class MainVoteContract extends Contract {
         assert.assert((variant >= 0) && (variant < variantsCount));
 
         this._pushVoteMember(sender);
-        this.voteResults[variant]++;
+        this._voteResults[variant]++;
         let count = Number(this._getKeyValue('votesCount')) + 1;
         this._putKeyValue('votesCount', count);
     }
@@ -181,7 +181,7 @@ class MainVoteContract extends Contract {
      * get results of voting at this moment
      */
     getResultsOfVoting() {
-        return Array(this.voteResults);
+        return Array(this._voteResults);
     }
 
     /**
@@ -202,7 +202,7 @@ class MainVoteContract extends Contract {
             //check if it is enought money
             assert.assert(new BigNumber(this.contract.fee) === payment.amount, 'Wrong payment amount');
             this._addVote(sender, variant);
-            this.VoteEvent.emit(sender, variant);
+            this._VoteEvent.emit(sender, variant);
             this._checkDeadlines();
         }
     }
