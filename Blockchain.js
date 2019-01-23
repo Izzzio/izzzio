@@ -1232,26 +1232,7 @@ function Blockchain(config) {
         initP2PServer();
         createWalletIfNotExsists();
 
-        if(config.plugins.length > 0) {
-            logger.info("Loading plugins...\n");
-            for (let plugin of config.plugins) {
-                try {
 
-                    if(!path.isAbsolute(plugin)) {
-                        plugin = './plugins/' + plugin;
-                    }
-                    plugin = require(plugin)(blockchainObject, config, storj);
-
-
-                } catch (e) {
-                    logger.fatal("Plugin fatal:\n");
-                    console.log(e);
-                    process.exit(1);
-                }
-            }
-
-            logger.info("Plugins loaded");
-        }
 
         if(config.appEntry) {
             logger.info("Loading DApp...\n");
@@ -1773,6 +1754,27 @@ function Blockchain(config) {
 
     //StarWave messaging protocol
     starwave.blockchain = blockchainObject;
+
+    //Plugins
+    if(config.plugins.length > 0) {
+        logger.info("Loading plugins...\n");
+        for (let plugin of config.plugins) {
+            try {
+
+                if(!path.isAbsolute(plugin)) {
+                    plugin = './plugins/' + plugin;
+                }
+                plugin = require(plugin)(blockchainObject, config, storj);
+
+            } catch (e) {
+                logger.fatal("Plugin fatal:\n");
+                console.log(e);
+                process.exit(1);
+            }
+        }
+
+        logger.info("Plugins loaded");
+    }
 
     //EcmaContract Smartcontracts
     if(typeof config.ecmaContract !== 'undefined' && config.ecmaContract.enabled) {
