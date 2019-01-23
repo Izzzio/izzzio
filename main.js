@@ -137,8 +137,7 @@ const config = {
 
     //Enabled plugins
     plugins: [
-        'cryptopro'
-    ]
+    ],
 
 };
 
