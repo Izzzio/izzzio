@@ -50,6 +50,9 @@ class Cryptography {
     constructor(config = {}) {
         this.utils = require('./utils');
 
+        this._hashFunctions = {};
+        this._signFunctions = {};
+
         this.config = config;
         this.config.hashFunction = this.config.hashFunction ? this.config.hashFunction.toUpperCase() : this.config.hashFunction;
         this.config.signFunction = this.config.signFunction ? this.config.signFunction.toUpperCase() : this.config.signFunction;
@@ -59,10 +62,10 @@ class Cryptography {
         //If GOST cryptography enabled, require libraries
         if(this.config.hashFunction === 'STRIBOG' || this.config.hashFunction === 'STRIBOG512' || this.config.signFunction === 'GOST' || this.config.signFunction === 'GOST512') {
             try {
-                GostSign = require('./GOSTModules/gostSign');
-                GostDigest = require('./GOSTModules/gostDigest');
-            }catch (e) {
-                logger.fatal('GOST crypto functions disabled in open source version');
+                GostSign = require('../plugins/GOSTModules/gostSign');
+                GostDigest = require('../plugins/GOSTModules/gostDigest');
+            } catch (e) {
+                logger.fatal('GOST plugin not found');
                 process.exit();
             }
         }
@@ -99,6 +102,25 @@ class Cryptography {
             this.gostSign = new GostSign(signOptions);
         }
 
+    }
+
+    /**
+     * Register external hash function
+     * @param {string} name
+     * @param {function} func
+     */
+    registerHash(name, func) {
+        this._hashFunctions[name.toUpperCase()] = func;
+    }
+
+    /**
+     * Register external sign function
+     * @param {string} name
+     * @param {function} validate
+     * @param {function} sign
+     */
+    registerSign(name, validate, sign) {
+        this._signFunctions[name.toUpperCase()] = {validate: validate, sign: sign};
     }
 
     /**
@@ -226,20 +248,26 @@ class Cryptography {
      */
     sign(data, key) {
         let signedData;
-        if(this.gostSign) {
-            let bData, bKey;
-            //prepare data for processing
-            bData = this.data2Buffer(data);
-            bKey = this.coding.Hex.decode(key);
 
-            signedData = this.gostSign.sign(bKey, bData);
-            signedData = this.coding.Hex.encode(signedData);
+        //External sign function
+        if(this._signFunctions[this.config.signFunction]) {
+            signedData = this._signFunctions[this.config.signFunction].sign(data, key);
         } else {
-            const _sign = crypto.createSign(SIGN_TYPE);
-            _sign.update(data);
-            signedData = _sign.sign(key).toString(inputOutputFormat);
+            if(this.gostSign) {
+                let bData, bKey;
+                //prepare data for processing
+                bData = this.data2Buffer(data);
+                bKey = this.coding.Hex.decode(key);
+
+                signedData = this.gostSign.sign(bKey, bData);
+                signedData = this.coding.Hex.encode(signedData);
+            } else {
+                const _sign = crypto.createSign(SIGN_TYPE);
+                _sign.update(data);
+                signedData = _sign.sign(key).toString(inputOutputFormat);
+            }
+            signedData = signedData.replace('\r\n', ''); //delete wrong symbols
         }
-        signedData = signedData.replace('\r\n', ''); //delete wrong symbols
         return {data: data, sign: signedData};
     }
 
@@ -255,6 +283,12 @@ class Cryptography {
             sign = data.sign;
             data = data.data;
         }
+
+        //External sign function
+        if(this._signFunctions[this.config.signFunction]) {
+            return this._signFunctions[this.config.signFunction].validate(data, sign, key);
+        }
+
         let result;
         if(this.gostSign) {
             let bData, bKey, bSign;
@@ -279,6 +313,12 @@ class Cryptography {
      * @returns {Buffer}
      */
     hash(data = '') {
+
+        //External hash function
+        if(this._hashFunctions[this.config.hashFunction]) {
+            return this._hashFunctions[this.config.hashFunction](data);
+        }
+
         let bData = this.data2Buffer(data);
         let hashBuffer;
         if(this.gostDigest) {
