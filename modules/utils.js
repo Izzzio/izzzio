@@ -93,7 +93,7 @@ module.exports = {
      * @constructor
      */
     uint8ArrayToHexString: function (arr) {
-        return Buffer.from(arr).toString('hex');
+        return String(Buffer.from(arr).toString('hex'));
     }
 
 };
