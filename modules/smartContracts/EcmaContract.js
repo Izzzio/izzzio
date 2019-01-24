@@ -31,6 +31,14 @@ const DEFAULT_LIMITS = {ram: MAXIMUM_VM_RAM, timeLimit: MAXIMUM_TIME_LIMIT, call
 const DELAYED_QUEUE_LIMIT = 10;
 
 /**
+ * Non private methods protected by external call
+ * @type {string[]}
+ */
+const METHODS_BLACKLIST = [
+    'processDeploy', 'deploy', 'init', 'payProcess', 'assertOwnership', 'assertPayment'
+];
+
+/**
  * EcmaScript Smart contracts handler
  */
 class EcmaContract {
@@ -546,6 +554,12 @@ class EcmaContract {
              */
             _callMethodDeploy: function (contract, method, args, state) {
                 let sync = vmSync();
+
+                if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
+                    sync.fails();
+                    throw 'Calling blacklisted method of contract is not allowed';
+                }
+
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
                 that.callContractMethodDeployWait(contract, method, state, function (err, result) {
@@ -574,6 +588,12 @@ class EcmaContract {
              */
             _callMethodRollback: function (contract, method, args, state) {
                 let sync = vmSync();
+
+                if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
+                    sync.fails();
+                    throw 'Calling blacklisted method of contract is not allowed';
+                }
+
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
                 that.callContractMethodRollback(contract, method, state, function (err, result) {
@@ -620,6 +640,11 @@ class EcmaContract {
                 if(that._delayedCallLimiter >= DELAYED_QUEUE_LIMIT) {
                     throw 'Maximum delayed call queue limit reached';
                 }
+
+                if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
+                    throw 'Calling blacklisted method of contract is not allowed';
+                }
+
                 that._delayedCallLimiter++;
                 that._nextCallings.push({contract: contract, method: method, args: args, state: state});
             }
@@ -1443,6 +1468,12 @@ class EcmaContract {
         if((method === 'contract.deploy') || (method === 'deploy')) {
             logger.error('Calling deploy method of contract is not allowed');
             return callback('Calling deploy method of contract is not allowed');
+        }
+
+        //Prevert blacklist call
+        if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
+            logger.error('Calling blacklisted method of contract is not allowed');
+            return callback('Calling blacklisted method of contract is not allowed');
         }
 
         //Check call limits
