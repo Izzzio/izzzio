@@ -25,6 +25,12 @@ const MAXIMUM_VM_RAM = 256;
 const DEFAULT_LIMITS = {ram: MAXIMUM_VM_RAM, timeLimit: MAXIMUM_TIME_LIMIT, callLimit: 10000};
 
 /**
+ * Maximum delayed list queue limit
+ * @type {number}
+ */
+const DELAYED_QUEUE_LIMIT = 10;
+
+/**
  * EcmaScript Smart contracts handler
  */
 class EcmaContract {
@@ -35,6 +41,11 @@ class EcmaContract {
         this.contracts = this.db.db;
         this.config = storj.get('config');
         this.ready = false;
+
+        /**
+         * @var {Cryptography}
+         */
+        this.cryptography = storj.get('cryptography');
 
         this._contractInstanceCache = {};
         this._contractInstanceCacheLifetime = typeof this.config.ecmaContract === 'undefined' || typeof this.config.ecmaContract.contractInstanceCacheLifetime === 'undefined' ? 60000 : this.config.ecmaContract.contractInstanceCacheLifetime;
@@ -63,6 +74,13 @@ class EcmaContract {
          * @private
          */
         this._nextCallings = [];
+
+        /**
+         * Delayed call queue limiter
+         * @type {number}
+         * @private
+         */
+        this._delayedCallLimiter = 0;
 
         /**
          * Contain contracts calls for detecting calling limits by CALLS_LIMITER_THRESHOLD
@@ -332,17 +350,51 @@ class EcmaContract {
          * Crypto functions
          */
         vm.setObjectGlobal('crypto', {
+            /**
+             * SHA256 hash
+             * @param data
+             * @return {*}
+             */
             sha256: function (data) {
                 return CryptoJS.SHA256(toString(data)).toString();
             },
+
+            /**
+             * MD5 hash
+             * @param data
+             * @return {*}
+             */
             md5: function (data) {
                 return CryptoJS.MD5(toString(data)).toString();
             },
-            verifySign: function (data, sign, publicKey) {
-                return that.blockchain.wallet.verifyData(data, sign, publicKey);
+            /**
+             * System defined hash function
+             * @param data
+             * @return {Buffer}
+             */
+            hash: function (data) {
+                return that.cryptography.hash(String(data));
             },
+
+            /**
+             * Verify signature with system defined function
+             * @param data
+             * @param sign
+             * @param publicKey
+             * @return {boolean|*}
+             */
+            verifySign: function (data, sign, publicKey) {
+                return that.blockchain.wallet.verifyData(data, sign, String(publicKey));
+            },
+
+            /**
+             * Sign data with system defined function
+             * @param data
+             * @param privateKey
+             * @return {*|{data, sign}|{data: *, sign: *}}
+             */
             signData: function (data, privateKey) {
-                return that.blockchain.wallet.signData(data, privateKey);
+                return that.blockchain.wallet.signData(data, String(privateKey));
             }
         });
 
@@ -565,6 +617,10 @@ class EcmaContract {
             _addDelayedCall: function (contract, method, args, state) {
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
+                if(that._delayedCallLimiter >= DELAYED_QUEUE_LIMIT) {
+                    throw 'Maximum delayed call queue limit reached';
+                }
+                that._delayedCallLimiter++;
                 that._nextCallings.push({contract: contract, method: method, args: args, state: state});
             }
         });
@@ -795,6 +851,7 @@ class EcmaContract {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
                                 that._nextCallings = [];
+                                that._delayedCallLimiter = 0;
                                 cb(err);
                                 return;
                             }
@@ -802,12 +859,14 @@ class EcmaContract {
                                 that.events.rollback(instance.vm.state.contractAddress, state.block.index, function () {
                                     instance.db.rollback(function () {
                                         that._nextCallings = [];
+                                        that._delayedCallLimiter = 0;
                                         cb(null, result);
                                     });
                                 });
                             } catch (e) {
                                 instance.db.rollback(function () {
                                     that._nextCallings = [];
+                                    that._delayedCallLimiter = 0;
                                     cb(null, result);
                                 });
                             }
@@ -819,6 +878,7 @@ class EcmaContract {
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
                     that._nextCallings = [];
+                    that._delayedCallLimiter = 0;
                     cb(err);
                 }
             }
@@ -908,6 +968,7 @@ class EcmaContract {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
                                 that._nextCallings = [];
+                                that._delayedCallLimiter = 0;
                                 cb(err);
                                 return;
                             }
@@ -926,6 +987,7 @@ class EcmaContract {
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
                     that._nextCallings = [];
+                    that._delayedCallLimiter = 0;
                     cb(err);
                 }
             }
