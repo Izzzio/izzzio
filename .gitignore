@@ -84,3 +84,4 @@ typings/
 /installers/BitcoenWalletComponents.plist
 /installers/BitcoenWallet-Darwin-x64.dmg
 /installers/BitcoenWalletUnsigned-Darwin-x64.dmg
+plugins/GOSTModules
