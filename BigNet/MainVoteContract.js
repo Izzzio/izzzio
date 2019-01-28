@@ -20,7 +20,7 @@ class MainVoteContract extends Contract {
 
         super.init();
         this._vote = new KeyValue('_vote');
-        this._voteMembers = new BlockchainObject('_voteMembers');       //список голосов: адрес голосующего
+        this._voteMembers = new BlockchainMap('_voteMembers');       //список голосов: адрес голосующего
         this._voteMembersArray = new BlockchainArray('_voteMembersArray'); //список голосов: массив адресов голосующих
         this._voteResults = new BlockchainArray('_voteResults');       //результаты голосования: ключ - вариант голосования, значение - количество голосов
 
