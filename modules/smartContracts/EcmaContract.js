@@ -41,6 +41,7 @@ const METHODS_BLACKLIST = [
     'payProcess',
     'assertOwnership',
     'assertPayment',
+    'assertMaster'
 ];
 
 /**
