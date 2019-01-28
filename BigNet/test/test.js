@@ -100,7 +100,7 @@ class App extends DApp {
 
     async instantC2CTest() {
         const buyerCode = 'new ' + function () {
-            const SELLER_ADDRESS = '6';
+            const SELLER_ADDRESS = '8';
             const MASTER_CONTRACT = '5';
 
             class ByerContract extends Contract {
@@ -189,14 +189,13 @@ class App extends DApp {
         await mainToken.transfer(String(buyerBlock.address), 10);
 
 
-
         let result = await that.contracts.ecmaPromise.deployMethod(buyerBlock.address, "buySomeData", [], {});
         result = await that.contracts.ecmaPromise.deployMethod(sellerBlock.address, "externalCall", [], {});
         result = await that.contracts.ecmaPromise.deployMethod(buyerBlock.address, "checkCustomResult", [], {});
 
 
-        assert.true(Number(await mainToken.balanceOf(7)) === 10-2, 'Invalid buyer balance 10-PRICE');
-        assert.true(Number(await mainToken.balanceOf(6)) === 2-(2*masterInfo.c2cFee), 'Invalid seller balance PRICE - (PRICE * C2CFEE)');
+        assert.true(Number(await mainToken.balanceOf(9)) === 10 - 2, 'Invalid buyer balance 10-PRICE');
+        assert.true(Number(await mainToken.balanceOf(8)) === 2 - (2 * masterInfo.c2cFee), 'Invalid seller balance PRICE - (PRICE * C2CFEE)');
 
 
     }
@@ -207,7 +206,7 @@ class App extends DApp {
      */
     async run() {
 
-        //  await this.tokenTest();
+        await this.tokenTest();
         await this.instantC2CTest();
 
         console.log('');
