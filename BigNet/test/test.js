@@ -98,6 +98,108 @@ class App extends DApp {
         assert.true(String(contractInfo.emission - 100) === await mainToken.totalSupply(), 'Invalid total supply after burn');
     }
 
+    async instantC2CTest() {
+        const buyerCode = 'new ' + function () {
+            const SELLER_ADDRESS = '8';
+            const MASTER_CONTRACT = '5';
+
+            class ByerContract extends Contract {
+
+                init() {
+                    this._lastOrders = new BlockchainMap('lastOrders');
+
+                }
+
+                buySomeData() {
+                    let orderId = contracts.callMethodDeploy(MASTER_CONTRACT, 'processC2CBuyRequest', [SELLER_ADDRESS, [2, 2]]);
+                    this._lastOrders.orderId = orderId;
+                }
+
+                /**
+                 * Receive order result
+                 * @param {*} result
+                 * @param {string} orderId
+                 */
+                processC2COrderResult(result, orderId) {
+                    assert.true(contracts.isChild() && contracts.caller() === MASTER_CONTRACT, 'This method can be called only from master contract');
+                    assert.true(result[0] === 4, 'Invalid order result');
+
+                }
+
+                /**
+                 * Check result
+                 */
+                checkCustomResult() {
+                    let customResultGet = contracts.callMethodDeploy(MASTER_CONTRACT, 'getC2CBuyResult', [this._lastOrders.orderId]);
+                    assert.true(JSON.parse(customResultGet)[0] === 4, 'Invalid order result');
+                }
+            }
+
+            global.registerContract(ByerContract);
+        };
+
+        const sellerCode = 'new ' + function () {
+            const MASTER_CONTRACT = '5';
+
+            class SellerContract extends Contract {
+
+                init() {
+                    this._orders = new BlockchainArray('myOrders');
+                }
+
+                /**
+                 * Get order price
+                 * @param {*} args
+                 * @return {string}
+                 */
+                getPrice(args) {
+                    return '2';
+                }
+
+                /**
+                 * Process income order
+                 * @param {string} from
+                 * @param {string} orderId
+                 * @param {*} args
+                 */
+                processC2COrder(from, orderId, args) {
+                    assert.true(contracts.isChild() && contracts.caller() === MASTER_CONTRACT, 'This method can be called only from master contract');
+                    this._orders.push({id: orderId, result: args[0] + args[1]});
+                }
+
+                /**
+                 * Some external call
+                 */
+                externalCall() {
+                    const order = this._orders.pop();
+                    contracts.callMethodDeploy(MASTER_CONTRACT, 'processC2CBuyResponse', [order.id, [order.result]]);
+                }
+            }
+
+            global.registerContract(SellerContract);
+        };
+
+        //Deploy buyer and seller
+        const sellerBlock = await that.contracts.ecmaPromise.deployContract(sellerCode, 10);
+        const buyerBlock = await that.contracts.ecmaPromise.deployContract(buyerCode, 10);
+
+        //Connect to to main token
+        let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
+        const masterInfo = await mainToken.contract;
+        await mainToken.transfer(String(buyerBlock.address), 10);
+
+
+        let result = await that.contracts.ecmaPromise.deployMethod(buyerBlock.address, "buySomeData", [], {});
+        result = await that.contracts.ecmaPromise.deployMethod(sellerBlock.address, "externalCall", [], {});
+        result = await that.contracts.ecmaPromise.deployMethod(buyerBlock.address, "checkCustomResult", [], {});
+
+
+        assert.true(Number(await mainToken.balanceOf(9)) === 10 - 2, 'Invalid buyer balance 10-PRICE');
+        assert.true(Number(await mainToken.balanceOf(8)) === 2 - (2 * masterInfo.c2cFee), 'Invalid seller balance PRICE - (PRICE * C2CFEE)');
+
+
+    }
+
     /**
      * Run tests
      * @return {Promise<void>}
@@ -105,6 +207,7 @@ class App extends DApp {
     async run() {
 
         await this.tokenTest();
+        await this.instantC2CTest();
 
         console.log('');
         console.log('');

@@ -831,7 +831,11 @@ class EcmaContract {
 
         vm.injectSource(__dirname + '/internalModules/BigNumber.js');
         vm.injectSource(__dirname + '/internalModules/TypedKeyValue.js');
+        /**
+         * @deprecated
+         */
         vm.injectSource(__dirname + '/internalModules/BlockchainObject.js');
+        vm.injectSource(__dirname + '/internalModules/BlockchainMap.js');
         vm.injectSource(__dirname + '/internalModules/TokensRegister.js');
         vm.injectSource(__dirname + '/internalModules/Contract.js');
         vm.injectSource(__dirname + '/internalModules/TokenContract.js');
@@ -1497,7 +1501,6 @@ class EcmaContract {
 
                 if(err) {
                     that.rollbackAndClearContractsChain(state, function () {
-
                         logger.error('Contracts calling chain falls with error: ' + err);
                         callback(err);
                     });

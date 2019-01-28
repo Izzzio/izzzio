@@ -4,10 +4,9 @@
  */
 
 /**
- * Object-like data structure with data safe setters and getters. In fact Map structure
- * @deprecated Real object bug
+ * Map structure
  */
-class BlockchainObject {
+class BlockchainMap {
 
     constructor(name) {
         this.db = new TypedKeyValue(name);
