@@ -6,6 +6,7 @@
  * Provides main token and platform functionality
  * Process payable transaction
  * Process resources rental
+ * Backend for C2C ordering
  *
  */
 
@@ -207,7 +208,7 @@ class mainToken extends TokenContract {
         const fee = price.times(FEE);
         this._transferFromTo(sellerAddress, FEE_ADDRESS, fee.toFixed());
 
-        contracts.callDelayedMethodDeploy(order.buyerAddress, 'processC2COrderResult', [resultData, orderId]);
+        contracts.callDelayedMethodDeploy(order.buyerAddress, 'processC2COrderResult', [resultData, orderId, sellerAddress]);
     }
 
     /**

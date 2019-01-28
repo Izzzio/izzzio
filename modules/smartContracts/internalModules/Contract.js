@@ -29,8 +29,20 @@ class Contract {
         assert.assert(this.contract.owner === global.getState().from, msg);
     }
 
+    /**
+     * Asserts is payment
+     * @param msg
+     */
     assertPayment(msg = 'This method can only be invoked from token contract') {
         assert.false(!this.payProcess(), msg);
+    }
+
+    /**
+     * Asserts is called from master contract
+     * @param msg
+     */
+    assertMaster(msg = 'This method can only be invoked from master contract') {
+        assert.true(contracts.isChild() && String(contracts.caller()) === contracts.getMasterContractAddress(), 'This method can be called only from master contract');
     }
 
     /**
@@ -68,6 +80,17 @@ class Contract {
         };
     }
 
+    /**
+     * Return C2C order result
+     * @param {string} masterContract
+     * @param {string} orderId
+     * @param {*} result
+     * @return {*}
+     */
+    _orderResponse(orderId, result, masterContract = contracts.getMasterContractAddress()) {
+        return contracts.callMethodDeploy(masterContract, 'processC2CBuyResponse', [orderId, [result]]);
+    }
+
 
     /**
      * Initialization method
@@ -77,6 +100,8 @@ class Contract {
         if(contracts.isDeploy()) {
             this.deploy();
         }
+
+        this._c2cOrdersCallbacks = {};
     }
 
     /**
@@ -86,5 +111,29 @@ class Contract {
         assert.false(contracts.isChild(), 'You can\'t call deploy method of another contract');
     }
 
+    /**
+     * Register c2c order result callback function
+     * @param from
+     * @param callback
+     */
+    _registerC2CResultCallback(from, callback) {
+        if(typeof this._c2cOrdersCallbacks === 'undefined') {
+            throw new Error('Contract class not initialized');
+        }
+        this._c2cOrdersCallbacks[String(from)] = callback;
+    }
+
+    /**
+     * Process c2c order result
+     * @param {*} result
+     * @param {string} orderId
+     * @param {string} sellerAddress
+     */
+    processC2COrderResult(result, orderId, sellerAddress) {
+        this.assertMaster();
+        if(typeof this._c2cOrdersCallbacks[String(sellerAddress)] !== 'undefined') {
+            this._c2cOrdersCallbacks[String(sellerAddress)](result, orderId, sellerAddress);
+        }
+    }
 
 }

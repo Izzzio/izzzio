@@ -35,7 +35,13 @@ const DELAYED_QUEUE_LIMIT = 10;
  * @type {string[]}
  */
 const METHODS_BLACKLIST = [
-    'processDeploy', 'deploy', 'init', 'payProcess', 'assertOwnership', 'assertPayment'
+    'processDeploy',
+    'deploy',
+    'init',
+    'payProcess',
+    'assertOwnership',
+    'assertPayment',
+    'assertMaster'
 ];
 
 /**
@@ -647,6 +653,23 @@ class EcmaContract {
 
                 that._delayedCallLimiter++;
                 that._nextCallings.push({contract: contract, method: method, args: args, state: state});
+            },
+            /**
+             * Returns master contract address
+             * @param state
+             * @private
+             */
+            _getMasterContractAddress: function (state) {
+                let sync = vmSync();
+                const address = that.config.ecmaContract.masterContract;
+                if(address) {
+                    if(state.block && state.block.index >= Number(address)) {
+                        sync.return(String(address));
+                        return;
+                    }
+                }
+                sync.fails();
+
             }
         });
 
@@ -753,6 +776,16 @@ class EcmaContract {
                     return waitForReturn();
                 },
                 /**
+                 * Returns master contract address
+                 * @return {*}
+                 */
+                getMasterContractAddress: function () {
+                    let state = global.getState();
+                    state.delayedMethod = false;
+                    _contracts._getMasterContractAddress(state);
+                    return waitForReturn();
+                },
+                /**
                  * Get parent caller address
                  * @return {*}
                  */
@@ -843,6 +876,7 @@ class EcmaContract {
         vm.injectSource(__dirname + '/internalModules/BlockchainArray.js');
         vm.injectSource(__dirname + '/internalModules/ContractConnector.js');
         vm.injectSource(__dirname + '/internalModules/TokenContractConnector.js');
+        vm.injectSource(__dirname + '/internalModules/SellerContractConnector.js');
 
     }
 

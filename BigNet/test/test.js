@@ -98,40 +98,41 @@ class App extends DApp {
         assert.true(String(contractInfo.emission - 100) === await mainToken.totalSupply(), 'Invalid total supply after burn');
     }
 
+    /**
+     * Test C2C methods
+     * @return {Promise<void>}
+     */
     async instantC2CTest() {
         const buyerCode = 'new ' + function () {
             const SELLER_ADDRESS = '8';
-            const MASTER_CONTRACT = '5';
 
             class ByerContract extends Contract {
 
                 init() {
+                    super.init();
                     this._lastOrders = new BlockchainMap('lastOrders');
-
+                    this._sellerConnector = new SellerContractConnector(SELLER_ADDRESS);
+                    this._registerC2CResultCallback(SELLER_ADDRESS, this.c2cBuyingResult)
                 }
 
                 buySomeData() {
-                    let orderId = contracts.callMethodDeploy(MASTER_CONTRACT, 'processC2CBuyRequest', [SELLER_ADDRESS, [2, 2]]);
+                    let orderId = this._sellerConnector.buy([2, 2]);
                     this._lastOrders.orderId = orderId;
                 }
 
-                /**
-                 * Receive order result
-                 * @param {*} result
-                 * @param {string} orderId
-                 */
-                processC2COrderResult(result, orderId) {
-                    assert.true(contracts.isChild() && contracts.caller() === MASTER_CONTRACT, 'This method can be called only from master contract');
+                c2cBuyingResult(result, orderId) {
+                    assert.true(contracts.isChild() && contracts.caller() === contracts.getMasterContractAddress(), 'This method can be called only from master contract');
                     assert.true(result[0] === 4, 'Invalid order result');
-
                 }
+
 
                 /**
                  * Check result
                  */
                 checkCustomResult() {
-                    let customResultGet = contracts.callMethodDeploy(MASTER_CONTRACT, 'getC2CBuyResult', [this._lastOrders.orderId]);
-                    assert.true(JSON.parse(customResultGet)[0] === 4, 'Invalid order result');
+
+                    let customResultGet = this._sellerConnector.getResult(this._lastOrders.orderId);
+                    assert.true(customResultGet[0] === 4, 'Invalid order result');
                 }
             }
 
@@ -139,11 +140,11 @@ class App extends DApp {
         };
 
         const sellerCode = 'new ' + function () {
-            const MASTER_CONTRACT = '5';
 
             class SellerContract extends Contract {
 
                 init() {
+                    super.init();
                     this._orders = new BlockchainArray('myOrders');
                 }
 
@@ -163,7 +164,7 @@ class App extends DApp {
                  * @param {*} args
                  */
                 processC2COrder(from, orderId, args) {
-                    assert.true(contracts.isChild() && contracts.caller() === MASTER_CONTRACT, 'This method can be called only from master contract');
+                    assert.true(contracts.isChild() && contracts.caller() === contracts.getMasterContractAddress(), 'This method can be called only from master contract');
                     this._orders.push({id: orderId, result: args[0] + args[1]});
                 }
 
@@ -172,7 +173,7 @@ class App extends DApp {
                  */
                 externalCall() {
                     const order = this._orders.pop();
-                    contracts.callMethodDeploy(MASTER_CONTRACT, 'processC2CBuyResponse', [order.id, [order.result]]);
+                    this._orderResponse(order.id, order.result);
                 }
             }
 
