@@ -65,6 +65,18 @@ const RESOURCES_PRICE = {
     callLimit: 1
 };
 
+/**
+ * C2C Fee
+ * @type {number}
+ */
+const FEE = 0.001;
+
+/**
+ * C2C Fee transfer address
+ * @type {string}
+ */
+const FEE_ADDRESS = CONTRACT_OWNER;
+
 class mainToken extends TokenContract {
 
     /**
@@ -72,7 +84,7 @@ class mainToken extends TokenContract {
      * @return {{owner: string, ticker: string, name: string}}
      */
     get contract() {
-        return {name: TOKEN_NAME, ticker: TICKER, owner: CONTRACT_OWNER, emission: EMISSION};
+        return {name: TOKEN_NAME, ticker: TICKER, owner: CONTRACT_OWNER, emission: EMISSION, c2cFee: FEE};
     }
 
     /**
@@ -84,8 +96,10 @@ class mainToken extends TokenContract {
          * Resource rents info
          * @type {KeyValue}
          */
-        this._resourceRents = new KeyValue('_resourceRents');
+        this._resourceRents = new KeyValue('resourceRents');
+        this._c2cOrders = new BlockchainMap('c2cOrders');
     }
+
 
     /**
      * Used whe payable method is called from the other contract
@@ -133,6 +147,112 @@ class mainToken extends TokenContract {
     checkContractAddress(address) {
         return !isNaN(parseFloat(address)) && isFinite(address);
     }
+
+    /**
+     * Creates C2C order
+     * @param {string} sellerAddress
+     * @param {*} args
+     * @return {*}
+     */
+    processC2CBuyRequest(sellerAddress, args) {
+        assert.true(this.checkContractAddress(sellerAddress), 'Invalid address');
+        assert.true(contracts.isChild(), 'This method can be called only from other contract');
+
+        const addressFrom = contracts.caller();
+        sellerAddress = String(sellerAddress);
+
+        const price = new BigNumber(global.contracts.callMethodDeploy(sellerAddress, 'getPrice', [args]));
+        assert.false((new BigNumber(this.balanceOf(addressFrom))).lt(price), 'Insufficient funds for contract buy');
+
+        const orderId = this._generateOrderId(sellerAddress, addressFrom, args);
+        assert.false(this._c2cOrders[orderId], 'You already have same order');
+
+        this._c2cOrders[orderId] = {
+            buyerAddress: addressFrom,
+            args: args,
+            price: price.toFixed(),
+            result: false,
+        };
+
+        contracts.callDelayedMethodDeploy(sellerAddress, 'processC2COrder', [addressFrom, orderId, args]);
+        return orderId;
+    }
+
+    /**
+     * Process C2C order
+     * @param {string} orderId
+     * @param {*} resultData
+     */
+    processC2CBuyResponse(orderId, resultData) {
+        assert.true(contracts.isChild(), 'This method can be called only from other contract');
+        assert.true(this._c2cOrders[orderId] !== null && this._c2cOrders[orderId].result === false, 'Order not found or already finished');
+
+        const order = this._c2cOrders[orderId];
+        order.buyerAddress = String(order.buyerAddress);
+        const sellerAddress = String(contracts.caller());
+
+        assert.true(this._generateOrderId(sellerAddress, order.buyerAddress, order.args) === orderId, "Order id validity checking error");
+
+        const price = new BigNumber(order.price);
+        assert.false((new BigNumber(this.balanceOf(order.buyerAddress))).lt(price), 'Insufficient funds for contract buy');
+
+        //Saving result
+        order.result = resultData;
+        this._c2cOrders[orderId] = order;
+
+        //Take price
+        this._transferFromTo(order.buyerAddress, sellerAddress, price.toFixed());
+
+        //Take comission
+        const fee = price.times(FEE);
+        this._transferFromTo(sellerAddress, FEE_ADDRESS, fee.toFixed());
+
+        contracts.callDelayedMethodDeploy(order.buyerAddress, 'processC2COrderResult', [resultData, orderId]);
+    }
+
+    /**
+     * Get order result
+     * @param {string} orderId
+     * @return {*}
+     */
+    getC2CBuyResult(orderId) {
+        assert.true(contracts.isChild(), 'This method can be called only from other contract');
+        assert.true(this._c2cOrders[orderId] !== null, 'Order not found or already finished');
+        assert.true(this._c2cOrders[orderId].result !== false, 'Order not ready yet');
+
+        const order = this._c2cOrders[orderId];
+        order.buyerAddress = String(order.buyerAddress);
+
+        assert.true(order.buyerAddress === String(contracts.caller()), 'Access denied for this orderId');
+
+        return JSON.stringify(order.result);
+    }
+
+    /**
+     * Override transfer method
+     * @param from
+     * @param to
+     * @param amount
+     * @private
+     */
+    _transferFromTo(from, to, amount) {
+        this._wallets.transfer(from, to, amount);
+        this._TransferEvent.emit(from, to, new BigNumber(amount));
+    }
+
+
+    /**
+     * Generate order Id by params
+     * @param seller
+     * @param buyer
+     * @param args
+     * @return {*}
+     * @private
+     */
+    _generateOrderId(seller, buyer, args) {
+        return crypto.hash(seller + '_' + buyer + '_' + args.toString());
+    }
+
 
     /**
      * Process new contract deployment
@@ -195,10 +315,10 @@ class mainToken extends TokenContract {
     /**
      * TODO: Remove in release
      */
-    test(){
+    test() {
         console.log('TEST CALL');
-        console.log(contracts.callMethodDeploy('5','balanceOf',[CONTRACT_OWNER]));
-        console.log(contracts.callMethodDeploy('5','checkContractLimits',['6']));
+        console.log(contracts.callMethodDeploy('5', 'balanceOf', [CONTRACT_OWNER]));
+        console.log(contracts.callMethodDeploy('5', 'checkContractLimits', ['6']));
         console.log('RESULT GRANTED');
     }
 }
