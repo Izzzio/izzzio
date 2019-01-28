@@ -106,7 +106,7 @@ class App extends DApp {
             class ByerContract extends Contract {
 
                 init() {
-                    this._lastOrders = new BlockchainObject('lastOrders');
+                    this._lastOrders = new BlockchainMap('lastOrders');
 
                 }
 
