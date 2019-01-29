@@ -101,7 +101,19 @@ class Contract {
             this.deploy();
         }
 
+        /**
+         * c2c Orders callbacks
+         * @type {{}}
+         * @private
+         */
         this._c2cOrdersCallbacks = {};
+
+        /**
+         *  DApp external interface config
+         * @type {{code: string, infoMethods: {}, type: boolean, deployMethods: {}}}
+         * @private
+         */
+        this._appInterfaceConfig = {type: false, code: '', infoMethods: {}, deployMethods: {}};
     }
 
     /**
@@ -135,5 +147,55 @@ class Contract {
             this._c2cOrdersCallbacks[String(sellerAddress)](result, orderId, sellerAddress);
         }
     }
+
+    /**
+     * Register information method for external app calls
+     * @param {string} methodName
+     * @param {array} types
+     * @private
+     */
+    _registerAppInfoMethod(methodName, types = []) {
+        if(typeof this[methodName] === "undefined") {
+            throw  new Error("Method " + methodName + ' not found');
+        }
+        this._appInterfaceConfig.infoMethods[methodName] = types;
+    }
+
+    /**
+     * Register deployable method for external app calls
+     * @param {string} methodName
+     * @param {array} types
+     * @private
+     */
+    _registerAppDeployMethod(methodName, types = []) {
+        if(typeof this[methodName] === "undefined") {
+            throw  new Error("Method " + methodName + ' not found');
+        }
+        this._appInterfaceConfig.deployMethods[methodName] = types;
+    }
+
+    /**
+     * Register external app
+     * @param {string} sourceCode
+     * @param {string} type
+     * @private
+     */
+    _registerApp(sourceCode, type = "web") {
+        this._appInterfaceConfig.type = type;
+        this._appInterfaceConfig.code = sourceCode;
+    }
+
+    /**
+     * Return external App data
+     * @return {*}
+     */
+    getAppData() {
+        if(this._appInterfaceConfig.type !== false) {
+            return JSON.stringify(this._appInterfaceConfig);
+        }
+
+        return false;
+    }
+
 
 }
