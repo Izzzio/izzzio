@@ -108,7 +108,38 @@ class DApp {
             /**
              * @type EcmaContract
              */
-            ecma: that.ecmaContract
+            ecma: that.ecmaContract,
+            ecmaPromise: {
+                /**
+                 * Promised version of EcmaContracts methods
+                 * deployContract
+                 * @param source
+                 * @param resourceRent
+                 * @return {Promise<any>}
+                 */
+                deployContract: function (source, resourceRent) {
+                    return new Promise((resolve, reject) => {
+                        that.ecmaContract.deployContract(source, resourceRent, function (block) {
+                            resolve(block);
+                        });
+                    })
+                },
+                /**
+                 * deployMethod
+                 * @param address
+                 * @param method
+                 * @param args
+                 * @param state
+                 * @return {Promise<any>}
+                 */
+                deployMethod: function (address, method, args, state) {
+                    return new Promise((resolve, reject) => {
+                        that.ecmaContract.deployContractMethod(address, method, args, state, function (generatedBlock) {
+                            resolve(generatedBlock);
+                        })
+                    });
+                }
+            }
         };
 
         /**
@@ -200,6 +231,14 @@ class DApp {
      */
     getCurrentPeers(fullSockets) {
         return that.blockchain.getCurrentPeers(fullSockets);
+    }
+
+    /**
+     * Returns master contract address
+     * @return {number}
+     */
+    getMasterContractAddress() {
+        return that.getConfig().ecmaContract.masterContract
     }
 
     /**

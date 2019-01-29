@@ -92,6 +92,20 @@ let Wallet = function (walletFile, config) {
      */
     wallet.accepted = false;
 
+    /**
+     * Generators list
+     * @type {{}}
+     * @private
+     */
+    wallet._generatorHooks = [];
+
+    /**
+     * Register wallet generator
+     * @param generator
+     */
+    wallet.registerGeneratorHook = function (generator) {
+        wallet._generatorHooks.push(generator);
+    };
 
     /**
      * Repair bad generated key
@@ -131,7 +145,20 @@ let Wallet = function (walletFile, config) {
      * Generates new data for wallet
      */
     wallet.generate = function () {
-        wallet.keysPair = cryptography.generateKeyPair();
+
+        let generated = false;
+        for (let generator of wallet._generatorHooks) {
+            let generatorResult = generator(wallet);
+            if(generatorResult) {
+                wallet.keysPair = generatorResult.keysPair;
+                generated = true;
+                break;
+            }
+        }
+
+        if(!generated) {
+            wallet.keysPair = cryptography.generateKeyPair();
+        }
 
         wallet.log('Info: Generated');
         this.createId();

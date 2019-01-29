@@ -29,7 +29,7 @@ module.exports = {
         }, 10);
     },
     /**
-     * convert hex number string to utf-16
+     * Convert hex number string to utf-16
      * @param str
      * @return {*}
      */
@@ -53,7 +53,7 @@ module.exports = {
         return code;
     },
     /**
-     * convert utf-16 string to hex
+     * Convert utf-16 string to hex
      * @param uniStr
      * @return {string}
      */
@@ -74,5 +74,26 @@ module.exports = {
         }
 
         return str;
+    },
+
+    /**
+     * Hex string to Uint8Array
+     * @param hexString
+     * @return {Uint8Array}
+     * @constructor
+     */
+    hexString2Uint8Array: function (hexString){
+        return new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)))
+    },
+
+    /**
+     * Uint8Array to hex string
+     * @param arr
+     * @return {*}
+     * @constructor
+     */
+    uint8ArrayToHexString: function (arr) {
+        return String(Buffer.from(arr).toString('hex'));
     }
+
 };

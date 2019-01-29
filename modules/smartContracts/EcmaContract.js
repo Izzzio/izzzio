@@ -25,6 +25,26 @@ const MAXIMUM_VM_RAM = 256;
 const DEFAULT_LIMITS = {ram: MAXIMUM_VM_RAM, timeLimit: MAXIMUM_TIME_LIMIT, callLimit: 10000};
 
 /**
+ * Maximum delayed list queue limit
+ * @type {number}
+ */
+const DELAYED_QUEUE_LIMIT = 10;
+
+/**
+ * Non private methods protected by external call
+ * @type {string[]}
+ */
+const METHODS_BLACKLIST = [
+    'processDeploy',
+    'deploy',
+    'init',
+    'payProcess',
+    'assertOwnership',
+    'assertPayment',
+    'assertMaster'
+];
+
+/**
  * EcmaScript Smart contracts handler
  */
 class EcmaContract {
@@ -35,6 +55,11 @@ class EcmaContract {
         this.contracts = this.db.db;
         this.config = storj.get('config');
         this.ready = false;
+
+        /**
+         * @var {Cryptography}
+         */
+        this.cryptography = storj.get('cryptography');
 
         this._contractInstanceCache = {};
         this._contractInstanceCacheLifetime = typeof this.config.ecmaContract === 'undefined' || typeof this.config.ecmaContract.contractInstanceCacheLifetime === 'undefined' ? 60000 : this.config.ecmaContract.contractInstanceCacheLifetime;
@@ -63,6 +88,13 @@ class EcmaContract {
          * @private
          */
         this._nextCallings = [];
+
+        /**
+         * Delayed call queue limiter
+         * @type {number}
+         * @private
+         */
+        this._delayedCallLimiter = 0;
 
         /**
          * Contain contracts calls for detecting calling limits by CALLS_LIMITER_THRESHOLD
@@ -257,7 +289,11 @@ class EcmaContract {
             }
             return {
                 return: function (result) {
-                    vm.setObjectGlobal('_execResult', {status: 1, result: result});
+                    if(!result) {
+                        vm.setObjectGlobal('_execResult', {status: 3});
+                    } else {
+                        vm.setObjectGlobal('_execResult', {status: 1, result: result});
+                    }
                     vm.waitingForResponse = false;
                     return result;
                 },
@@ -281,6 +317,10 @@ class EcmaContract {
                         if(global._execResult.status === 2) {
                             global._execResult.status = 0;
                             return null;
+                        }
+                        if(global._execResult.status === 3) {
+                            global._execResult.status = 0;
+                            return false;
                         }
                         global._execResult.status = 0;
                         if(typeof global._execResult.result === 'undefined') {
@@ -332,17 +372,51 @@ class EcmaContract {
          * Crypto functions
          */
         vm.setObjectGlobal('crypto', {
+            /**
+             * SHA256 hash
+             * @param data
+             * @return {*}
+             */
             sha256: function (data) {
                 return CryptoJS.SHA256(toString(data)).toString();
             },
+
+            /**
+             * MD5 hash
+             * @param data
+             * @return {*}
+             */
             md5: function (data) {
                 return CryptoJS.MD5(toString(data)).toString();
             },
-            verifySign: function (data, sign, publicKey) {
-                return that.blockchain.wallet.verifyData(data, sign, publicKey);
+            /**
+             * System defined hash function
+             * @param data
+             * @return {Buffer}
+             */
+            hash: function (data) {
+                return that.cryptography.hash(String(data));
             },
+
+            /**
+             * Verify signature with system defined function
+             * @param data
+             * @param sign
+             * @param publicKey
+             * @return {boolean|*}
+             */
+            verifySign: function (data, sign, publicKey) {
+                return that.blockchain.wallet.verifyData(data, sign, String(publicKey));
+            },
+
+            /**
+             * Sign data with system defined function
+             * @param data
+             * @param privateKey
+             * @return {*|{data, sign}|{data: *, sign: *}}
+             */
             signData: function (data, privateKey) {
-                return that.blockchain.wallet.signData(data, privateKey);
+                return that.blockchain.wallet.signData(data, String(privateKey));
             }
         });
 
@@ -494,6 +568,12 @@ class EcmaContract {
              */
             _callMethodDeploy: function (contract, method, args, state) {
                 let sync = vmSync();
+
+                if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
+                    sync.fails();
+                    throw 'Calling blacklisted method of contract is not allowed';
+                }
+
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
                 that.callContractMethodDeployWait(contract, method, state, function (err, result) {
@@ -504,7 +584,7 @@ class EcmaContract {
                         });
                     } else {
                         if(!result) {
-                            sync.return(true);
+                            sync.return(false);
                         } else {
                             sync.return(result);
                         }
@@ -522,6 +602,12 @@ class EcmaContract {
              */
             _callMethodRollback: function (contract, method, args, state) {
                 let sync = vmSync();
+
+                if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
+                    sync.fails();
+                    throw 'Calling blacklisted method of contract is not allowed';
+                }
+
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
                 that.callContractMethodRollback(contract, method, state, function (err, result) {
@@ -529,7 +615,7 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.return(true);
+                            sync.return(false);
                         } else {
                             sync.return(result);
                         }
@@ -546,7 +632,7 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.return(true);
+                            sync.return(false);
                         } else {
                             sync.return(result);
                         }
@@ -565,7 +651,33 @@ class EcmaContract {
             _addDelayedCall: function (contract, method, args, state) {
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
+                if(that._delayedCallLimiter >= DELAYED_QUEUE_LIMIT) {
+                    throw 'Maximum delayed call queue limit reached';
+                }
+
+                if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
+                    throw 'Calling blacklisted method of contract is not allowed';
+                }
+
+                that._delayedCallLimiter++;
                 that._nextCallings.push({contract: contract, method: method, args: args, state: state});
+            },
+            /**
+             * Returns master contract address
+             * @param state
+             * @private
+             */
+            _getMasterContractAddress: function (state) {
+                let sync = vmSync();
+                const address = that.config.ecmaContract.masterContract;
+                if(address) {
+                    if(state.block && state.block.index >= Number(address)) {
+                        sync.return(String(address));
+                        return;
+                    }
+                }
+                sync.fails();
+
             }
         });
 
@@ -672,6 +784,16 @@ class EcmaContract {
                     return waitForReturn();
                 },
                 /**
+                 * Returns master contract address
+                 * @return {*}
+                 */
+                getMasterContractAddress: function () {
+                    let state = global.getState();
+                    state.delayedMethod = false;
+                    _contracts._getMasterContractAddress(state);
+                    return waitForReturn();
+                },
+                /**
                  * Get parent caller address
                  * @return {*}
                  */
@@ -739,7 +861,7 @@ class EcmaContract {
 
                 let state = global.getState();
 
-                if(typeof state.block !== 'undefined' && typeof state.block.timestamp !== undefined) {
+                if(typeof state.block !== 'undefined' && typeof state.block.timestamp !== 'undefined') {
                     _MockDate.set(new Date(state.block.timestamp));
                 } else {
                     _MockDate.set(new Date(0));
@@ -748,9 +870,23 @@ class EcmaContract {
             MockDate = undefined;
         });
 
+        /**
+         * Support for require external contracts
+         */
+        vm.injectSource(__dirname + '/internalModules/Require.js');
+        vm.injectScript('new ' + function () {
+            global.require = function (contractAddress) {
+                return new Require(contractAddress);
+            }
+        });
+
         vm.injectSource(__dirname + '/internalModules/BigNumber.js');
         vm.injectSource(__dirname + '/internalModules/TypedKeyValue.js');
+        /**
+         * @deprecated
+         */
         vm.injectSource(__dirname + '/internalModules/BlockchainObject.js');
+        vm.injectSource(__dirname + '/internalModules/BlockchainMap.js');
         vm.injectSource(__dirname + '/internalModules/TokensRegister.js');
         vm.injectSource(__dirname + '/internalModules/Contract.js');
         vm.injectSource(__dirname + '/internalModules/TokenContract.js');
@@ -758,6 +894,8 @@ class EcmaContract {
         vm.injectSource(__dirname + '/internalModules/BlockchainArray.js');
         vm.injectSource(__dirname + '/internalModules/ContractConnector.js');
         vm.injectSource(__dirname + '/internalModules/TokenContractConnector.js');
+        vm.injectSource(__dirname + '/internalModules/SellerContractConnector.js');
+
 
     }
 
@@ -771,6 +909,11 @@ class EcmaContract {
      */
     callContractMethodRollback(address, method, state, cb, ...args) {
         let that = this;
+
+        if(method.indexOf('._') !== -1 || method[0] === '_') {
+            throw 'Calling private contract method in deploy method not allowed';
+        }
+
         this.getContractInstanceByAddress(address, function (err, instance) {
 
             if(err) {
@@ -790,6 +933,7 @@ class EcmaContract {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
                                 that._nextCallings = [];
+                                that._delayedCallLimiter = 0;
                                 cb(err);
                                 return;
                             }
@@ -797,12 +941,14 @@ class EcmaContract {
                                 that.events.rollback(instance.vm.state.contractAddress, state.block.index, function () {
                                     instance.db.rollback(function () {
                                         that._nextCallings = [];
+                                        that._delayedCallLimiter = 0;
                                         cb(null, result);
                                     });
                                 });
                             } catch (e) {
                                 instance.db.rollback(function () {
                                     that._nextCallings = [];
+                                    that._delayedCallLimiter = 0;
                                     cb(null, result);
                                 });
                             }
@@ -814,6 +960,7 @@ class EcmaContract {
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
                     that._nextCallings = [];
+                    that._delayedCallLimiter = 0;
                     cb(err);
                 }
             }
@@ -831,7 +978,7 @@ class EcmaContract {
      */
 
     callContractMethodDeploy(address, method, state, cb, ...args) {
-        if(method.indexOf('contract._') !== -1) {
+        if(method.indexOf('._') !== -1 || method[0] === '_') {
             throw 'Calling private contract method in deploy method not allowed';
         }
 
@@ -879,7 +1026,8 @@ class EcmaContract {
      */
     callContractMethodDeployWait(address, method, state, cb, ...args) {
         let that = this;
-        if(method.indexOf('contract._') !== -1) {
+
+        if(method.indexOf('._') !== -1 || method[0] === '_') {
             throw 'Calling private contract method in deploy method not allowed';
         }
 
@@ -902,6 +1050,7 @@ class EcmaContract {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
                                 that._nextCallings = [];
+                                that._delayedCallLimiter = 0;
                                 cb(err);
                                 return;
                             }
@@ -920,6 +1069,7 @@ class EcmaContract {
                 } catch (err) {
                     logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
                     that._nextCallings = [];
+                    that._delayedCallLimiter = 0;
                     cb(err);
                 }
             }
@@ -1377,6 +1527,12 @@ class EcmaContract {
             return callback('Calling deploy method of contract is not allowed');
         }
 
+        //Prevert blacklist call
+        if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
+            logger.error('Calling blacklisted method of contract is not allowed');
+            return callback('Calling blacklisted method of contract is not allowed');
+        }
+
         //Check call limits
         that.getContractLimits(address, function (limits) {
 
@@ -1398,7 +1554,6 @@ class EcmaContract {
 
                 if(err) {
                     that.rollbackAndClearContractsChain(state, function () {
-
                         logger.error('Contracts calling chain falls with error: ' + err);
                         callback(err);
                     });
