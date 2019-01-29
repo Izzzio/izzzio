@@ -206,6 +206,8 @@ class VM {
                 _state = decodeReferences(system.getState());
             };
 
+
+
             /**
              * IO functions
              */
@@ -235,6 +237,24 @@ class VM {
                 _state = global.state;
                 global.contract = new contract();
                 global.Contract = contract;
+
+                /**
+                 * Check if contract has some method
+                 * @param method
+                 * @return {boolean}
+                 */
+                global.contract.hasMethod = function (method) {
+                    return String(typeof global.contract[method] === 'function');
+                };
+
+                /**
+                 * Check contract has some property
+                 * @param property
+                 * @return {boolean}
+                 */
+                global.contract.hasProperty = function (property) {
+                    return String(typeof global.contract[method] !== 'function' && typeof global.contract[method] !== 'undefined');
+                };
             };
 
             /**
