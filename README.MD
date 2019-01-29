@@ -1,8 +1,28 @@
-# iZ³ Node
+# iZ³ - IZZZIO Blockchain Node
 
+IZZZIO (iZ³) - fully customizable blockchain platform. This platform provides super-flexible configuration of each functional link of the network. The network supports the following functions:
 
++ Flexible network configuration
++ External crypto plugins support for custom cryptography integration
++ 1-dimensional chain configuration
++ Free format blocks. You can store any data up to 15 MB
++ Turing-complete JavaScript smart contracts
++ Support of browsers integration without additional plugins and integration layers. Works by [Candy framework](https://github.com/Izzzio/Candy)
++ 50000 tx/sec tested speed. See [benchmark](benchmark) section
++ Internal consensus mechanism without miners: LCPoA
++ Support for other consensus plugins
++ DApp operating system
++ Special P2P hi-speed messaging protocol - StarWave and StarWaveCrypto for encrypted messaging
 
-## Building
+## BigNet
+
+BigNet is a public network of smart contracts developed by IZZZIO specifically for business tasks. The network allows you to run your decentralized applications, while being safe from changing the rate of cryptocurrencies, and increasing the cost of transactions. Because they are free :)
+
+See [BigNet section](BigNet)
+
+[See BigNet site](https://bignet.izzz.io)
+
+## Building Node
 
 
 #### Dependencies
