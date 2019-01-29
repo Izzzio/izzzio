@@ -46,6 +46,14 @@ class Contract {
     }
 
     /**
+     * Asserts external call
+     * @param msg
+     */
+    assertExternal(msg = "This method can only be invoked by external call") {
+        assert.false(contracts.isChild(), msg);
+    }
+
+    /**
      * Process income payment
      * @return {*}
      */

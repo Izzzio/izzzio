@@ -14,6 +14,8 @@ class _BlockchainArray extends KeyValue {
         //Iterator
         this[Symbol.iterator] = this.iterator;
 
+        let that = this;
+
         /**
          * Proxify some items calls
          */
@@ -50,11 +52,15 @@ class _BlockchainArray extends KeyValue {
 
 
                 if(typeof target[item] !== 'undefined') {
+                    if(!value) {
+                        return true;
+                    }
                     return value;
                 }
 
-                //let getValue = target.get(String(item));
-                if(/*!getValue &&*/ item <= target.length) {
+
+                let getValue = target.get(String(item));
+                if(getValue === null && item <= target.length) {
                     target._setLength(target.length + 1);
                 }
 
@@ -63,6 +69,10 @@ class _BlockchainArray extends KeyValue {
                 }
 
                 target.put(String(item), JSON.stringify({val: value}));
+
+                if(!value) {
+                    return true;
+                }
 
                 return value;
             }

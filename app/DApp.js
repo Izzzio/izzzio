@@ -138,7 +138,29 @@ class DApp {
                             resolve(generatedBlock);
                         })
                     });
-                }
+                },
+                /**
+                 * callMethodRollback
+                 * @param address
+                 * @param method
+                 * @param args
+                 * @param state
+                 * @return {Promise<any>}
+                 */
+                callMethodRollback: function (address, method, args, state) {
+                    return new Promise((resolve, reject) => {
+                        try {
+                            that.ecmaContract.callContractMethodRollback(address, method, state, function (err, result) {
+                                if(err) {
+                                    reject(err);
+                                }
+                                resolve(result);
+                            }, ...args);
+                        } catch (e) {
+                            reject(e);
+                        }
+                    });
+                },
             }
         };
 
