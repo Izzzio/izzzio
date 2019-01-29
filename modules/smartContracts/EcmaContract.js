@@ -289,7 +289,11 @@ class EcmaContract {
             }
             return {
                 return: function (result) {
-                    vm.setObjectGlobal('_execResult', {status: 1, result: result});
+                    if(!result) {
+                        vm.setObjectGlobal('_execResult', {status: 3});
+                    } else {
+                        vm.setObjectGlobal('_execResult', {status: 1, result: result});
+                    }
                     vm.waitingForResponse = false;
                     return result;
                 },
@@ -313,6 +317,10 @@ class EcmaContract {
                         if(global._execResult.status === 2) {
                             global._execResult.status = 0;
                             return null;
+                        }
+                        if(global._execResult.status === 3) {
+                            global._execResult.status = 0;
+                            return false;
                         }
                         global._execResult.status = 0;
                         if(typeof global._execResult.result === 'undefined') {
@@ -576,7 +584,7 @@ class EcmaContract {
                         });
                     } else {
                         if(!result) {
-                            sync.return(true);
+                            sync.return(false);
                         } else {
                             sync.return(result);
                         }
@@ -607,7 +615,7 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.return(true);
+                            sync.return(false);
                         } else {
                             sync.return(result);
                         }
@@ -624,7 +632,7 @@ class EcmaContract {
                         sync.return(err);
                     } else {
                         if(!result) {
-                            sync.return(true);
+                            sync.return(false);
                         } else {
                             sync.return(result);
                         }
@@ -862,6 +870,16 @@ class EcmaContract {
             MockDate = undefined;
         });
 
+        /**
+         * Support for require external contracts
+         */
+        vm.injectSource(__dirname + '/internalModules/Require.js');
+        vm.injectScript('new ' + function () {
+            global.require = function (contractAddress) {
+                return new Require(contractAddress);
+            }
+        });
+
         vm.injectSource(__dirname + '/internalModules/BigNumber.js');
         vm.injectSource(__dirname + '/internalModules/TypedKeyValue.js');
         /**
@@ -877,6 +895,7 @@ class EcmaContract {
         vm.injectSource(__dirname + '/internalModules/ContractConnector.js');
         vm.injectSource(__dirname + '/internalModules/TokenContractConnector.js');
         vm.injectSource(__dirname + '/internalModules/SellerContractConnector.js');
+
 
     }
 
