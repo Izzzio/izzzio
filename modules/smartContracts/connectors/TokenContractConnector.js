@@ -17,6 +17,7 @@ class TokenContractConnector extends ContractConnector {
         this.registerDeployMethod('transfer', '_transfer');
         this.registerDeployMethod('mint', '_mint');
         this.registerDeployMethod('burn', '_burn');
+
     }
 
     /**
@@ -70,6 +71,24 @@ class TokenContractConnector extends ContractConnector {
      */
     get contract() {
         return this.getPropertyPromise('contract');
+    }
+
+    /**
+     * Create payable transaction
+     * @param {string} address
+     * @param {string} method
+     * @param {string} txAmount
+     * @param {array} args
+     * @return {Promise<Block>}
+     */
+    pay(address, method, txAmount, args) {
+        let that = this;
+        return new Promise((resolve, reject) => {
+            that.ecmaContract.deployContractMethod(that.address, 'processPayableTransaction', [address, String(txAmount), method, args], that._getState(), function (newBlock) {
+                resolve(newBlock);
+            });
+        });
+
     }
 
 }
