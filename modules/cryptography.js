@@ -229,7 +229,7 @@ class Cryptography {
             keyPair.public = this.coding.Hex.encode(keyPair.publicKey).replace(new RegExp(/\r\n/, 'g'), "");
             keyPair.private = this.coding.Hex.encode(keyPair.privateKey);
         } else {
-            keyPair = keypair({bits: 2048});
+            keyPair = keypair({bits: Number(this.config.keyLength)});
             keyPair.private = repairKey(keyPair.private);
             keyPair.public = repairKey(keyPair.public);
         }

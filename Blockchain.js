@@ -113,10 +113,12 @@ function Blockchain(config) {
 
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
-    logger.info('Wallet address ' + wallet.getAddress(false));
-    if(wallet.block !== -1) {
-        logger.info('Tiny address ' + wallet.getAddress(true));
-        wallet.block = -1;
+    if(wallet.id.length !== 0) {
+        logger.info('Wallet address ' + wallet.getAddress(false));
+        if(wallet.block !== -1) {
+            logger.info('Tiny address ' + wallet.getAddress(true));
+            wallet.block = -1;
+        }
     }
     console.log('');
 
@@ -1780,6 +1782,11 @@ function Blockchain(config) {
     if(typeof config.ecmaContract !== 'undefined' && config.ecmaContract.enabled) {
         blockchainObject.ecmaContract = new EcmaContract();
         storj.put('ecmaContract', blockchainObject.ecmaContract);
+    }
+
+    //Wallet create
+    if(wallet.id.length === 0){
+        wallet.generate();
     }
 
     storj.put('blockchainObject', blockchainObject);

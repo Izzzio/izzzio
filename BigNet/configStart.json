@@ -1,0 +1,36 @@
+{
+  "p2pPort": 6032,
+  "httpServer": "localhost",
+  "httpPort": 3015,
+  "initialPeers": [
+  ],
+  "validators": [
+    "dlcpoa"
+  ],
+  "upnp": {
+    "enabled": true,
+    "token": "BigNet"
+  },
+  "genesisTiemstamp": 1534080014000,
+  "generateEmptyBlockDelay": 86400000,
+  "enableMessaging": false,
+  "rpcPassword": "",
+  "blockAcceptCount": 1,
+  "maxPeers": 25,
+  "workDir": "../runtime/",
+  "walletFile": "../runtime/wallet.json",
+  "walletsDB": "wallets",
+  "blocksDB": "blocks",
+  "ecmaContract": {
+    "enabled": true,
+    "allowDebugMessages": true,
+    "contractInstanceCacheLifetime": 10000,
+    "masterContract": 1
+  },
+  "appEntry": "./BigNet/startNetwork.js",
+  "signFunction": "bitcore",
+  "hashFunction": "SHA256",
+  "plugins": [
+    "bitcore-crypto"
+  ]
+}

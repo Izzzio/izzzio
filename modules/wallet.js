@@ -187,10 +187,9 @@ let Wallet = function (walletFile, config) {
      */
     wallet.init = function () {
         if(wallet.id.length === 0) {
-            wallet.generate();
-        }
-
-        if(!wallet.selfValidate()) {
+           // wallet.generate();
+            logger.info('Empty wallet created');
+        } else if(!wallet.selfValidate()) {
             throw logger.fatal('Wallet self-validation error! Invalid key or sign checking');
 
         }

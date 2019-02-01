@@ -94,6 +94,7 @@ module.exports = {
      */
     uint8ArrayToHexString: function (arr) {
         return String(Buffer.from(arr).toString('hex'));
-    }
+    },
+
 
 };
