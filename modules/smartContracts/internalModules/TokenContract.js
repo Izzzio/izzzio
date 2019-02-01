@@ -4,7 +4,8 @@
  */
 
 /**
- * Basic token contract
+ * IZ3 token standard
+ * Basic token contract.
  */
 class TokenContract extends Contract {
 
@@ -22,10 +23,25 @@ class TokenContract extends Contract {
 
         this._mintable = mintable;
         this._wallets = new TokensRegister(this.contract.ticker);
-        if(Number(initialEmission) > 0 && contracts.isDeploy()) { //Calls on deploying
+        this._initialEmission = initialEmission;
+        if(Number(initialEmission) > 0 && contracts.isDeploy() && this.contract.owner) { //Calls on deploying
             this._wallets.mint(this.contract.owner, initialEmission);
             this._MintEvent.emit(this.contract.owner, new BigNumber(initialEmission));
         }
+    }
+
+    /**
+     * Basic token info
+     * @return {{owner: boolean, ticker: string, emission: (BigNumber|Number|String|BigNumber|Number|String), name: string, type: string}}
+     */
+    get contract() {
+        return {
+            name: 'IZ3 Token',
+            ticker: 'IZ3TKN',
+            owner: false,
+            emission: this._initialEmission,
+            type: 'token',
+        };
     }
 
     /**
@@ -90,5 +106,24 @@ class TokenContract extends Contract {
         assert.true(this._mintable, 'Token is not mintable');
         this._wallets.mint(from, amount);
         this._MintEvent.emit(from, new BigNumber(amount));
+    }
+
+    /**
+     * Returns fee for action
+     * @param {string} action
+     * @param {array} args
+     * @return {string}
+     */
+    getActionFee(action, args) {
+        return '0';
+    }
+
+    /**
+     * Returns fee for basic transfer
+     * @param {number|string} amount
+     * @return {string}
+     */
+    getTransferFee(amount) {
+        return '0';
     }
 }

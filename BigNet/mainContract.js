@@ -20,7 +20,7 @@ const EMISSION = 9999999999;
  * Token full name
  * @type {string}
  */
-const TOKEN_NAME = 'izzzio main';
+const TOKEN_NAME = 'IZZZIO main token';
 
 /**
  * Token ticker
@@ -70,7 +70,7 @@ const RESOURCES_PRICE = {
  * C2C Fee
  * @type {number}
  */
-const FEE = 0.001;
+const C2C_FEE = 0.001;
 
 /**
  * C2C Fee transfer address
@@ -78,6 +78,9 @@ const FEE = 0.001;
  */
 const FEE_ADDRESS = CONTRACT_OWNER;
 
+/**
+ * Main IZZZIO token contract
+ */
 class mainToken extends TokenContract {
 
     /**
@@ -85,7 +88,14 @@ class mainToken extends TokenContract {
      * @return {{owner: string, ticker: string, name: string}}
      */
     get contract() {
-        return {name: TOKEN_NAME, ticker: TICKER, owner: CONTRACT_OWNER, emission: EMISSION, c2cFee: FEE};
+        return {
+            name: TOKEN_NAME,
+            ticker: TICKER,
+            owner: CONTRACT_OWNER,
+            emission: EMISSION,
+            c2cFee: C2C_FEE,
+            type: 'token',
+        };
     }
 
     /**
@@ -205,7 +215,7 @@ class mainToken extends TokenContract {
         this._transferFromTo(order.buyerAddress, sellerAddress, price.toFixed());
 
         //Take comission
-        const fee = price.times(FEE);
+        const fee = price.times(C2C_FEE);
         this._transferFromTo(sellerAddress, FEE_ADDRESS, fee.toFixed());
 
         contracts.callDelayedMethodDeploy(order.buyerAddress, 'processC2COrderResult', [resultData, orderId, sellerAddress]);
