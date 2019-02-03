@@ -353,6 +353,17 @@ class EcmaContract {
         vm.setObjectGlobal('_blocks', {
             getById: function (id, state) {
                 let sync = vmSync();
+
+                let block = state.block || null;
+                if(!block){
+                    return sync.fails(false);
+                }
+
+                let blockIndex = state.block.index || null;
+                if(!blockIndex){
+                    return sync.fails(false);
+                }
+
                 if(state.block.index <= id) {
                     return sync.fails(false);
                 }
@@ -361,7 +372,11 @@ class EcmaContract {
                     if(err) {
                         sync.fails(false);
                     } else {
-                        sync.return(block);
+                        if(id !== block.index){
+                            sync.fails(false);
+                        } else {
+                            sync.return(block);
+                        }
                     }
                 })
             }
@@ -493,7 +508,21 @@ class EcmaContract {
              * @private
              */
             _callMethodDeploy: function (contract, method, args, state) {
+                contract = Number(contract);
                 let sync = vmSync();
+
+                let block = state.block || null;
+                if(!block){
+                    return sync.fails(false);
+                }
+                let blockIndex = state.block.index || null;
+                if(!blockIndex){
+                    return sync.fails(false);
+                }
+                if(state.block.index <= contract) {
+                    return sync.fails(false);
+                }
+
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
                 that.callContractMethodDeployWait(contract, method, state, function (err, result) {
@@ -521,7 +550,21 @@ class EcmaContract {
              * @private
              */
             _callMethodRollback: function (contract, method, args, state) {
+                contract = Number(contract);
                 let sync = vmSync();
+
+                let block = state.block || null;
+                if(!block){
+                    return sync.fails(false);
+                }
+                let blockIndex = state.block.index || null;
+                if(!blockIndex){
+                    return sync.fails(false);
+                }
+                if(state.block.index <= contract) {
+                    return sync.fails(false);
+                }
+
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
                 that.callContractMethodRollback(contract, method, state, function (err, result) {
@@ -538,6 +581,7 @@ class EcmaContract {
                 }, ...args);
             },
             _getContractProperty: function (contract, property, state) {
+                contract = Number(contract);
                 let sync = vmSync();
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
@@ -563,6 +607,7 @@ class EcmaContract {
              * @private
              */
             _addDelayedCall: function (contract, method, args, state) {
+                contract = Number(contract);
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
                 that._nextCallings.push({contract: contract, method: method, args: args, state: state});
