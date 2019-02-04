@@ -358,12 +358,6 @@ class EcmaContract {
                 if(!block){
                     return sync.fails(false);
                 }
-
-                let blockIndex = state.block.index || null;
-                if(!blockIndex){
-                    return sync.fails(false);
-                }
-
                 if(state.block.index <= id) {
                     return sync.fails(false);
                 }
@@ -515,10 +509,6 @@ class EcmaContract {
                 if(!block){
                     return sync.fails(false);
                 }
-                let blockIndex = state.block.index || null;
-                if(!blockIndex){
-                    return sync.fails(false);
-                }
                 if(state.block.index <= contract) {
                     return sync.fails(false);
                 }
@@ -557,10 +547,6 @@ class EcmaContract {
                 if(!block){
                     return sync.fails(false);
                 }
-                let blockIndex = state.block.index || null;
-                if(!blockIndex){
-                    return sync.fails(false);
-                }
                 if(state.block.index <= contract) {
                     return sync.fails(false);
                 }
@@ -583,6 +569,15 @@ class EcmaContract {
             _getContractProperty: function (contract, property, state) {
                 contract = Number(contract);
                 let sync = vmSync();
+
+                let block = state.block || null;
+                if(!block){
+                    return sync.fails(false);
+                }
+                if(state.block.index <= contract) {
+                    return sync.fails(false);
+                }
+
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
                 that.getContractProperty(contract, 'contract.' + property, function (err, result) {
@@ -698,7 +693,11 @@ class EcmaContract {
                     }
 
                     _contracts._callMethodRollback(contract, method, args, state);
-                    return waitForReturn();
+                    let result = waitForReturn();
+                    if(result === null) {
+                        throw 'External call failed';
+                    }
+                    return result;
                 },
                 /**
                  * Returns property value from another contract
@@ -715,6 +714,13 @@ class EcmaContract {
                     }
                     _contracts._getContractProperty(contract, property, state);
                     return waitForReturn();
+                    /*
+                    let result = waitForReturn();
+                    if(result === null) {
+                        throw 'External call failed';
+                    }
+                    return result;
+                    */
                 },
                 /**
                  * Get parent caller address
