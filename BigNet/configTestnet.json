@@ -3,6 +3,7 @@
   "httpServer": "localhost",
   "httpPort": 3015,
   "initialPeers": [
+    "ws://176.9.104.200:6031"
   ],
   "validators": [
     "dlcpoa"

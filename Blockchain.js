@@ -519,6 +519,8 @@ function Blockchain(config) {
      */
     function initConnection(ws) {
 
+
+
         if(peersBlackList.indexOf(ws._socket.remoteAddress) !== -1) {
             if(config.program.verbose) {
                 logger.info('Blacklisted peer ' + ws._socket.remoteAddress);
@@ -553,6 +555,8 @@ function Blockchain(config) {
             }
         }
 
+
+
         p2pErrorHandler(ws);
         sockets.push(ws);
         if(config.checkExternalConnectionData) {
@@ -572,6 +576,8 @@ function Blockchain(config) {
      */
     function initMessageHandler(ws) {
         ws.on('message', (data) => {
+
+
 
             //prevent multiple sockets on one busaddress
             if(!config.allowMultiplySocketsOnBus) {
@@ -603,7 +609,7 @@ function Blockchain(config) {
             }
 
             //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
-            if(!ws.haveBlockchainInfo) {
+            if(!ws.haveBlockchainInfo && message.type !== MessageType.META) {
                 return;
             }
 
@@ -851,12 +857,14 @@ function Blockchain(config) {
     function connectToPeers(newPeers) {
         let peers = getCurrentPeers();
 
+
         if(peers.length >= config.maxPeers) {
             return;
         }
         newPeers = newPeers.filter((v, i, a) => a.indexOf(v) === i);
 
         newPeers.forEach((peer) => {
+
             if(peers.indexOf(peer) !== -1) {
                 return;
             }
@@ -874,6 +882,7 @@ function Blockchain(config) {
                     ws.close();
                 });
             } catch (e) {
+                console.log(e);
             }
         });
     }
