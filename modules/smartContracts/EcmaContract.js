@@ -69,7 +69,7 @@ class EcmaContract {
         /**
          * Events indenxing
          */
-        this.events = new EventsDB('/contractsRuntime/EventsDB.db');
+        this.events = new EventsDB(that.config.workDir + 'contractsRuntime/EventsDB.db');
         this.events.initialize(function () {
             logger.info('Initialized');
             that.ready = true;
@@ -1412,7 +1412,7 @@ class EcmaContract {
             delete this._contractInstanceCache[addr];
             return;
         } else {
-            db = new TransactionalKeyValue('contractsRuntime/' + addr);
+            db = new TransactionalKeyValue(that.config.workDir + '/contractsRuntime/' + addr);
         }
         db.clear(function () {
             db.close(function () {
