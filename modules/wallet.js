@@ -131,8 +131,8 @@ let Wallet = function (walletFile, config) {
             wallet.accepted = walletData.accepted;
 
             //1.0.4b bug workaround
-            wallet.keysPair.private = repairKey(wallet.keysPair.private);
-            wallet.keysPair.public = repairKey(wallet.keysPair.public);
+            //wallet.keysPair.private = repairKey(wallet.keysPair.private);
+            //wallet.keysPair.public = repairKey(wallet.keysPair.public);
             //1.0.4b bug workaround
 
 
@@ -189,10 +189,10 @@ let Wallet = function (walletFile, config) {
         if(wallet.id.length === 0) {
            // wallet.generate();
             logger.info('Empty wallet created');
-        } else if(!wallet.selfValidate()) {
+        } /*else if(!wallet.selfValidate()) {
             throw logger.fatal('Wallet self-validation error! Invalid key or sign checking');
 
-        }
+        }*/
 
         return wallet;
     };
@@ -311,8 +311,8 @@ let Wallet = function (walletFile, config) {
         amount = Number(amount);
 
         //1.0.4b bug workaround
-        wallet.keysPair.private = repairKey(wallet.keysPair.private);
-        wallet.keysPair.public = repairKey(wallet.keysPair.public);
+       // wallet.keysPair.private = repairKey(wallet.keysPair.private);
+       // wallet.keysPair.public = repairKey(wallet.keysPair.public);
         //1.0.4b bug workaround
 
         if(wallet.block === -1) {

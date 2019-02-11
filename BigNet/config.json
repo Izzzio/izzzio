@@ -31,6 +31,6 @@
   "signFunction": "bitcore",
   "hashFunction": "SHA256",
   "plugins": [
-    "bitcore-crypto"
+    "iz3-bitcore-crypto"
   ]
 }
