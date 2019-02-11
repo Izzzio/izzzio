@@ -1412,7 +1412,7 @@ class EcmaContract {
             delete this._contractInstanceCache[addr];
             return;
         } else {
-            db = new TransactionalKeyValue(that.config.workDir + '/contractsRuntime/' + addr);
+            db = new TransactionalKeyValue(this.config.workDir + '/contractsRuntime/' + addr);
         }
         db.clear(function () {
             db.close(function () {
