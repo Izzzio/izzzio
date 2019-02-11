@@ -109,6 +109,7 @@ const config = {
     //Wallet
     walletFile: './wallet.json',         //Адрес файла кошелька
     workDir: '.',
+    disableWalletDeploy: true,
 
     //Database
     walletsDB: 'wallets',                   // false - для хранения в ОЗУ, mem://wallets.json для хранения в ОЗУ и записи на ПЗУ при выгрузке

@@ -1347,7 +1347,7 @@ function Blockchain(config) {
      * Создаёт кошелёк в блокчейне, если он не создан.
      */
     function createWalletIfNotExsists() {
-        if(wallet.accepted) {
+        if(wallet.accepted || config.disableWalletDeploy) {
             return;
         }
         wallet.create();
