@@ -609,7 +609,7 @@ function Blockchain(config) {
             }
 
             //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
-            if(!ws.nodeMetaInfo && message.type !== MessageType.META) {
+            if(!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData) {
                 return;
             }
 

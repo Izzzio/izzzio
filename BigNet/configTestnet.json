@@ -23,6 +23,7 @@
   "walletsDB": "wallets",
   "blocksDB": "blocks",
   "appEntry": false,
+  "checkExternalConnectionData": false,
   "ecmaContract": {
     "enabled": true,
     "allowDebugMessages": true,
