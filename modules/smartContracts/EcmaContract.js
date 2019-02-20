@@ -507,10 +507,10 @@ class EcmaContract {
 
                 let block = state.block || null;
                 if(!block){
-                    return sync.fails(false);
+                    return sync.fails();
                 }
                 if(state.block.index <= contract) {
-                    return sync.fails(false);
+                    return sync.fails();
                 }
 
                 state.calledFrom = state.contractAddress;
@@ -545,10 +545,10 @@ class EcmaContract {
 
                 let block = state.block || null;
                 if(!block){
-                    return sync.fails(false);
+                    return sync.fails();
                 }
                 if(state.block.index <= contract) {
-                    return sync.fails(false);
+                    return sync.fails();
                 }
 
                 state.calledFrom = state.contractAddress;
@@ -572,10 +572,10 @@ class EcmaContract {
 
                 let block = state.block || null;
                 if(!block){
-                    return sync.fails(false);
+                    return sync.return('not_exist_block_in_state');
                 }
                 if(state.block.index <= contract) {
-                    return sync.fails(false);
+                    return sync.return('contract_gt_state');
                 }
 
                 state.calledFrom = state.contractAddress;
@@ -589,7 +589,6 @@ class EcmaContract {
                         } else {
                             sync.return(result);
                         }
-
                     }
                 });
             },
@@ -713,14 +712,15 @@ class EcmaContract {
                         throw 'You can\'t call method from himself';
                     }
                     _contracts._getContractProperty(contract, property, state);
-                    return waitForReturn();
-                    /*
+
+                    //return waitForReturn();
                     let result = waitForReturn();
-                    if(result === null) {
-                        throw 'External call failed';
+                    if(result === 'unknown_block_in_state') {
+                        throw 'unknown block in state';
+                    } else if(result === 'contract_gt_state'){
+                        throw 'contract not in states';
                     }
                     return result;
-                    */
                 },
                 /**
                  * Get parent caller address
