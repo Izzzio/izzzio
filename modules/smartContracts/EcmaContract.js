@@ -572,10 +572,10 @@ class EcmaContract {
 
                 let block = state.block || null;
                 if(!block){
-                    return sync.return('not_exist_block_in_state');
+                    throw 'unknown block in state';
                 }
                 if(state.block.index <= contract) {
-                    return sync.return('contract_gt_state');
+                    throw 'contract not in states';
                 }
 
                 state.calledFrom = state.contractAddress;
@@ -712,15 +712,7 @@ class EcmaContract {
                         throw 'You can\'t call method from himself';
                     }
                     _contracts._getContractProperty(contract, property, state);
-
-                    //return waitForReturn();
-                    let result = waitForReturn();
-                    if(result === 'unknown_block_in_state') {
-                        throw 'unknown block in state';
-                    } else if(result === 'contract_gt_state'){
-                        throw 'contract not in states';
-                    }
-                    return result;
+                    return waitForReturn();
                 },
                 /**
                  * Get parent caller address
