@@ -507,10 +507,10 @@ class EcmaContract {
 
                 let block = state.block || null;
                 if(!block){
-                    return sync.fails();
+                    throw 'not exist block in state';
                 }
                 if(state.block.index <= contract) {
-                    return sync.fails();
+                    throw 'contract not in states';
                 }
 
                 state.calledFrom = state.contractAddress;
@@ -545,10 +545,10 @@ class EcmaContract {
 
                 let block = state.block || null;
                 if(!block){
-                    return sync.fails();
+                    throw 'not exist block in state';
                 }
                 if(state.block.index <= contract) {
-                    return sync.fails();
+                    throw 'contract not in states';
                 }
 
                 state.calledFrom = state.contractAddress;
@@ -572,7 +572,7 @@ class EcmaContract {
 
                 let block = state.block || null;
                 if(!block){
-                    throw 'unknown block in state';
+                    throw 'not exist block in state';
                 }
                 if(state.block.index <= contract) {
                     throw 'contract not in states';
@@ -602,6 +602,15 @@ class EcmaContract {
              */
             _addDelayedCall: function (contract, method, args, state) {
                 contract = Number(contract);
+
+                let block = state.block || null;
+                if(!block){
+                    throw 'not exist block in state';
+                }
+                if(state.block.index <= contract) {
+                    throw 'contract not in states';
+                }
+
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
                 that._nextCallings.push({contract: contract, method: method, args: args, state: state});
@@ -692,11 +701,14 @@ class EcmaContract {
                     }
 
                     _contracts._callMethodRollback(contract, method, args, state);
+                    return waitForReturn();
+                    /*
                     let result = waitForReturn();
                     if(result === null) {
                         throw 'External call failed';
                     }
                     return result;
+                    */
                 },
                 /**
                  * Returns property value from another contract
