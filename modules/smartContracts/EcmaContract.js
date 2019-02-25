@@ -702,13 +702,6 @@ class EcmaContract {
 
                     _contracts._callMethodRollback(contract, method, args, state);
                     return waitForReturn();
-                    /*
-                    let result = waitForReturn();
-                    if(result === null) {
-                        throw 'External call failed';
-                    }
-                    return result;
-                    */
                 },
                 /**
                  * Returns property value from another contract
