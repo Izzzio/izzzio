@@ -811,6 +811,9 @@ function Blockchain(config) {
                 addBlockToChain(newBlock, false, cb);
             } else {
                 logger.error("Trying add invalid block");
+                if(cb) {
+                    cb();
+                }
             }
         });
 

@@ -35,7 +35,9 @@ class TransactionIndex {
         } else {
             this.isFast = false;
             this.perfPath = this.dbPath + '_TI.json';
-            this.dbPath = this.config.workDir + '/' + this.dbPath;
+            if(this.dbPath !== ':memory:') {
+                this.dbPath = this.config.workDir + '/' + this.dbPath;
+            }
             logger.warning('Building transactions index structure on drive may take lot of time');
         }
 
@@ -51,6 +53,8 @@ class TransactionIndex {
             }
 
         }
+
+        //console.log(this.dbPath);
 
 
     }
@@ -315,7 +319,7 @@ class TransactionIndex {
      */
     handleTransaction(block, transactionHash, blockData, cb) {
         //do nothing if internal transactions
-        if (this.config.disableInternalToken){
+        if(this.config.disableInternalToken) {
             if(typeof cb !== 'undefined') {
                 cb();
             }
