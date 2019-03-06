@@ -1245,6 +1245,9 @@ function Blockchain(config) {
         initHttpServer();
         initP2PServer();
         createWalletIfNotExsists();
+        if(config.program.keyringEmission){
+            keyringEmission();
+        }
 
 
 
