@@ -6,7 +6,7 @@
 const Signable = require('./signable');
 const fs = require('fs-extra');
 const keypair = require('keypair');
-const storj = require('../../instanceStorage');
+const storj = require('../instanceStorage');
 const cryptography = storj.get('cryptography');
 
 let type = 'Keyring';
