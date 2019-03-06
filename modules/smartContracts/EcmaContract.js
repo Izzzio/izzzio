@@ -69,7 +69,7 @@ class EcmaContract {
         /**
          * Events indenxing
          */
-        this.events = new EventsDB(/*that.config.workDir +*/ 'contractsRuntime/EventsDB.db');
+        this.events = new EventsDB(/*that.config.workDir +*/ '/contractsRuntime/EventsDB.db');
         this.events.initialize(function () {
             logger.info('Initialized');
             that.ready = true;
