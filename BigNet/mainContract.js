@@ -109,6 +109,10 @@ class mainToken extends TokenContract {
          */
         this._resourceRents = new KeyValue('resourceRents');
         this._c2cOrders = new BlockchainMap('c2cOrders');
+        this._resourcePrice = new BlockchainMap('resourcePrice');
+        this._resourcePrice['ram'] = RESOURCES_PRICE.ram;
+        this._resourcePrice['callLimit'] = RESOURCES_PRICE.callLimit;
+        this._resourcePrice['timeLimit'] = RESOURCES_PRICE.timeLimit;
     }
 
 
@@ -298,9 +302,9 @@ class mainToken extends TokenContract {
             amount = MAX_RESOURCES_COST;
         }
 
-        let ram = RESOURCES_PRICE.ram * amount;
-        let timeLimit = RESOURCES_PRICE.timeLimit * amount;
-        let callLimit = RESOURCES_PRICE.callLimit * amount;
+        let ram = this._resourcePrice['ram'] * amount;
+        let timeLimit = this._resourcePrice['timeLimit'] * amount;
+        let callLimit = this._resourcePrice['callLimit'] * amount;
 
 
         ram = (ram < MINIMAL_RESOURCES.ram) ? MINIMAL_RESOURCES.ram : ram;
