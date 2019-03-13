@@ -9,7 +9,6 @@
  * Backend for C2C ordering
  *
  */
-
 /**
  * Token emission amount
  * @type {number}
@@ -326,6 +325,10 @@ class mainToken extends TokenContract {
         return JSON.stringify(this.calculateResources(resourcesAmount));
     }
 
+    /**
+     * accepting new resourses cost after voting
+     * @param amount
+     */
     acceptNewResources(amount) {
         let newCost = this.calculateResources(amount);
         this._resourcePrice['ram'] = newCost.ram;

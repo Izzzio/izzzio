@@ -279,6 +279,7 @@ class voteContract extends Contract {
      * Start voting
      */
     startVoting() {
+        //start can make only owner
         assert.assert(this.contract.owner === global.getState().from, 'Restricted access');
         this._voteState = 1;
     }
