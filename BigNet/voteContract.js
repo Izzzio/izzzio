@@ -278,9 +278,12 @@ class voteContract extends Contract {
     /**
      * Start voting
      */
-    startVoting() {
+    startVoting(newVariants) {
         //start can make only owner
         assert.assert(this.contract.owner === global.getState().from, 'Restricted access');
+        assert.assert(newVariants && this._voteState !== STATE[0], "Trying to change variants in running or ended voting");
+        //change variants(if newVariants has error, then nothing changes)
+        this._voteVariants.applyArray(newVariants);
         this._voteState = 1;
     }
 
