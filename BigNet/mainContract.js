@@ -326,6 +326,13 @@ class mainToken extends TokenContract {
         return JSON.stringify(this.calculateResources(resourcesAmount));
     }
 
+    acceptNewResources(amount) {
+        let newCost = this.calculateResources(amount);
+        this._resourcePrice['ram'] = newCost.ram;
+        this._resourcePrice['timeLimit'] = newCost.timeLimit;
+        this._resourcePrice['callLimit'] = newCost.callLimit;
+    }
+
 
     /**
      * TODO: Remove in release
