@@ -70,7 +70,7 @@ class voteContract extends Contract {
     /**
      * Initialization method with emission
      */
-    init() {
+    init(subject = SUBJECT, variants = VOTE_VARIANTS) {
 
         super.init();
         this._vote = new KeyValue('_vote');
@@ -87,6 +87,17 @@ class voteContract extends Contract {
         this._ChangeVoteState = new Event('ChangeVoteState', 'string');
 
         this._voteState = 0;
+
+        //add customisation for voting
+        this._putKeyValue('_voteSubject', subject);
+
+        this._voteVariants = new BlockchainArray('_voteVariants');
+        if (!BlockchainArray.isArray(variants)) {
+            variants = VOTE_VARIANTS;
+        }
+        for (let v of variants) {
+            this._voteVariants.push(v);
+        }
     }
 
     /**
@@ -96,11 +107,11 @@ class voteContract extends Contract {
     get contract() {
         return {
             owner: CONTRACT_OWNER,
-            subject: SUBJECT,
+            subject: this._getKeyValue('_voteSubject'),
             deadTimeLine: VOTE_END_DATE,
             deadVotesLine: VOTE_END_THRESHOLD,
             votePrice: VOTE_PRICE,
-            variants: VOTE_VARIANTS,
+            variants: this._voteVariants.toArray(),
             type: 'vote'
         };
     }
@@ -232,9 +243,10 @@ class voteContract extends Contract {
      */
     getResultsOfVoting() {
         let results = {};
-        for (let no in VOTE_VARIANTS) {
-            if(VOTE_VARIANTS.hasOwnProperty(no)) {
-                results[VOTE_VARIANTS[no]] = this._voteResults[no];
+        let voteVariants = this.contract.variants;
+        for (let no in voteVariants) {
+            if(voteVariants.hasOwnProperty(no)) {
+                results[voteVariants[no]] = this._voteResults[no];
             }
         }
         return JSON.stringify({results, state: this._voteState});
