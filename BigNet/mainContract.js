@@ -336,6 +336,40 @@ class mainToken extends TokenContract {
         this._resourcePrice['callLimit'] = newCost.callLimit;
     }
 
+    getResultsOfVoting(voteContractAddress) {
+        return JSON.parse(contracts.callMethodDeploy(voteContractAddress, 'getResultsOfVoting',[]));
+    }
+
+    processResults(voteContractAddress) {
+        const results = this.getResultsOfVoting(voteContractAddress);
+        switch (results.state) {
+            case 'waiting':
+                return 0;
+                break;
+            case 'started':
+                return 1;
+                break;
+            case 'ended':
+                //проверка варианта голования. если новый, то применяем новые значения, если старый, то ничего не делаем
+                return 2;
+        }
+    }
+
+    /**
+     * starts voting contract by addres to decide if we need new resouces price or not
+     * @param voteContractAddress address of voting contract
+     * @param newVariant multiplier for new resourses cost (new = old * multiplier)
+     */
+    startVotingForChangeResoursesPrice(voteContractAddress, newVariant) {
+        let newCost = JSON.stringify(calculateResources(newVariant));
+        let oldCost = JSON.stringify({
+            ram: this._resourcePrice['ram'],
+            timeLimit: this._resourcePrice['timeLimit'],
+            callLimit: this._resourcePrice['callLimit']
+        });
+        contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newCost, oldCost]);
+    }
+
 
     /**
      * TODO: Remove in release
