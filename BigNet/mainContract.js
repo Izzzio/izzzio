@@ -335,10 +335,21 @@ class mainToken extends TokenContract {
         this._resourcePrice['callLimit'] = newCost.callLimit;
     }
 
+    /**
+     * get results og voting contract by its address
+     * @param voteContractAddress
+     * @returns {any}
+     * @private
+     */
     _getResultsOfVoting(voteContractAddress) {
         return JSON.parse(contracts.callMethodDeploy(voteContractAddress, 'getResultsOfVoting',[]));
     }
 
+    /**
+     * Process results of change contract cost voting
+     * @param voteContractAddress
+     * @returns {number} result of processing: 0 - voting isn't started, 1 - coting hasn't been ended yet, 2 - old variant wins, 4 - new variant wins and accepted
+     */
     processResults(voteContractAddress) {
         const voteResults = this._getResultsOfVoting(voteContractAddress);
         switch (voteResults.state) {
@@ -350,6 +361,7 @@ class mainToken extends TokenContract {
                 break;
             case 'ended':
                 let winner = JSON.parse(this._findMaxVariantIndex(voteResults.results));
+                // if wins the same variant as we have now then do nothing
                 if (winner.index === this._getCurrentResourses()) {
                     return 2;
                 } else {
@@ -359,6 +371,12 @@ class mainToken extends TokenContract {
         }
     }
 
+    /**
+     * find max element and returns winner's index and value
+     * @param map
+     * @returns {{index: string, value: number}}
+     * @private
+     */
     _findMaxVariantIndex(map) {
         let max = {
             index:'',
@@ -375,6 +393,11 @@ class mainToken extends TokenContract {
         return max;
     }
 
+    /**
+     * get current resources in JSON format
+     * @returns {string}
+     * @private
+     */
     _getCurrentResourses() {
         return JSON.stringify({
             ram: this._resourcePrice['ram'],
