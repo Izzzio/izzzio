@@ -329,20 +329,19 @@ class mainToken extends TokenContract {
      * accepting new resourses cost after voting
      * @param amount
      */
-    acceptNewResources(amount) {
-        let newCost = this.calculateResources(amount);
+    _acceptNewResources(newCost) {
         this._resourcePrice['ram'] = newCost.ram;
         this._resourcePrice['timeLimit'] = newCost.timeLimit;
         this._resourcePrice['callLimit'] = newCost.callLimit;
     }
 
-    getResultsOfVoting(voteContractAddress) {
+    _getResultsOfVoting(voteContractAddress) {
         return JSON.parse(contracts.callMethodDeploy(voteContractAddress, 'getResultsOfVoting',[]));
     }
 
     processResults(voteContractAddress) {
-        const results = this.getResultsOfVoting(voteContractAddress);
-        switch (results.state) {
+        const voteResults = this._getResultsOfVoting(voteContractAddress);
+        switch (voteResults.state) {
             case 'waiting':
                 return 0;
                 break;
@@ -350,9 +349,38 @@ class mainToken extends TokenContract {
                 return 1;
                 break;
             case 'ended':
-                //проверка варианта голования. если новый, то применяем новые значения, если старый, то ничего не делаем
-                return 2;
+                let winner = JSON.parse(this._findMaxVariantIndex(voteResults.results));
+                if (winner.index === this._getCurrentResourses()) {
+                    return 2;
+                } else {
+                    this._acceptNewResources(JSON.parse(winner.index));
+                    return 3;
+                }
         }
+    }
+
+    _findMaxVariantIndex(map) {
+        let max = {
+            index:'',
+            value: -1,
+        };
+        for (let ind in map) {
+            if(map.hasOwnProperty(ind)) {
+                if (max.value <= map[ind]) {
+                    max.index = ind;
+                    max.value = map[ind];
+                }
+            }
+        }
+        return max;
+    }
+
+    _getCurrentResourses() {
+        return JSON.stringify({
+            ram: this._resourcePrice['ram'],
+            timeLimit: this._resourcePrice['timeLimit'],
+            callLimit: this._resourcePrice['callLimit']
+        });
     }
 
     /**
@@ -362,11 +390,7 @@ class mainToken extends TokenContract {
      */
     startVotingForChangeResoursesPrice(voteContractAddress, newVariant) {
         let newCost = JSON.stringify(calculateResources(newVariant));
-        let oldCost = JSON.stringify({
-            ram: this._resourcePrice['ram'],
-            timeLimit: this._resourcePrice['timeLimit'],
-            callLimit: this._resourcePrice['callLimit']
-        });
+        let oldCost = this._getCurrentResourses();
         contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newCost, oldCost]);
     }
 
