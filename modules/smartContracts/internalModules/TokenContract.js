@@ -51,10 +51,10 @@ class TokenContract extends Contract {
      */
     _getSender() {
         if(contracts.isChild()) {
-            return contracts.caller();
+            return String(contracts.caller());
         }
 
-        return global.getState().from;
+        return String(global.getState().from);
     }
 
     /**

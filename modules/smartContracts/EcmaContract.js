@@ -917,6 +917,7 @@ class EcmaContract {
         this.getContractInstanceByAddress(address, function (err, instance) {
 
             if(err) {
+                logger.error('Error getting contract instance for contract: ' + address + ' method ' + method);
                 cb(err);
             } else {
                 try {
@@ -1250,7 +1251,7 @@ class EcmaContract {
                     contractAddress: latestBlock.index + 1
                 }, function (err, result) {
                     if(err) {
-                        throw  err;
+                        throw new Error(err + ' processDeploy method falls ');
                     }
 
                     generateBlock();
