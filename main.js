@@ -31,6 +31,7 @@ program
     .option('--clear-db', 'Clear all saved chain and calculated wallets.')
     .option('-c, --config [path]', 'Core config path', 'config.json')
     .option('--work-dir [path]', 'Working directory', false)
+    .option('--keyring-emission', 'Generate and deploy keyring', false)
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
     .option('--new-chain', 'Generates keyring and token emission if possible', false)
     .option('--fall-on-errors', 'Allow stop node on uncaught exceptions', false)

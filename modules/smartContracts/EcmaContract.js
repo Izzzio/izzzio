@@ -69,7 +69,7 @@ class EcmaContract {
         /**
          * Events indenxing
          */
-        this.events = new EventsDB(that.config.workDir + 'contractsRuntime/EventsDB.db');
+        this.events = new EventsDB(/*that.config.workDir +*/ '/contractsRuntime/EventsDB.db');
         this.events.initialize(function () {
             logger.info('Initialized');
             that.ready = true;
@@ -224,7 +224,7 @@ class EcmaContract {
                 logging: that.config.ecmaContract.allowDebugMessages,
                 logPrefix: 'Contract ' + address + ': ',
             });
-            let db = new TransactionalKeyValue(that.config.workDir + 'contractsRuntime/' + address);
+            let db = new TransactionalKeyValue(/*that.config.workDir +*/ 'contractsRuntime/' + address);
             try {
                 vm.setTimingLimits(limits.timeLimit + 10000);
                 vm.setCpuLimit(limits.timeLimit + 500);
@@ -917,6 +917,7 @@ class EcmaContract {
         this.getContractInstanceByAddress(address, function (err, instance) {
 
             if(err) {
+                logger.error('Error getting contract instance for contract: ' + address + ' method ' + method);
                 cb(err);
             } else {
                 try {
@@ -1250,7 +1251,7 @@ class EcmaContract {
                     contractAddress: latestBlock.index + 1
                 }, function (err, result) {
                     if(err) {
-                        throw  err;
+                        throw new Error(err + ' processDeploy method falls ');
                     }
 
                     generateBlock();
@@ -1412,7 +1413,7 @@ class EcmaContract {
             delete this._contractInstanceCache[addr];
             return;
         } else {
-            db = new TransactionalKeyValue(this.config.workDir + 'contractsRuntime/' + addr);
+            db = new TransactionalKeyValue(/*this.config.workDir +*/ 'contractsRuntime/' + addr);
         }
         db.clear(function () {
             db.close(function () {

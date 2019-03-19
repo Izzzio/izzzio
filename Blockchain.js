@@ -406,7 +406,7 @@ function Blockchain(config) {
                     'Content-Type': 'application/json',
                     'Content-Disposition': 'attachment; filename="blockchain.json"'
                 });
-                res.write('[');
+                res.write('{');
                 for (let i = 0; i < maxBlock + 1; i++) {
                     let result;
                     try {
@@ -414,9 +414,17 @@ function Blockchain(config) {
                     } catch (e) {
                         continue;
                     }
-                    res.write(JSON.stringify(result) + ',');
+
+                    if(Buffer.isBuffer(result)){
+                        result = JSON.stringify(String(result));
+                    }else{
+                        result = JSON.stringify(result);
+                    }
+
+                    res.write('"'+i+'":'+result + ',');
                 }
-                res.write(']');
+                res.write('"maxBlock":'+maxBlock+'');
+                res.write('}');
                 res.end();
             });
         });
@@ -811,6 +819,9 @@ function Blockchain(config) {
                 addBlockToChain(newBlock, false, cb);
             } else {
                 logger.error("Trying add invalid block");
+                if(cb) {
+                    cb();
+                }
             }
         });
 
@@ -1242,6 +1253,9 @@ function Blockchain(config) {
         initHttpServer();
         initP2PServer();
         createWalletIfNotExsists();
+        if(config.program.keyringEmission){
+            keyringEmission();
+        }
 
 
 
