@@ -407,14 +407,25 @@ class mainToken extends TokenContract {
     }
 
     /**
+     * returns resourses as string
+     * @param obj
+     * @returns {string}
+     * @private
+     */
+    _resoursesObjectToString(obj) {
+        return `ram:${obj.ram}, time limit:${obj.timeLimit}, call limit:${obj.callLimit}`
+    }
+
+    /**
      * starts voting contract by addres to decide if we need new resouces price or not
      * @param voteContractAddress address of voting contract
      * @param newVariant multiplier for new resourses cost (new = old * multiplier)
      */
     startVotingForChangeResoursesPrice(voteContractAddress, newVariant) {
-        let newCost = JSON.stringify(this.calculateResources(newVariant));
-        let oldCost = this._getCurrentResourses();
+        let newCost = this._resoursesObjectToString(this.calculateResources(newVariant));
+        let oldCost = this._resoursesObjectToString(this._getCurrentResourses());
         contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newCost, oldCost]);
+        //return JSON.stringify([newCost, oldCost]);
     }
 
 

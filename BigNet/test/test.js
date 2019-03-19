@@ -239,6 +239,7 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async voteContractAmountChangeTest() {
+
         let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
         const voteContractCode = fs.readFileSync('../voteContract.js').toString();
         const newBlock = await that.contracts.ecmaPromise.deployContract(voteContractCode, 10);
@@ -250,11 +251,12 @@ class App extends DApp {
         assert.true(result.results.first === 0 && result.results.second === 0 && result.results.third === 0, 'Invalid empty vote results');
         assert.true(result.state === 'waiting', 'Invalid empty vote state');
 
-        await mainToken.startVotingForChangeResoursesPrice(newBlock, 2);
-
-
-
-
+       /* logger.info(await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(),'startVotingForChangeResoursesPrice',
+                                [newBlock,2]),{});*/
+        result = await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "startVotingForChangeResoursesPrice", [newBlock.address, 2], {});
+        result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
+        console.log(result.state);
+/*
 
 
 
@@ -270,7 +272,7 @@ class App extends DApp {
 
         result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
         assert.true(result.results.first === 0 && result.results.second === 1 && result.results.third === 0, 'Invalid empty vote results');
-        assert.true(result.state === 'started', 'Invalid empty vote state');
+        assert.true(result.state === 'started', 'Invalid empty vote state');*/
 
     }
 
@@ -281,9 +283,10 @@ class App extends DApp {
      */
     async run() {
 
-        await this.tokenTest();
-        await this.c2cTest();
-        await this.voteContractTest();
+       // await this.tokenTest();
+       // await this.c2cTest();
+       // await this.voteContractTest();
+        await this.voteContractAmountChangeTest();
 
         console.log('');
         console.log('');
