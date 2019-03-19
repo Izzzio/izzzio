@@ -77,6 +77,13 @@ class voteContract extends Contract {
         this._voteMembers = new BlockchainMap('_voteMembers');
         this._voteMembersArray = new BlockchainArray('_voteMembersArray');
         this._voteResults = new BlockchainArray('_voteResults');
+        this._voteVariants = new BlockchainArray('_voteVariants');
+        if (!BlockchainArray.isArray(variants)) {
+            variants = VOTE_VARIANTS;
+        }
+        for (let v of variants) {
+            this._voteVariants.push(v);
+        }
 
         for (let v of this.contract.variants) {
             this._voteResults.push(0);
@@ -91,13 +98,7 @@ class voteContract extends Contract {
         //add customisation for voting
         this._putKeyValue('_voteSubject', subject);
 
-        this._voteVariants = new BlockchainArray('_voteVariants');
-        if (!BlockchainArray.isArray(variants)) {
-            variants = VOTE_VARIANTS;
-        }
-        for (let v of variants) {
-            this._voteVariants.push(v);
-        }
+
     }
 
     /**
@@ -111,7 +112,7 @@ class voteContract extends Contract {
             deadTimeLine: VOTE_END_DATE,
             deadVotesLine: VOTE_END_THRESHOLD,
             votePrice: VOTE_PRICE,
-            variants: this._voteVariants.toArray(),
+            variants: this._voteVariants.toArray(),//this._voteVariants ? this._voteVariants.toArray() : VOTE_VARIANTS,
             type: 'vote'
         };
     }
@@ -281,9 +282,11 @@ class voteContract extends Contract {
     startVoting(newVariants) {
         //start can make only owner
         assert.assert(this.contract.owner === global.getState().from, 'Restricted access');
-        assert.assert(newVariants && this._voteState !== STATE[0], "Trying to change variants in running or ended voting");
+        if (newVariants){
         //change variants(if newVariants has error, then nothing changes)
-        this._voteVariants.applyArray(newVariants);
+            assert.assert(this._voteState !== STATE[0], 'Trying to change variants in running or ended voting');
+            this._voteVariants.applyArray(newVariants);
+        }
         this._voteState = 1;
     }
 

@@ -412,7 +412,7 @@ class mainToken extends TokenContract {
      * @param newVariant multiplier for new resourses cost (new = old * multiplier)
      */
     startVotingForChangeResoursesPrice(voteContractAddress, newVariant) {
-        let newCost = JSON.stringify(calculateResources(newVariant));
+        let newCost = JSON.stringify(this.calculateResources(newVariant));
         let oldCost = this._getCurrentResourses();
         contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newCost, oldCost]);
     }

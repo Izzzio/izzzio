@@ -235,6 +235,47 @@ class App extends DApp {
 
 
     /**
+     * Vote contract test
+     * @return {Promise<void>}
+     */
+    async voteContractAmountChangeTest() {
+        let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
+        const voteContractCode = fs.readFileSync('../voteContract.js').toString();
+        const newBlock = await that.contracts.ecmaPromise.deployContract(voteContractCode, 10);
+
+        let lastBalance = Number(await mainToken.balanceOf(this.getCurrentWallet().id));
+
+        let result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
+
+        assert.true(result.results.first === 0 && result.results.second === 0 && result.results.third === 0, 'Invalid empty vote results');
+        assert.true(result.state === 'waiting', 'Invalid empty vote state');
+
+        await mainToken.startVotingForChangeResoursesPrice(newBlock, 2);
+
+
+
+
+
+
+
+        result = await that.contracts.ecmaPromise.deployMethod(newBlock.address, "startVoting", [], {});
+
+        result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
+        assert.true(result.state === 'started', 'Invalid empty vote state');
+
+        await mainToken.pay(newBlock.address, "processPayment", '1', ['1']);
+
+
+        assert.true(lastBalance - 1 === Number(await mainToken.balanceOf(this.getCurrentWallet().id)), "Invalid balance change");
+
+        result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
+        assert.true(result.results.first === 0 && result.results.second === 1 && result.results.third === 0, 'Invalid empty vote results');
+        assert.true(result.state === 'started', 'Invalid empty vote state');
+
+    }
+
+
+    /**
      * Run tests
      * @return {Promise<void>}
      */
