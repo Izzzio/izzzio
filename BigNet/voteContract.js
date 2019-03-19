@@ -288,8 +288,6 @@ class voteContract extends Contract {
             this._voteVariants.applyArray([...newVariants]);
         }
         this._voteState = 1;
-        console.log('started');
-        return 'Voting started';
     }
 
 }

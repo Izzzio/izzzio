@@ -360,9 +360,9 @@ class mainToken extends TokenContract {
                 return 1;
                 break;
             case 'ended':
-                let winner = JSON.parse(this._findMaxVariantIndex(voteResults.results));
+                let winner = this._findMaxVariantIndex(voteResults.results);
                 // if wins the same variant as we have now then do nothing
-                if (winner.index === this._getCurrentResourses()) {
+                if (winner.index === this.getCurrentResourses()) {
                     return 2;
                 } else {
                     this._acceptNewResources(JSON.parse(winner.index));
@@ -394,11 +394,10 @@ class mainToken extends TokenContract {
     }
 
     /**
-     * get current resources in JSON format
+     * get current resources
      * @returns {string}
-     * @private
      */
-    _getCurrentResourses() {
+    getCurrentResourses() {
         return JSON.stringify({
             ram: this._resourcePrice['ram'],
             timeLimit: this._resourcePrice['timeLimit'],
@@ -410,9 +409,8 @@ class mainToken extends TokenContract {
      * returns resourses as string
      * @param obj
      * @returns {string}
-     * @private
      */
-    _resoursesObjectToString(obj) {
+    resoursesObjectToString(obj) {
         return `ram:${obj.ram}, time limit:${obj.timeLimit}, call limit:${obj.callLimit}`
     }
 
@@ -422,10 +420,10 @@ class mainToken extends TokenContract {
      * @param newVariant multiplier for new resourses cost (new = old * multiplier)
      */
     startVotingForChangeResoursesPrice(voteContractAddress, newVariant) {
-        let newCost = this._resoursesObjectToString(this.calculateResources(newVariant));
-        let oldCost = this._resoursesObjectToString(this._getCurrentResourses());
+        let newCost = JSON.stringify(this.calculateResources(newVariant));
+        let oldCost = this.getCurrentResourses();
         contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newCost, oldCost]);
-        //return JSON.stringify([newCost, oldCost]);
+        return JSON.stringify([newCost, oldCost]);
     }
 
 

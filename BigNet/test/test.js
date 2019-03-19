@@ -235,45 +235,79 @@ class App extends DApp {
 
 
     /**
-     * Vote contract test
+     * test voting for changing resourses
      * @return {Promise<void>}
      */
-    async voteContractAmountChangeTest() {
+    async voteContractChangeResourses() {
 
+        //for this test you should change VOTE_END_THRESHOLD to 1 in votecontract(or vote 100 times)
+
+
+        let result;
+        let oldResourses;
+        let newResourses;
+        let newBlock;
         let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
         const voteContractCode = fs.readFileSync('../voteContract.js').toString();
-        const newBlock = await that.contracts.ecmaPromise.deployContract(voteContractCode, 10);
 
-        let lastBalance = Number(await mainToken.balanceOf(this.getCurrentWallet().id));
+        //change resourses
+        logger.info('Vote for changing resourses in 2(at least) times');
+        //deploy voting
+        newBlock = await that.contracts.ecmaPromise.deployContract(voteContractCode, 10);
+        //check initial results of voting(native method)
+        result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
+        assert.true(result.results.first === 0 && result.results.second === 0 && result.results.third === 0, 'Invalid empty vote results');
+        assert.true(result.state === 'waiting', 'Invalid empty vote state');
+        //check initial results of voting(master contract method)
+        result = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
+        assert.true(result === 0, 'Invalid empty vote state');
+        //star voting for change resourses(try to double resourses)
+        await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "startVotingForChangeResoursesPrice", [newBlock.address, 2], {});
+        //check state of voting(should be started)
+        result = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
+        assert.true(result === 1, 'Invalid started vote state');
+        //make vote(pay 1 coin for it)
+        await mainToken.pay(newBlock.address, "processPayment", '1', ['0']);
+        //check if the voting stopped
+        result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
+        assert.true(result.state === 'ended', 'Invalid started vote state');
+        //get old resourses
+        oldResourses = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResourses", [newBlock.address], {});
+        //save new resourses
+        await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
+        //check saved resourses
+        newResourses = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResourses", [newBlock.address], {});
+        assert.false(oldResourses === newResourses, 'Resourses should been changed');
+        logger.info('old: '+oldResourses);
+        logger.info('new: '+newResourses);
 
-        let result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
+
+        //vote against changing
+        logger.info('Vote against changing resourses ');
+        newBlock = await that.contracts.ecmaPromise.deployContract(voteContractCode, 10);
+
+        result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
 
         assert.true(result.results.first === 0 && result.results.second === 0 && result.results.third === 0, 'Invalid empty vote results');
         assert.true(result.state === 'waiting', 'Invalid empty vote state');
 
-       /* logger.info(await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(),'startVotingForChangeResoursesPrice',
-                                [newBlock,2]),{});*/
-        result = await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "startVotingForChangeResoursesPrice", [newBlock.address, 2], {});
+        result = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
+        assert.true(result === 0, 'Invalid empty vote state');
+
+        await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "startVotingForChangeResoursesPrice", [newBlock.address, 2], {});
+
+        result = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
+        assert.true(result === 1, 'Invalid started vote state');
+
+        await mainToken.pay(newBlock.address, "processPayment", '1', ['1']); ////vote against changing
         result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
-        console.log(result.state);
-/*
-
-
-
-        result = await that.contracts.ecmaPromise.deployMethod(newBlock.address, "startVoting", [], {});
-
-        result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
-        assert.true(result.state === 'started', 'Invalid empty vote state');
-
-        await mainToken.pay(newBlock.address, "processPayment", '1', ['1']);
-
-
-        assert.true(lastBalance - 1 === Number(await mainToken.balanceOf(this.getCurrentWallet().id)), "Invalid balance change");
-
-        result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
-        assert.true(result.results.first === 0 && result.results.second === 1 && result.results.third === 0, 'Invalid empty vote results');
-        assert.true(result.state === 'started', 'Invalid empty vote state');*/
-
+        assert.true(result.state === 'ended', 'Invalid started vote state');
+        oldResourses = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResourses", [newBlock.address], {});
+        await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
+        newResourses = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResourses", [newBlock.address], {});
+        assert.false(oldResourses !== newResourses, 'Resourses should not been changed');
+        logger.info('old: '+ oldResourses);
+        logger.info('new: '+ newResourses);
     }
 
 
@@ -283,10 +317,10 @@ class App extends DApp {
      */
     async run() {
 
-       // await this.tokenTest();
-       // await this.c2cTest();
-       // await this.voteContractTest();
-        await this.voteContractAmountChangeTest();
+        await this.tokenTest();
+        await this.c2cTest();
+        await this.voteContractTest();
+        await this.voteContractChangeResourses();
 
         console.log('');
         console.log('');
