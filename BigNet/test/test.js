@@ -235,23 +235,23 @@ class App extends DApp {
 
 
     /**
-     * test voting for changing resourses
+     * test voting for changing resources
      * @return {Promise<void>}
      */
-    async voteContractChangeResourses() {
+    async voteContractChangeResources() {
 
         //for this test you should change VOTE_END_THRESHOLD to 1 in votecontract(or vote 100 times)
 
 
         let result;
-        let oldResourses;
-        let newResourses;
+        let oldResources;
+        let newResources;
         let newBlock;
         let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
         const voteContractCode = fs.readFileSync('../voteContract.js').toString();
 
-        //change resourses
-        logger.info('Vote for changing resourses in 2(at least) times');
+        //change resources
+        logger.info('Vote for changing resources in 2(at least) times');
         //deploy voting
         newBlock = await that.contracts.ecmaPromise.deployContract(voteContractCode, 10);
         //check initial results of voting(native method)
@@ -261,8 +261,8 @@ class App extends DApp {
         //check initial results of voting(master contract method)
         result = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
         assert.true(result === 0, 'Invalid empty vote state');
-        //star voting for change resourses(try to double resourses)
-        await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "startVotingForChangeResoursesPrice", [newBlock.address, 2], {});
+        //star voting for change resources(try to double resources)
+        await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "startVotingForChangeResourcesPrice", [newBlock.address, 2], {});
         //check state of voting(should be started)
         result = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
         assert.true(result === 1, 'Invalid started vote state');
@@ -271,19 +271,19 @@ class App extends DApp {
         //check if the voting stopped
         result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
         assert.true(result.state === 'ended', 'Invalid started vote state');
-        //get old resourses
-        oldResourses = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResourses", [newBlock.address], {});
-        //save new resourses
+        //get old resources
+        oldResources = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResources", [newBlock.address], {});
+        //save new resources
         await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
-        //check saved resourses
-        newResourses = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResourses", [newBlock.address], {});
-        assert.false(oldResourses === newResourses, 'Resourses should been changed');
-        logger.info('old: '+oldResourses);
-        logger.info('new: '+newResourses);
+        //check saved resources
+        newResources = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResources", [newBlock.address], {});
+        assert.false(oldResources === newResources, 'Resources should been changed');
+        logger.info('old: '+oldResources);
+        logger.info('new: '+newResources);
 
 
         //vote against changing
-        logger.info('Vote against changing resourses ');
+        logger.info('Vote against changing resources ');
         newBlock = await that.contracts.ecmaPromise.deployContract(voteContractCode, 10);
 
         result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
@@ -294,7 +294,7 @@ class App extends DApp {
         result = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
         assert.true(result === 0, 'Invalid empty vote state');
 
-        await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "startVotingForChangeResoursesPrice", [newBlock.address, 2], {});
+        await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "startVotingForChangeResourcesPrice", [newBlock.address, 2], {});
 
         result = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
         assert.true(result === 1, 'Invalid started vote state');
@@ -302,12 +302,12 @@ class App extends DApp {
         await mainToken.pay(newBlock.address, "processPayment", '1', ['1']); ////vote against changing
         result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
         assert.true(result.state === 'ended', 'Invalid started vote state');
-        oldResourses = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResourses", [newBlock.address], {});
+        oldResources = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResources", [newBlock.address], {});
         await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
-        newResourses = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResourses", [newBlock.address], {});
-        assert.false(oldResourses !== newResourses, 'Resourses should not been changed');
-        logger.info('old: '+ oldResourses);
-        logger.info('new: '+ newResourses);
+        newResources = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentResources", [newBlock.address], {});
+        assert.false(oldResources !== newResources, 'Resources should not been changed');
+        logger.info('old: '+ oldResources);
+        logger.info('new: '+ newResources);
     }
 
 
@@ -323,7 +323,7 @@ class App extends DApp {
 
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //for next test you should change VOTE_END_THRESHOLD to 1 in voteContract!!!!!!!!!!
-        await this.voteContractChangeResourses();
+        await this.voteContractChangeResources();
 
         console.log('');
         console.log('');

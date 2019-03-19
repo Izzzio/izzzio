@@ -78,26 +78,24 @@ class voteContract extends Contract {
         this._voteMembersArray = new BlockchainArray('_voteMembersArray');
         this._voteResults = new BlockchainArray('_voteResults');
         this._voteVariants = new BlockchainArray('_voteVariants');
-        if (!BlockchainArray.isArray(variants)) {
-            variants = VOTE_VARIANTS;
-        }
-        for (let v of variants) {
-            this._voteVariants.push(v);
-        }
-
-        for (let v of this.contract.variants) {
-            this._voteResults.push(0);
-        }
-        this._putKeyValue('votesCount', 0);
-
         this._VoteEvent = new Event('Vote', 'string', 'number');
         this._ChangeVoteState = new Event('ChangeVoteState', 'string');
 
-        this._voteState = 0;
-
-        //add customisation for voting
-        this._putKeyValue('_voteSubject', subject);
-
+        if (contracts.isDeploy()) { //Calls on deploying
+            if (!BlockchainArray.isArray(variants)) {
+                variants = VOTE_VARIANTS;
+            }
+            for (let v of variants) {
+                this._voteVariants.push(v);
+            }
+            for (let v of this.contract.variants) {
+                this._voteResults.push(0);
+            }
+            this._putKeyValue('votesCount', 0);
+            this._voteState = 0;
+            //add customisation for voting
+            this._putKeyValue('_voteSubject', subject);
+        }
 
     }
 

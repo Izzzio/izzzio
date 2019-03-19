@@ -109,9 +109,13 @@ class mainToken extends TokenContract {
         this._resourceRents = new KeyValue('resourceRents');
         this._c2cOrders = new BlockchainMap('c2cOrders');
         this._resourcePrice = new BlockchainMap('resourcePrice');
-        this._resourcePrice['ram'] = RESOURCES_PRICE.ram;
-        this._resourcePrice['callLimit'] = RESOURCES_PRICE.callLimit;
-        this._resourcePrice['timeLimit'] = RESOURCES_PRICE.timeLimit;
+        this._ResourcesCostChange = new Event('ResourcesCostChange', 'string', 'string');
+        if (contracts.isDeploy()) {
+            this._resourcePrice['ram'] = RESOURCES_PRICE.ram;
+            this._resourcePrice['callLimit'] = RESOURCES_PRICE.callLimit;
+            this._resourcePrice['timeLimit'] = RESOURCES_PRICE.timeLimit;
+            this._ResourcesCostChange.emit('initial',this.getCurrentResources());
+        }
     }
 
 
@@ -326,7 +330,7 @@ class mainToken extends TokenContract {
     }
 
     /**
-     * accepting new resourses cost after voting
+     * accepting new resources cost after voting
      * @param amount
      */
     _acceptNewResources(newCost) {
@@ -362,10 +366,12 @@ class mainToken extends TokenContract {
             case 'ended':
                 let winner = this._findMaxVariantIndex(voteResults.results);
                 // if wins the same variant as we have now then do nothing
-                if (winner.index === this.getCurrentResourses()) {
+                if (winner.index === this.getCurrentResources()) {
+                    this._ResourcesCostChange.emit('not change by voting',this.getCurrentResources());
                     return 2;
                 } else {
                     this._acceptNewResources(JSON.parse(winner.index));
+                    this._ResourcesCostChange.emit('change by voting',this.getCurrentResources());
                     return 3;
                 }
         }
@@ -397,7 +403,7 @@ class mainToken extends TokenContract {
      * get current resources
      * @returns {string}
      */
-    getCurrentResourses() {
+    getCurrentResources() {
         return JSON.stringify({
             ram: this._resourcePrice['ram'],
             timeLimit: this._resourcePrice['timeLimit'],
@@ -406,22 +412,22 @@ class mainToken extends TokenContract {
     }
 
     /**
-     * returns resourses as string
+     * returns resources as string
      * @param obj
      * @returns {string}
      */
-    resoursesObjectToString(obj) {
+    resourcesObjectToString(obj) {
         return `ram:${obj.ram}, time limit:${obj.timeLimit}, call limit:${obj.callLimit}`
     }
 
     /**
      * starts voting contract by addres to decide if we need new resouces price or not
      * @param voteContractAddress address of voting contract
-     * @param newVariant multiplier for new resourses cost (new = old * multiplier)
+     * @param newVariant multiplier for new resources cost (new = old * multiplier)
      */
-    startVotingForChangeResoursesPrice(voteContractAddress, newVariant) {
+    startVotingForChangeResourcesPrice(voteContractAddress, newVariant) {
         let newCost = JSON.stringify(this.calculateResources(newVariant));
-        let oldCost = this.getCurrentResourses();
+        let oldCost = this.getCurrentResources();
         contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newCost, oldCost]);
         return JSON.stringify([newCost, oldCost]);
     }
