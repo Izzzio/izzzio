@@ -47,7 +47,7 @@ const VOTE_END_DATE = '2020-02-01';
  * Vote count threshold
  * @type {number}
  */
-const VOTE_END_THRESHOLD = 100;
+const VOTE_END_THRESHOLD = 1;
 
 /**
  * voting price
@@ -70,23 +70,33 @@ class voteContract extends Contract {
     /**
      * Initialization method with emission
      */
-    init() {
+    init(subject = SUBJECT, variants = VOTE_VARIANTS) {
 
         super.init();
         this._vote = new KeyValue('_vote');
         this._voteMembers = new BlockchainMap('_voteMembers');
         this._voteMembersArray = new BlockchainArray('_voteMembersArray');
         this._voteResults = new BlockchainArray('_voteResults');
-
-        for (let v of this.contract.variants) {
-            this._voteResults.push(0);
-        }
-        this._putKeyValue('votesCount', 0);
-
+        this._voteVariants = new BlockchainArray('_voteVariants');
         this._VoteEvent = new Event('Vote', 'string', 'number');
         this._ChangeVoteState = new Event('ChangeVoteState', 'string');
 
-        this._voteState = 0;
+        if (contracts.isDeploy()) { //Calls on deploying
+            if (!BlockchainArray.isArray(variants)) {
+                variants = VOTE_VARIANTS;
+            }
+            for (let v of variants) {
+                this._voteVariants.push(v);
+            }
+            for (let v of this.contract.variants) {
+                this._voteResults.push(0);
+            }
+            this._putKeyValue('votesCount', 0);
+            this._voteState = 0;
+            //add customisation for voting
+            this._putKeyValue('_voteSubject', subject);
+        }
+
     }
 
     /**
@@ -96,11 +106,11 @@ class voteContract extends Contract {
     get contract() {
         return {
             owner: CONTRACT_OWNER,
-            subject: SUBJECT,
+            subject: this._getKeyValue('_voteSubject'),
             deadTimeLine: VOTE_END_DATE,
             deadVotesLine: VOTE_END_THRESHOLD,
             votePrice: VOTE_PRICE,
-            variants: VOTE_VARIANTS,
+            variants: this._voteVariants.toArray(),//this._voteVariants ? this._voteVariants.toArray() : VOTE_VARIANTS,
             type: 'vote'
         };
     }
@@ -232,9 +242,10 @@ class voteContract extends Contract {
      */
     getResultsOfVoting() {
         let results = {};
-        for (let no in VOTE_VARIANTS) {
-            if(VOTE_VARIANTS.hasOwnProperty(no)) {
-                results[VOTE_VARIANTS[no]] = this._voteResults[no];
+        let voteVariants = this.contract.variants;
+        for (let no in voteVariants) {
+            if(voteVariants.hasOwnProperty(no)) {
+                results[voteVariants[no]] = this._voteResults[no];
             }
         }
         return JSON.stringify({results, state: this._voteState});
@@ -266,8 +277,14 @@ class voteContract extends Contract {
     /**
      * Start voting
      */
-    startVoting() {
+    startVoting(...newVariants) {
+        //start can make only owner
         assert.assert(this.contract.owner === global.getState().from, 'Restricted access');
+        if (newVariants.length > 0){
+        //change variants(if newVariants has error, then nothing changes)
+            assert.assert(this._voteState === STATE[0], 'Trying to change variants in running or ended voting');
+            this._voteVariants.applyArray([...newVariants]);
+        }
         this._voteState = 1;
     }
 

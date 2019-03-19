@@ -9,7 +9,6 @@
  * Backend for C2C ordering
  *
  */
-
 /**
  * Token emission amount
  * @type {number}
@@ -109,6 +108,14 @@ class mainToken extends TokenContract {
          */
         this._resourceRents = new KeyValue('resourceRents');
         this._c2cOrders = new BlockchainMap('c2cOrders');
+        this._resourcePrice = new BlockchainMap('resourcePrice');
+        this._ResourcesCostChange = new Event('ResourcesCostChange', 'string', 'string');
+        if (contracts.isDeploy()) {
+            this._resourcePrice['ram'] = RESOURCES_PRICE.ram;
+            this._resourcePrice['callLimit'] = RESOURCES_PRICE.callLimit;
+            this._resourcePrice['timeLimit'] = RESOURCES_PRICE.timeLimit;
+            this._ResourcesCostChange.emit('initial',this.getCurrentResources());
+        }
     }
 
 
@@ -298,9 +305,9 @@ class mainToken extends TokenContract {
             amount = MAX_RESOURCES_COST;
         }
 
-        let ram = RESOURCES_PRICE.ram * amount;
-        let timeLimit = RESOURCES_PRICE.timeLimit * amount;
-        let callLimit = RESOURCES_PRICE.callLimit * amount;
+        let ram = this._resourcePrice['ram'] * amount;
+        let timeLimit = this._resourcePrice['timeLimit'] * amount;
+        let callLimit = this._resourcePrice['callLimit'] * amount;
 
 
         ram = (ram < MINIMAL_RESOURCES.ram) ? MINIMAL_RESOURCES.ram : ram;
@@ -320,6 +327,109 @@ class mainToken extends TokenContract {
             return false;
         }
         return JSON.stringify(this.calculateResources(resourcesAmount));
+    }
+
+    /**
+     * accepting new resources cost after voting
+     * @param amount
+     */
+    _acceptNewResources(newCost) {
+        this._resourcePrice['ram'] = newCost.ram;
+        this._resourcePrice['timeLimit'] = newCost.timeLimit;
+        this._resourcePrice['callLimit'] = newCost.callLimit;
+    }
+
+    /**
+     * get results og voting contract by its address
+     * @param voteContractAddress
+     * @returns {any}
+     * @private
+     */
+    _getResultsOfVoting(voteContractAddress) {
+        return JSON.parse(contracts.callMethodDeploy(voteContractAddress, 'getResultsOfVoting',[]));
+    }
+
+    /**
+     * Process results of change contract cost voting
+     * @param voteContractAddress
+     * @returns {number} result of processing: 0 - voting isn't started, 1 - coting hasn't been ended yet, 2 - old variant wins, 4 - new variant wins and accepted
+     */
+    processResults(voteContractAddress) {
+        const voteResults = this._getResultsOfVoting(voteContractAddress);
+        switch (voteResults.state) {
+            case 'waiting':
+                return 0;
+                break;
+            case 'started':
+                return 1;
+                break;
+            case 'ended':
+                let winner = this._findMaxVariantIndex(voteResults.results);
+                // if wins the same variant as we have now then do nothing
+                if (winner.index === this.getCurrentResources()) {
+                    this._ResourcesCostChange.emit('not change by voting',this.getCurrentResources());
+                    return 2;
+                } else {
+                    this._acceptNewResources(JSON.parse(winner.index));
+                    this._ResourcesCostChange.emit('change by voting',this.getCurrentResources());
+                    return 3;
+                }
+        }
+    }
+
+    /**
+     * find max element and returns winner's index and value
+     * @param map
+     * @returns {{index: string, value: number}}
+     * @private
+     */
+    _findMaxVariantIndex(map) {
+        let max = {
+            index:'',
+            value: -1,
+        };
+        for (let ind in map) {
+            if(map.hasOwnProperty(ind)) {
+                if (max.value <= map[ind]) {
+                    max.index = ind;
+                    max.value = map[ind];
+                }
+            }
+        }
+        return max;
+    }
+
+    /**
+     * get current resources
+     * @returns {string}
+     */
+    getCurrentResources() {
+        return JSON.stringify({
+            ram: this._resourcePrice['ram'],
+            timeLimit: this._resourcePrice['timeLimit'],
+            callLimit: this._resourcePrice['callLimit']
+        });
+    }
+
+    /**
+     * returns resources as string
+     * @param obj
+     * @returns {string}
+     */
+    resourcesObjectToString(obj) {
+        return `ram:${obj.ram}, time limit:${obj.timeLimit}, call limit:${obj.callLimit}`
+    }
+
+    /**
+     * starts voting contract by addres to decide if we need new resouces price or not
+     * @param voteContractAddress address of voting contract
+     * @param newVariant multiplier for new resources cost (new = old * multiplier)
+     */
+    startVotingForChangeResourcesPrice(voteContractAddress, newVariant) {
+        let newCost = JSON.stringify(this.calculateResources(newVariant));
+        let oldCost = this.getCurrentResources();
+        contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newCost, oldCost]);
+        return JSON.stringify([newCost, oldCost]);
     }
 
 
