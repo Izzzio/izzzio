@@ -47,7 +47,7 @@ const VOTE_END_DATE = '2020-02-01';
  * Vote count threshold
  * @type {number}
  */
-const VOTE_END_THRESHOLD = 100;
+const VOTE_END_THRESHOLD = 1;
 
 /**
  * voting price
