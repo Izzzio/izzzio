@@ -320,6 +320,9 @@ class App extends DApp {
         await this.tokenTest();
         await this.c2cTest();
         await this.voteContractTest();
+
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //for next test you should change VOTE_END_THRESHOLD to 1 in voteContract!!!!!!!!!!
         await this.voteContractChangeResourses();
 
         console.log('');
