@@ -240,6 +240,7 @@ class EventsDB {
 
     }
 
+
     /**
      * Get contract events
      * @param contract
@@ -250,8 +251,9 @@ class EventsDB {
     getContractEvents(contract, event, options = {}, cb) {
         options.fromBlock = !options.fromBlock ? 0 : options.fromBlock;
         options.toBlock = !options.toBlock ? 0xFFFFFFFFFF : options.toBlock;
+        options.additionalStatement = !options.additionalStatement ? '' : options.additionalStatement;
 
-        let statement = this.db.prepare("SELECT * FROM `events` WHERE block <= ? AND block >= ? AND event = ? AND contract = ?", [options.toBlock, options.fromBlock, event, contract], function () {
+        let statement = this.db.prepare("SELECT * FROM `events` WHERE block <= ? AND block >= ? AND event = ? AND contract = ? " + options.additionalStatement, [options.toBlock, options.fromBlock, event, contract], function () {
             statement.all([], function (err, values) {
                 cb(err, values);
             })
@@ -269,8 +271,10 @@ class EventsDB {
     getContractEventSum(contract, event, fieldNo, options = {}, cb) {
         options.fromBlock = !options.fromBlock ? 0 : options.fromBlock;
         options.toBlock = !options.toBlock ? 0xFFFFFFFFFF : options.toBlock;
+        options.additionalStatement = !options.additionalStatement ? '' : options.additionalStatement;
 
-        let statement = this.db.prepare(`SELECT bsum(v${fieldNo}) as sum FROM \`events\` WHERE block <= ? AND block >= ? AND event = ? AND contract = ?`, [options.toBlock, options.fromBlock, event, contract], function () {
+
+        let statement = this.db.prepare(`SELECT bsum(v${fieldNo}) as sum FROM \`events\` WHERE block <= ? AND block >= ? AND event = ? AND contract = ? ` + options.additionalStatement, [options.toBlock, options.fromBlock, event, contract], function () {
             statement.all([], function (err, values) {
                 cb(err, values);
             })
