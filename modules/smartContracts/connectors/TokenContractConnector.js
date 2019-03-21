@@ -84,7 +84,11 @@ class TokenContractConnector extends ContractConnector {
     pay(address, method, txAmount, args) {
         let that = this;
         return new Promise((resolve, reject) => {
-            that.ecmaContract.deployContractMethod(that.address, 'processPayableTransaction', [address, String(txAmount), method, args], that._getState(), function (newBlock) {
+            that.ecmaContract.deployContractMethod(that.address, 'processPayableTransaction', [address, String(txAmount), method, args], that._getState(), function (err, newBlock) {
+                if(err) {
+                    reject(err);
+                    return;
+                }
                 resolve(newBlock);
             });
         });

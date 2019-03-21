@@ -134,9 +134,17 @@ class DApp {
                  */
                 deployMethod: function (address, method, args, state) {
                     return new Promise((resolve, reject) => {
-                        that.ecmaContract.deployContractMethod(address, method, args, state, function (generatedBlock) {
-                            resolve(generatedBlock);
-                        })
+                        try {
+                            that.ecmaContract.deployContractMethod(address, method, args, state, function (err, generatedBlock) {
+                                if(err) {
+                                    reject(err);
+                                    return;
+                                }
+                                resolve(generatedBlock);
+                            })
+                        } catch (e) {
+                            reject(e);
+                        }
                     });
                 },
                 /**
@@ -153,6 +161,7 @@ class DApp {
                             that.ecmaContract.callContractMethodRollback(address, method, state, function (err, result) {
                                 if(err) {
                                     reject(err);
+                                    return;
                                 }
                                 resolve(result);
                             }, ...args);

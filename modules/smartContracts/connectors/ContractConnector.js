@@ -67,7 +67,7 @@ class ContractConnector {
 
         state.from = !state.from ? that.blockchain.wallet.id : state.from;
         state.contractAddress = !state.contractAddress ? that.address : state.contractAddress;
-        if(typeof  state.block === 'undefined') {
+        if(typeof state.block === 'undefined') {
             state.block = {};
         }
 
@@ -111,7 +111,11 @@ class ContractConnector {
         alias = (typeof alias === 'undefined' ? method : alias);
         this[alias] = function (...args) {
             return new Promise(function (resolve, reject) {
-                that.ecmaContract.deployContractMethod(that.address, method, args, that._getState(), function (generatedBlock) {
+                that.ecmaContract.deployContractMethod(that.address, method, args, that._getState(), function (err, generatedBlock) {
+                    if(err) {
+                        reject(err);
+                        return;
+                    }
                     resolve(generatedBlock);
                 })
             });
