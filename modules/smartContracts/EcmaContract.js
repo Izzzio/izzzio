@@ -1390,7 +1390,9 @@ class EcmaContract {
 
                 clearTimeout(this._contractInstanceCache[address].timer);
                 this._contractInstanceCache[address].timer = setTimeout(function () {
-                    destroyInstanceTimer(that._contractInstanceCache[address].instance);
+                    if(that._contractInstanceCache[address]) {
+                        destroyInstanceTimer(that._contractInstanceCache[address].instance);
+                    }
                 }, this._contractInstanceCacheLifetime);
 
                 process.nextTick(function () {
