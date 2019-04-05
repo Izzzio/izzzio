@@ -1,4 +1,4 @@
-![iZ3 logo](https://github.com/izzzio/iz3node/raw/master/logo.png)
+![iZ3 logo](https://github.com/Izzzio/iz3node/raw/master/logo.png)
 
 ![ES6](https://img.shields.io/badge/es-6-brightgreen.svg)
 ![GitHub contributors](https://img.shields.io/github/contributors/izzzio/iz3node.svg)
