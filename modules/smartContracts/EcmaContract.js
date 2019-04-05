@@ -104,6 +104,13 @@ class EcmaContract {
         this._lastestContractsCalls = {};
 
         /**
+         * Last handled block
+         * @type {number}
+         * @private
+         */
+        this._lastKnownBlock = 0;
+
+        /**
          * @var {BlockHandler} this.blockHandler
          */
         this.blockHandler = storj.get('blockHandler');
@@ -112,6 +119,7 @@ class EcmaContract {
             that.events._handleBlockReplay(block.index, function () {
                 that._handleBlock(blockData, block, false, () => {
                     callback();
+                    that._lastKnownBlock = block.index;
                 });
             });
         });
@@ -120,6 +128,7 @@ class EcmaContract {
             that.events._handleBlockReplay(block.index, function () {
                 that._handleBlock(blockData, block, false, () => {
                     callback();
+                    that._lastKnownBlock = block.index;
                 });
             });
         });
@@ -580,7 +589,7 @@ class EcmaContract {
                     if(err) {
                         that.rollbackAndClearContractsChain(state, function () {
                             sync.fails();
-                            throw 'Contracts calling chain fails with error: ' + err;
+                            throw  new Error('Contracts calling chain fails with error: ' + err);
                         });
                     } else {
                         if(!result) {
@@ -789,9 +798,16 @@ class EcmaContract {
                  */
                 getMasterContractAddress: function () {
                     let state = global.getState();
+
+                    //Check if master contract in state
+                    if(!state.masterContractAddress) {
+                        return state.masterContractAddress;
+                    }
+
                     state.delayedMethod = false;
                     _contracts._getMasterContractAddress(state);
                     return waitForReturn();
+
                 },
                 /**
                  * Get parent caller address
@@ -1122,7 +1138,11 @@ class EcmaContract {
             }
 
             that._instanceCallstack = [];
-            cb(null);
+            try {
+                cb(null);
+            } catch (e) {
+                logger.error(e);
+            }
         })();
 
     }
@@ -1192,6 +1212,7 @@ class EcmaContract {
         } else {
             this.contracts.get(address, function (err, contract) {
                 if(err) {
+                    console.error(err);
                     cb(true);
                 } else {
                     contract = JSON.parse(contract);
@@ -1240,7 +1261,7 @@ class EcmaContract {
 
         that.blockchain.getLatestBlock(function (latestBlock) {
 
-            if(!that.config.ecmaContract.masterContract || latestBlock.index < that.config.ecmaContract.masterContract) {
+            if(!that.config.ecmaContract.masterContract || that._lastKnownBlock < that.config.ecmaContract.masterContract) {
                 logger.info('Delpoying contract without master contract');
                 generateBlock();
             } else {
@@ -1281,6 +1302,7 @@ class EcmaContract {
 
             state.from = that.blockchain.wallet.id;
             state.contractAddress = address;
+            state.masterContractAddress = that.config.ecmaContract.masterContract ? that.config.ecmaContract.masterContract : false;
 
             let callBlock = new EcmaContractCallBlock(address, method, args, state);
             callBlock = that.blockchain.wallet.signBlock(callBlock);
@@ -1448,6 +1470,7 @@ class EcmaContract {
     _handleContractDeploy(address, code, state, block, callback) {
         let that = this;
 
+
         /**
          * Initiate and run contract
          */
@@ -1456,6 +1479,7 @@ class EcmaContract {
             state.block = block;
             state.contractAddress = address;
             let contract = {code: code, state: state};
+
             that.contracts.put(address, JSON.stringify(contract), function (err) {
                 if(err) {
                     logger.error('Contract deploy handling error');
@@ -1489,7 +1513,7 @@ class EcmaContract {
         function checkDeployByMaster() {
             that.blockchain.getLatestBlock(function (latestBlock) {
 
-                if(!that.config.ecmaContract.masterContract || latestBlock.index < that.config.ecmaContract.masterContract || block.index === that.config.ecmaContract.masterContract) {
+                if(!that.config.ecmaContract.masterContract || that._lastKnownBlock < that.config.ecmaContract.masterContract || block.index === that.config.ecmaContract.masterContract) {
                     addNewContract()
                 } else {
                     that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'processDeploy', {

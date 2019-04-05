@@ -415,15 +415,15 @@ function Blockchain(config) {
                         continue;
                     }
 
-                    if(Buffer.isBuffer(result)){
+                    if(Buffer.isBuffer(result)) {
                         result = JSON.stringify(String(result));
-                    }else{
+                    } else {
                         result = JSON.stringify(result);
                     }
 
-                    res.write('"'+i+'":'+result + ',');
+                    res.write('"' + i + '":' + result + ',');
                 }
-                res.write('"maxBlock":'+maxBlock+'');
+                res.write('"maxBlock":' + maxBlock + '');
                 res.write('}');
                 res.end();
             });
@@ -528,7 +528,6 @@ function Blockchain(config) {
     function initConnection(ws) {
 
 
-
         if(peersBlackList.indexOf(ws._socket.remoteAddress) !== -1) {
             if(config.program.verbose) {
                 logger.info('Blacklisted peer ' + ws._socket.remoteAddress);
@@ -564,7 +563,6 @@ function Blockchain(config) {
         }
 
 
-
         p2pErrorHandler(ws);
         sockets.push(ws);
         if(config.checkExternalConnectionData) {
@@ -584,7 +582,6 @@ function Blockchain(config) {
      */
     function initMessageHandler(ws) {
         ws.on('message', (data) => {
-
 
 
             //prevent multiple sockets on one busaddress
@@ -732,7 +729,7 @@ function Blockchain(config) {
          * @type {number}
          */
         fromBlock = (typeof fromBlock === 'undefined' ? 0 : Number(fromBlock));
-        if(fromBlock < 5) {
+        if(fromBlock <= 5) {
             limit = 3;
         }
 
@@ -958,11 +955,11 @@ function Blockchain(config) {
                     lastKnownBlock = latestBlockReceived.index;
                     if(receivedBlocks.length === 1) {
                         if(lastKnownBlock !== latestBlockReceived.index) {
-                            logger.info('Synchronize: Recived last chain block ' + latestBlockReceived.index);
+                            logger.info('Synchronize: Received last chain block ' + latestBlockReceived.index);
                         }
                     } else {
                         if(config.program.verbose) {
-                            logger.info('Synchronize: Recived ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
+                            logger.info('Synchronize: Received ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
                         }
                     }
                     if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) { //когда получен один блок от того который у нас есть
@@ -990,6 +987,13 @@ function Blockchain(config) {
 
                     } else {
                         if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
+                            //До 5го блока синхронизация только по одному
+                            if(receivedBlocks[0].index <= 5 && receivedBlocks[0].index !== 0) {
+                                receivedBlocks = [receivedBlocks[0]];
+                            }
+                            if(receivedBlocks[0].index === 0) {
+                                receivedBlocks = [receivedBlocks[1]];
+                            }
                             replaceChain(receivedBlocks, function () {
                                 storj.put('chainResponseMutex', false);
                             });
@@ -1021,65 +1025,81 @@ function Blockchain(config) {
      */
     function replaceChain(newBlocks, cb) {
 
-
-        let maxIndex = maxBlock - config.limitedConfidenceBlockZone;
-        if(maxIndex < 0) {
-            maxIndex = 0;
+        let fromBlock = newBlocks[0].index - 1;
+        if(fromBlock < 0) {
+            fromBlock = 0;
         }
 
-        const validChain = isValidChain(newBlocks);
-
-        if(!(newBlocks[0].index >= maxIndex)) {//ограничение доверия принимаемой цепочки блоков
-
-            if(config.program.verbose) {
-                logger.error('LimitedConfidence: Invalid chain');
-            }
-
-            if(typeof cb !== 'undefined') {
-                cb();
-            }
-
-            return;
-        }
-
-
-        if(
-            validChain // &&  newBlocks[0].index >= maxIndex
-        /*&& newBlocks.length >= maxBlock*/
-        ) {
-            //console.log(newBlocks);
-            //logger.info('Received blockchain is valid.');
-            logger.info('Synchronize: ' + newBlocks[0].index + ' of ' + newBlocks[newBlocks.length - 1].index);
-            Sync(function () {
-                for (let i of newBlocks) {
-                    addBlockToChainIndex.sync(null, i.index, i, true);
+        getBlockById(fromBlock, function (err, lBlock) {
+            if(err) {
+                logger.error(new Error('Can\'t get block no ' + newBlocks[0].index + ' ' + err));
+                if(typeof cb !== 'undefined') {
+                    cb();
                 }
-                responseLatestMsg(function (msg) {
-                    broadcast(msg);
-                });
+                return;
+            }
 
-                clearTimeout(replaceChainTimer);
-                replaceChainTimer = setTimeout(function () {
-                    //If receiving chain, no syncing
-                    if(storj.get('chainResponseMutex')) {
-                        return;
-                    }
-                    blockHandler.resync();
-                }, config.peerExchangeInterval + 2000);
+
+            let maxIndex = maxBlock - config.limitedConfidenceBlockZone;
+            if(maxIndex < 0) {
+                maxIndex = 0;
+            }
+
+            const validChain = isValidChain(fromBlock === 0 ? newBlocks : [lBlock].concat(newBlocks));
+
+            if(!(newBlocks[0].index >= maxIndex)) {//ограничение доверия принимаемой цепочки блоков
+
+                if(config.program.verbose) {
+                    logger.error('LimitedConfidence: Invalid chain');
+                }
 
                 if(typeof cb !== 'undefined') {
                     cb();
                 }
 
-            });
-
-        } else {
-            if(typeof cb !== 'undefined') {
-                cb();
+                return;
             }
-            logger.error('Received blockchain corrupted');
 
-        }
+
+            if(
+                validChain // &&  newBlocks[0].index >= maxIndex
+            /*&& newBlocks.length >= maxBlock*/
+            ) {
+                //console.log(newBlocks);
+                //logger.info('Received blockchain is valid.');
+                logger.info('Synchronize: ' + newBlocks[0].index + ' of ' + newBlocks[newBlocks.length - 1].index);
+                Sync(function () {
+                    for (let i of newBlocks) {
+                        addBlockToChainIndex.sync(null, i.index, i, true);
+                    }
+                    responseLatestMsg(function (msg) {
+                        broadcast(msg);
+                    });
+
+                    clearTimeout(replaceChainTimer);
+                    replaceChainTimer = setTimeout(function () {
+                        //If receiving chain, no syncing
+                        if(storj.get('chainResponseMutex')) {
+                            return;
+                        }
+                        blockHandler.resync();
+                    }, config.peerExchangeInterval + 2000);
+
+                    if(typeof cb !== 'undefined') {
+                        cb();
+                    }
+
+                });
+
+            } else {
+                if(typeof cb !== 'undefined') {
+                    cb();
+                }
+                logger.error('Received blockchain corrupted');
+
+            }
+
+        })
     }
 
     /**
@@ -1253,10 +1273,9 @@ function Blockchain(config) {
         initHttpServer();
         initP2PServer();
         createWalletIfNotExsists();
-        if(config.program.keyringEmission){
+        if(config.program.keyringEmission) {
             keyringEmission();
         }
-
 
 
         if(config.appEntry) {
@@ -1681,6 +1700,21 @@ function Blockchain(config) {
     }
 
 
+    /**
+     * Get block by id
+     * @param {number} id
+     * @param {function} cb
+     */
+    function getBlockById(id, cb) {
+        blockchain.get(id, function (err, val) {
+            if(err) {
+                cb(err);
+            } else {
+                cb(err, JSON.parse(val));
+            }
+        })
+    }
+
     blockchainObject = {
         config: config,
         validators: nodeMetaInfo,
@@ -1758,15 +1792,7 @@ function Blockchain(config) {
          * @param {Number} id
          * @param {Function} cb
          */
-        getBlockById(id, cb) {
-            blockchain.get(id, function (err, val) {
-                if(err) {
-                    cb(err);
-                } else {
-                    cb(err, JSON.parse(val));
-                }
-            })
-        }
+        getBlockById: getBlockById
     };
 
     //Init2
@@ -1808,7 +1834,7 @@ function Blockchain(config) {
     }
 
     //Wallet create
-    if(wallet.id.length === 0){
+    if(wallet.id.length === 0) {
         wallet.generate();
     }
 
