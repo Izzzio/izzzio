@@ -1,3 +1,10 @@
+![iZ3 logo](https://github.com/izzzio/iz3node/raw/master/logo.png)
+
+![ES6](https://img.shields.io/badge/es-6-brightgreen.svg)
+![GitHub contributors](https://img.shields.io/github/contributors/izzzio/iz3node.svg)
+![GitHub last commit](https://img.shields.io/github/last-commit/izzzio/iz3node.svg)
+![Github search hit counter](https://img.shields.io/github/search/izzzio/iz3node/goto.svg)
+![GitHub top language](https://img.shields.io/github/languages/top/izzzio/iz3node.svg)
 # iZ³ - IZZZIO Blockchain Node
 
 IZZZIO (iZ³) - fully customizable blockchain platform. This platform provides super-flexible configuration of each functional link of the network. The network supports the following functions:
