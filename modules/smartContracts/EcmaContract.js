@@ -1032,7 +1032,6 @@ class EcmaContract {
 
         this.getContractInstanceByAddress(address, function (err, instance) {
             if(err) {
-                console.log(address, method);
                 cb(new Error('Error getting contract instance for contract 1: ' + address + ' method ' + method));
             } else {
                 try {
@@ -1293,7 +1292,6 @@ class EcmaContract {
 
             testWallet.createId(callBlock.pubkey);
             if(testWallet.id !== state.from) {
-                console.log(testWallet.id, state.from)
                 logger.error('Contract method deploy check author error');
                 cb(new Error('Contract method deploy check author error'));
                 return;
