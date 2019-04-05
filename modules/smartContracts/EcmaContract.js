@@ -1212,7 +1212,6 @@ class EcmaContract {
         } else {
             this.contracts.get(address, function (err, contract) {
                 if(err) {
-                    console.error(err);
                     cb(true);
                 } else {
                     contract = JSON.parse(contract);
