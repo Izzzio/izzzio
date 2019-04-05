@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)

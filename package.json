@@ -56,5 +56,8 @@
     "iz3",
     "izzz",
     "izzzio"
-  ]
+  ],
+  "bin": {
+    "iz3node": "./main.js"
+  }
 }
