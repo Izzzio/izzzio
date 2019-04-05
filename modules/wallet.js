@@ -3,15 +3,7 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-
-const crypto = require('crypto');
-
-const keypair = require('keypair');
-
-const NodeRSA = require('node-rsa');
-
 const fs = require('fs');
-//const CryptoJS = require("crypto-js");
 const Transaction = require("./blocks/transaction");
 const WalletRegister = require("./blocks/walletRegister");
 const moment = require('moment');
@@ -20,8 +12,6 @@ const storj = require('./instanceStorage');
 const cryptography = storj.get('cryptography');
 
 const logger = new (require('./logger'))();
-
-const SIGN_TYPE = 'sha256';
 
 /**
  * Wallet object

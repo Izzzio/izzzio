@@ -5,7 +5,6 @@
 
 
 const Signable = require('../../blocks/signable');
-//const CryptoJS = require("crypto-js");
 let type = 'EcmaContractCallBlock';
 const storj = require('../../instanceStorage');
 const cryptography = storj.get('cryptography');
@@ -44,7 +43,6 @@ class EcmaContractCallBlock extends Signable {
      * Data hash for sign
      */
     generateData() {
-        //this.data = CryptoJS.SHA256(this.type + this.address + JSON.stringify(this.state) + JSON.stringify(this.args) + this.method).toString();
         this.data = cryptography.hash(this.type + this.address + JSON.stringify(this.state) + JSON.stringify(this.args) + this.method).toString();
 
     }

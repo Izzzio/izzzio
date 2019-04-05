@@ -3,7 +3,6 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-const CryptoJS = require("crypto-js");
 const VM = require('./VM');
 const TransactionalKeyValue = require('./TransactionalKeyValue');
 const KeyValueInstancer = require('./KeyValueInstancer');
@@ -381,23 +380,6 @@ class EcmaContract {
          * Crypto functions
          */
         vm.setObjectGlobal('crypto', {
-            /**
-             * SHA256 hash
-             * @param data
-             * @return {*}
-             */
-            sha256: function (data) {
-                return CryptoJS.SHA256(toString(data)).toString();
-            },
-
-            /**
-             * MD5 hash
-             * @param data
-             * @return {*}
-             */
-            md5: function (data) {
-                return CryptoJS.MD5(toString(data)).toString();
-            },
             /**
              * System defined hash function
              * @param data
@@ -800,13 +782,13 @@ class EcmaContract {
                     let state = global.getState();
 
                     //Check if master contract in state
-                    if(!state.masterContractAddress) {
-                        return state.masterContractAddress;
+                    if(state.masterContractAddress) {
+                        return String(state.masterContractAddress);
                     }
 
                     state.delayedMethod = false;
                     _contracts._getMasterContractAddress(state);
-                    return waitForReturn();
+                    return String(waitForReturn());
 
                 },
                 /**
@@ -1050,7 +1032,7 @@ class EcmaContract {
 
         this.getContractInstanceByAddress(address, function (err, instance) {
             if(err) {
-                cb(new Error('Error getting contract instance for contract: ' + address + ' method ' + method));
+                cb(new Error('Error getting contract instance for contract 1: ' + address + ' method ' + method));
             } else {
                 try {
                     that._instanceCallstack.push(instance);

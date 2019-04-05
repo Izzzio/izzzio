@@ -6,7 +6,6 @@
 
 
 const Signable = require('./signable');
-//const CryptoJS = require("crypto-js");
 const storj = require('../instanceStorage');
 const cryptography = storj.get('cryptography');
 let type = 'CandyData';
@@ -32,7 +31,6 @@ class CandyData extends Signable {
      * Создаёт строку данных для подписи
      */
     generateData() {
-        //this.data = this.type + CryptoJS.SHA256(this.candyData);
         this.data = this.type + cryptography.hash(this.candyData);
     }
 

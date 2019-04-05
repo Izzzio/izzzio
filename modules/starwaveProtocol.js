@@ -24,8 +24,6 @@ const storj = require('./instanceStorage');
 const moment = require('moment');
 const getid = require('./getid');
 
-//const StarwaveCrypto = require('./starwaveCrypto');
-
 class starwaveProtocol {
 
     constructor(config, blockchain) {
@@ -38,7 +36,6 @@ class starwaveProtocol {
          */
         this._messageMutex = {};
         storj.put('starwaveProtocol', this);
-        //this.starwaveCrypto = new StarwaveCrypto(this);
     }
 
     /**
