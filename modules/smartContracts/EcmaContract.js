@@ -782,13 +782,13 @@ class EcmaContract {
                     let state = global.getState();
 
                     //Check if master contract in state
-                    if(!state.masterContractAddress) {
-                        return state.masterContractAddress;
+                    if(state.masterContractAddress) {
+                        return String(state.masterContractAddress);
                     }
 
                     state.delayedMethod = false;
                     _contracts._getMasterContractAddress(state);
-                    return waitForReturn();
+                    return String(waitForReturn());
 
                 },
                 /**
@@ -1032,7 +1032,8 @@ class EcmaContract {
 
         this.getContractInstanceByAddress(address, function (err, instance) {
             if(err) {
-                cb(new Error('Error getting contract instance for contract: ' + address + ' method ' + method));
+                console.log(address, method);
+                cb(new Error('Error getting contract instance for contract 1: ' + address + ' method ' + method));
             } else {
                 try {
                     that._instanceCallstack.push(instance);

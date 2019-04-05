@@ -131,7 +131,10 @@ module.exports = function register(blockchain, config, storj) {
         return generateKeyPair(config);
     });
 
-    cryptography.registerSign('', validate, sign);
+    cryptography.registerGenerator('NEWRSA', function () {
+        return generateKeyPair(config);
+    });
+    cryptography.registerSign('NEWRSA', validate, sign);
 
     blockchain.wallet.registerGeneratorHook(function () {
         return generateWallet(config);
