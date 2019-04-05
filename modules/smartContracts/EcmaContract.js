@@ -3,7 +3,6 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-const CryptoJS = require("crypto-js");
 const VM = require('./VM');
 const TransactionalKeyValue = require('./TransactionalKeyValue');
 const KeyValueInstancer = require('./KeyValueInstancer');
@@ -381,23 +380,6 @@ class EcmaContract {
          * Crypto functions
          */
         vm.setObjectGlobal('crypto', {
-            /**
-             * SHA256 hash
-             * @param data
-             * @return {*}
-             */
-            sha256: function (data) {
-                return CryptoJS.SHA256(toString(data)).toString();
-            },
-
-            /**
-             * MD5 hash
-             * @param data
-             * @return {*}
-             */
-            md5: function (data) {
-                return CryptoJS.MD5(toString(data)).toString();
-            },
             /**
              * System defined hash function
              * @param data
@@ -1310,6 +1292,7 @@ class EcmaContract {
 
             testWallet.createId(callBlock.pubkey);
             if(testWallet.id !== state.from) {
+                console.log(testWallet.id, state.from)
                 logger.error('Contract method deploy check author error');
                 cb(new Error('Contract method deploy check author error'));
                 return;

@@ -246,7 +246,7 @@ class StarwaveCrypto {
             }
         }
         else {
-            logger.error(`There is no secret key for address: ${message.reciver}`)
+            logger.error(`There is no secret key for address: ${message.reciver}`);
             return 1;
         }
     }

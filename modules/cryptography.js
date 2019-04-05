@@ -20,15 +20,6 @@
  * Class realises universal functions for cryptography in project
  */
 
-const inputOutputFormat = 'hex';
-const SIGN_TYPE = 'sha256';
-
-'use strict';
-const CryptoJS = require('crypto-js');
-
-
-const crypto = require('crypto');
-const keypair = require('keypair');
 const logger = new (require('./logger'))();
 
 const CodingFunctions = require('./codingFunctions');
@@ -46,17 +37,22 @@ function repairKey(key) {
     return key.replace(new RegExp("\n\n", 'g'), "\n");
 }
 
+/**
+ * Cryptography modules
+ */
 class Cryptography {
     constructor(config = {}) {
         this.utils = require('./utils');
 
         this._hashFunctions = {};
         this._signFunctions = {};
+        this._generatorFunctions = {};
 
         this.config = config;
         this.config.hashFunction = this.config.hashFunction ? this.config.hashFunction.toUpperCase() : this.config.hashFunction;
         this.config.signFunction = this.config.signFunction ? this.config.signFunction.toUpperCase() : this.config.signFunction;
 
+        this.repairKey = repairKey;
 
         let GostSign, GostDigest;
         //If GOST cryptography enabled, require libraries
@@ -121,6 +117,15 @@ class Cryptography {
      */
     registerSign(name, validate, sign) {
         this._signFunctions[name.toUpperCase()] = {validate: validate, sign: sign};
+    }
+
+    /**
+     * Register generator
+     * @param {string} name
+     * @param {function} func
+     */
+    registerGenerator(name, func) {
+        this._generatorFunctions[name.toUpperCase()] = func;
     }
 
     /**
@@ -219,19 +224,24 @@ class Cryptography {
 
 
     /**
-     * generates pair of keys
+     * Generates pair of keys
      * @returns {{private: *, public: *}}
      */
     generateKeyPair() {
+
+        //External generator function
+        if(this._generatorFunctions[this.config.generatorFunction]) {
+            return this._generatorFunctions[this.config.generatorFunction]();
+        }
+
         let keyPair;
         if(this.gostSign) {
             keyPair = this.gostSign.generateKey();
             keyPair.public = this.coding.Hex.encode(keyPair.publicKey).replace(new RegExp(/\r\n/, 'g'), "");
             keyPair.private = this.coding.Hex.encode(keyPair.privateKey);
         } else {
-            keyPair = keypair({bits: Number(this.config.keyLength)});
-            keyPair.private = repairKey(keyPair.private);
-            keyPair.public = repairKey(keyPair.public);
+            logger.fatal('No generation functions found');
+            return {private: '', public: ''};
         }
         if(this.config.signFunction === 'NEWRSA') {
             //get old rsa key in PEM format and convert to utf-16
@@ -262,9 +272,8 @@ class Cryptography {
                 signedData = this.gostSign.sign(bKey, bData);
                 signedData = this.coding.Hex.encode(signedData);
             } else {
-                const _sign = crypto.createSign(SIGN_TYPE);
-                _sign.update(data);
-                signedData = _sign.sign(key).toString(inputOutputFormat);
+                logger.fatal('No sign functions found');
+                return {data: data, sign: ''};
             }
             signedData = signedData.replace('\r\n', ''); //delete wrong symbols
         }
@@ -297,12 +306,8 @@ class Cryptography {
             bSign = this.coding.Hex.decode(sign);
             result = this.gostSign.verify(bKey, bSign, bData);
         } else {
-            let k = key;
-            //convert key if it's not in PEM
-            k = k.indexOf('RSA PUBLIC KEY') < 0 ? this.hexToPem(k, 'PUBLIC') : k;
-            const verify = crypto.createVerify(SIGN_TYPE);
-            verify.update(data);
-            result = verify.verify(k, sign, inputOutputFormat);
+            logger.fatal('No verify functions found');
+            return false;
         }
         return result;
     }
@@ -324,8 +329,8 @@ class Cryptography {
         if(this.gostDigest) {
             hashBuffer = this.gostDigest.digest(bData);
         } else {
-            hashBuffer = CryptoJS.SHA256(data).toString();
-            hashBuffer = this.coding.Hex.decode(hashBuffer); //make output independent to hash function type
+            logger.fatal('No hash functions found');
+            return '';
         }
         return this.coding.Hex.encode(hashBuffer).replace('\r\n', '');
     }

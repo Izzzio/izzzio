@@ -139,7 +139,9 @@ const config = {
     keyLength: 2048,                        //Key length for some algorithms
 
     //Enabled plugins
-    plugins: [],
+    plugins: [
+        "iz3-basic-crypto"
+    ],
 
 };
 
