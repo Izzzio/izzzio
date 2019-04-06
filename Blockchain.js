@@ -988,10 +988,10 @@ function Blockchain(config) {
                         if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
                             //До 5го блока синхронизация только по одному
                             if(receivedBlocks[0].index <= 5 && receivedBlocks[0].index !== 0) {
-                                receivedBlocks = [receivedBlocks[0]];
+                                receivedBlocks = [receivedBlocks[0],receivedBlocks[1]];
                             }
                             if(receivedBlocks[0].index === 0) {
-                                receivedBlocks = [receivedBlocks[1]];
+                                receivedBlocks = [receivedBlocks[1],receivedBlocks[2]];
                             }
                             replaceChain(receivedBlocks, function () {
                                 storj.put('chainResponseMutex', false);
