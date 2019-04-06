@@ -256,10 +256,10 @@ if(global.PATH.configDir) {
         if(!fs.existsSync(config.appEntry)) {
             config.appEntry = global.PATH.mainDir + path.sep + config.appEntry;
         }
+
+        config.appEntry = path.resolve(config.appEntry);
     }
 }
-
-config.appEntry = path.resolve(config.appEntry);
 
 if(!fs.existsSync(config.appEntry) && config.appEntry) {
     logger.fatal('App entry not found ' + config.appEntry);
