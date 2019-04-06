@@ -13,8 +13,11 @@ const EventsDB = require('./EventsDB');
 const Wallet = require('../wallet');
 const moment = require('moment');
 
-const EcmaContractDeployBlock = require('./blocks/EcmaContractDeployBlock');
-const EcmaContractCallBlock = require('./blocks/EcmaContractCallBlock');
+const path = require('path');
+const fs = require('fs');
+
+const EcmaContractDeployBlock = require('./blocksModels/EcmaContractDeployBlock');
+const EcmaContractCallBlock = require('./blocksModels/EcmaContractCallBlock');
 const uglifyJs = require("uglify-es");
 const ContractConnector = require('./connectors/ContractConnector');
 
@@ -64,6 +67,10 @@ class EcmaContract {
         this._contractInstanceCacheLifetime = typeof this.config.ecmaContract === 'undefined' || typeof this.config.ecmaContract.contractInstanceCacheLifetime === 'undefined' ? 60000 : this.config.ecmaContract.contractInstanceCacheLifetime;
 
         this._dbInstances = [];
+
+        if(!fs.existsSync(that.config.workDir + '/contractsRuntime')) {
+            fs.mkdirSync(that.config.workDir + '/contractsRuntime');
+        }
 
         /**
          * Events indenxing

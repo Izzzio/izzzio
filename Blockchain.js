@@ -57,7 +57,7 @@ function Blockchain(config) {
 
     //Blockchain
     const Block = require('./modules/block');
-    const Signable = require('./modules/blocks/signable');
+    const Signable = require('./modules/blocksModels/signable');
     const Wallet = require('./modules/wallet');
     const BlockHandler = require('./modules/blockHandler');
     const Transactor = require('./modules/transactor');
@@ -988,10 +988,10 @@ function Blockchain(config) {
                         if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
                             //До 5го блока синхронизация только по одному
                             if(receivedBlocks[0].index <= 5 && receivedBlocks[0].index !== 0) {
-                                receivedBlocks = [receivedBlocks[0]];
+                                receivedBlocks = [receivedBlocks[0],receivedBlocks[1]];
                             }
                             if(receivedBlocks[0].index === 0) {
-                                receivedBlocks = [receivedBlocks[1]];
+                                receivedBlocks = [receivedBlocks[1],receivedBlocks[2]];
                             }
                             replaceChain(receivedBlocks, function () {
                                 storj.put('chainResponseMutex', false);
@@ -1544,7 +1544,7 @@ function Blockchain(config) {
         ) {
             logger.info('Starting keyring emission');
 
-            let keyring = new (require('./modules/blocks/keyring'))([], wallet.id);
+            let keyring = new (require('./modules/blocksModels/keyring'))([], wallet.id);
             keyring.generateKeys(config.workDir + '/keyringKeys.json', config.keyringKeysCount, wallet);
             transactor.transact(keyring, function (blockData, cb) {
                 config.validators[0].generateNextBlock(blockData, function (generatedBlock) {
@@ -1810,11 +1810,15 @@ function Blockchain(config) {
         logger.info("Loading plugins...\n");
         for (let plugin of config.plugins) {
             try {
-
-                if(!path.isAbsolute(plugin)) {
-                    plugin = './plugins/' + plugin;
+                try {
+                    plugin = require(plugin)(blockchainObject, config, storj);
+                } catch (e) {
+                    if(!path.isAbsolute(plugin)) {
+                        plugin = './plugins/' + plugin;
+                    }
+                    plugin = require(plugin)(blockchainObject, config, storj);
                 }
-                plugin = require(plugin)(blockchainObject, config, storj);
+
 
             } catch (e) {
                 logger.fatal("Plugin fatal:\n");

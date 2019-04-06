@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
@@ -25,7 +27,7 @@ let program = require('commander');
 
 program
     .version(version)
-    .description(' iZ3 blockchain core.')
+    .description(' iZ3 - IZZZIO blockchain core.')
     .option('-a, --autofix', 'Fix saved chain if possible. WARNING: You can lose important data')
     .option('--clear', 'Clear all saved chain and deletes wallet. WARNING: You can lose important data')
     .option('--clear-db', 'Clear all saved chain and calculated wallets.')
@@ -243,33 +245,25 @@ if(program.generateWallets) {
 }
 
 global.PATH.mainDir = __dirname;
-//check how appEntry is written
+
 if(global.PATH.configDir) {
     if(config.appEntry) {
-        //try to find app file near the config
-        let fullPathToAppEntry = '';
-        let existenceFlag = false;
-        //ref path in config
-        try {
-            fullPathToAppEntry = global.PATH.mainDir + path.sep + config.appEntry;
-            fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
-            existenceFlag = true;
-        } catch (err) {
-
+        if(!fs.existsSync(config.appEntry)) {
+            config.appEntry = global.PATH.configDir + path.sep + config.appEntry;
+        } else {
+            config.appEntry = (path.dirname(config.appEntry) + path.sep + path.basename(config.appEntry));
         }
-        //if only filename written
-        if(!existenceFlag) {
-            try {
-                let fullPathToAppEntry = global.PATH.configDir + path.sep + config.appEntry;
-                fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
-                config.appEntry = fullPathToAppEntry;
-            } catch (err) {
-                logger.warning('There is wrong filename in appEntry in config. appEntry will be set to "false"');
-                config.appEntry = false;
-            }
+        if(!fs.existsSync(config.appEntry)) {
+            config.appEntry = global.PATH.mainDir + path.sep + config.appEntry;
         }
 
+        config.appEntry = path.resolve(config.appEntry);
     }
+}
+
+if(!fs.existsSync(config.appEntry) && config.appEntry) {
+    logger.fatal('App entry not found ' + config.appEntry);
+    process.exit(1);
 }
 
 const blockchain = new Blockchain(config);

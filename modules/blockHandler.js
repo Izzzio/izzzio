@@ -4,9 +4,9 @@
  */
 
 //const Smart = require("./smart");
-const Keyring = require("./blocks/keyring");
-const Transaction = require("./blocks/transaction");
-const WalletRegister = require("./blocks/walletRegister");
+const Keyring = require("./blocksModels/keyring");
+const Transaction = require("./blocksModels/transaction");
+const WalletRegister = require("./blocksModels/walletRegister");
 const Wallet = require("./wallet");
 const Sync = require('sync');
 const fs = require('fs-extra');
