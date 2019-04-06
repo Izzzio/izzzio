@@ -2,6 +2,7 @@ node_modules
 npm-debug.log
 .idea
 pwc
+itst
 docs
 benchmark
 buildBinary
@@ -16,6 +17,7 @@ startTest
 testApp
 wallets
 iz3node.zip
+iz3node-pwc.zip
 keyring.json
 testApp.zip
 transactions.db
