@@ -17,7 +17,7 @@
  */
 
 
-const Signable = require('../modules/blocks/signable');
+const Signable = require('../modules/blocksModels/signable');
 //const CryptoJS = require("crypto-js");
 const storj = require('../modules/instanceStorage');
 const cryptography = storj.get('cryptography');

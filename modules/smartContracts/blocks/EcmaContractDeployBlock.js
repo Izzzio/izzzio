@@ -4,7 +4,7 @@
  */
 
 
-const Signable = require('../../blocks/signable');
+const Signable = require('../../blocksModels/signable');
 let type = 'EcmaContractDeploy';
 const storj = require('../../instanceStorage');
 const cryptography = storj.get('cryptography');

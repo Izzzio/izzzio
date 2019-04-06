@@ -4,8 +4,8 @@
  */
 
 const fs = require('fs');
-const Transaction = require("./blocks/transaction");
-const WalletRegister = require("./blocks/walletRegister");
+const Transaction = require("./blocksModels/transaction");
+const WalletRegister = require("./blocksModels/walletRegister");
 const moment = require('moment');
 const formatToken = require('./formatToken');
 const storj = require('./instanceStorage');

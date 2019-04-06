@@ -27,7 +27,7 @@ const HASH_SIGMA_LENGTH = MAX_HASH_SIGMA.length;                    //How many s
 let blockchain = null;
 
 const Block = require('../block');
-const Signable = require('../blocks/signable');
+const Signable = require('../blocksModels/signable');
 
 const moment = require('moment');
 const logger = require('../logger')('DLCPoA');
