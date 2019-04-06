@@ -13,8 +13,8 @@ const EventsDB = require('./EventsDB');
 const Wallet = require('../wallet');
 const moment = require('moment');
 
-const EcmaContractDeployBlock = require('./blocks/EcmaContractDeployBlock');
-const EcmaContractCallBlock = require('./blocks/EcmaContractCallBlock');
+const EcmaContractDeployBlock = require('./blocksModels/EcmaContractDeployBlock');
+const EcmaContractCallBlock = require('./blocksModels/EcmaContractCallBlock');
 const uglifyJs = require("uglify-es");
 const ContractConnector = require('./connectors/ContractConnector');
 
