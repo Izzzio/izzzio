@@ -29,6 +29,14 @@ See [BigNet section](BigNet)
 
 [See BigNet site](https://bignet.izzz.io)
 
+## Installing
+
+Simplest way:
+
+``npm i -g iz3node``
+
+Now you can use it as ``iz3node --config config.json``
+
 ## Building Node
 
 
