@@ -23,6 +23,11 @@ class DApp {
 
         this.ecmaContract = storj.get('ecmaContract');
 
+        /**
+         * @var {AccountManager}
+         */
+        this.accounts = storj.get('accountManager');
+
 
         that = this;
         /**
@@ -115,13 +120,14 @@ class DApp {
                  * deployContract
                  * @param source
                  * @param resourceRent
+                 * @param accountName
                  * @return {Promise<any>}
                  */
-                deployContract: function (source, resourceRent) {
+                deployContract: function (source, resourceRent, accountName = false) {
                     return new Promise((resolve, reject) => {
                         that.ecmaContract.deployContract(source, resourceRent, function (block) {
                             resolve(block);
-                        });
+                        }, accountName);
                     })
                 },
                 /**
@@ -130,9 +136,10 @@ class DApp {
                  * @param method
                  * @param args
                  * @param state
+                 * @param accountName
                  * @return {Promise<any>}
                  */
-                deployMethod: function (address, method, args, state) {
+                deployMethod: function (address, method, args, state, accountName = false) {
                     return new Promise((resolve, reject) => {
                         try {
                             that.ecmaContract.deployContractMethod(address, method, args, state, function (err, generatedBlock) {
@@ -141,7 +148,7 @@ class DApp {
                                     return;
                                 }
                                 resolve(generatedBlock);
-                            })
+                            }, accountName)
                         } catch (e) {
                             reject(e);
                         }
