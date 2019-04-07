@@ -23,6 +23,11 @@ class DApp {
 
         this.ecmaContract = storj.get('ecmaContract');
 
+        /**
+         * @var {AccountManager}
+         */
+        this.accounts = storj.get('accountManager');
+
 
         that = this;
         /**
