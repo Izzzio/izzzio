@@ -105,6 +105,10 @@ class KeyValue {
                     return reject(err);
                 }
 
+                if(that.type === STORAGE_TYPE.LEVELDB && result.toString().includes('JSON:')) {
+                    result = JSON.parse(result.toString().replace('JSON:', ''));
+                }
+
                 resolve(result);
             })
         })
@@ -154,6 +158,11 @@ class KeyValue {
         if(!options) {
             options = {};
         }
+
+        if(typeof value === 'object' && this.type === STORAGE_TYPE.LEVELDB) {
+            value = 'JSON:' + JSON.stringify(value);
+        }
+
         const that = this;
         return new Promise((resolve, reject) => {
             that.put(key, value, options, function (err, result) {

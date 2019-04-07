@@ -43,12 +43,21 @@ function Logger(prefix) {
             return this.log('Autofix', data);
         },
         error: function (data) {
+            if(typeof data.stack !== 'undefined') {
+                data = data.stack;
+            }
             return this.log('Error', data);
         },
         fatal: function (data) {
+            if(typeof data.stack !== 'undefined') {
+                data = data.stack;
+            }
             return this.log('Fatal', data);
         },
         warning: function (data) {
+            if(typeof data.stack !== 'undefined') {
+                data = data.stack;
+            }
             return this.log('Warning', data);
         }
     };

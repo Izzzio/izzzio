@@ -12,13 +12,20 @@ class ContractConnector {
     /**
      *Simplify interactions with contracts
      * @param {EcmaContract} ecmaContract
-     * @param address
+     * @param {string} address
+     * @param {string|boolean} accountName
      */
-    constructor(ecmaContract, address) {
+    constructor(ecmaContract, address, accountName = false) {
         this.ecmaContract = ecmaContract;
         this.address = address;
         this.blockchain = storj.get('blockchainObject');
         this.state = {};
+        this.accountName = accountName;
+
+        /**
+         * @var{AccountManager}
+         */
+        this.accountManager = storj.get('accountManager');
     }
 
     /**
@@ -61,11 +68,12 @@ class ContractConnector {
      * @return {{}|*}
      * @private
      */
-    _getState() {
+    async _getState() {
         let that = this;
         let state = this.state;
+        let wallet = await this.accountManager.getAccountAsync(this.accountName);
 
-        state.from = !state.from ? that.blockchain.wallet.id : state.from;
+        state.from = !state.from ? wallet.id : state.from;
         state.contractAddress = !state.contractAddress ? that.address : state.contractAddress;
         if(typeof state.block === 'undefined') {
             state.block = {};
@@ -73,7 +81,7 @@ class ContractConnector {
 
         state.block.index = !state.block.index ? that.blockchain.maxBlock : state.block.index;
         state.block.timestamp = !state.block.timestamp ? Number(new Date()) : state.block.timestamp;
-        state.block.hash = !state.block.hash ? 'nohash' : state.block.hash;
+        state.block.hash = !state.block.hash ? '' : state.block.hash;
 
         return state;
     }
@@ -84,12 +92,12 @@ class ContractConnector {
      * @param {undefined|string} alias
      */
     registerMethod(method, alias) {
-
         let that = this;
+
         alias = (typeof alias === 'undefined' ? method : alias);
         this[alias] = function (...args) {
-            return new Promise(function (resolve, reject) {
-                that.ecmaContract.callContractMethodRollback(that.address, method, that._getState(), function (err, val) {
+            return new Promise(async function (resolve, reject) {
+                that.ecmaContract.callContractMethodRollback(that.address, method, await that._getState(), function (err, val) {
                     if(err) {
                         reject(err);
                     } else {
@@ -110,14 +118,14 @@ class ContractConnector {
         let that = this;
         alias = (typeof alias === 'undefined' ? method : alias);
         this[alias] = function (...args) {
-            return new Promise(function (resolve, reject) {
-                that.ecmaContract.deployContractMethod(that.address, method, args, that._getState(), function (err, generatedBlock) {
+            return new Promise(async function (resolve, reject) {
+                that.ecmaContract.deployContractMethod(that.address, method, args, await that._getState(), function (err, generatedBlock) {
                     if(err) {
                         reject(err);
                         return;
                     }
                     resolve(generatedBlock);
-                })
+                }, that.accountName);
             });
         };
     }

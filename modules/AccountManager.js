@@ -38,10 +38,19 @@ class AccountManager {
      * @param id
      */
     async addAccountKeys(accountName, publicKey, privateKey, id = false) {
+        let wallet = new Wallet(false, this._config);
+
+        wallet.keysPair.public = publicKey;
+        wallet.keysPair.private = privateKey;
+        wallet.id = id;
+        if(!wallet.selfValidate()) {
+            throw new Error('Invalid wallet data');
+        }
+
         await this._accounts.putAsync(accountName, {
             id: id,
-            private: wallet.keysPair.private,
-            public: wallet.keysPair.public
+            private: privateKey,
+            public: publicKey
         });
     }
 
@@ -63,17 +72,46 @@ class AccountManager {
      * @param accountName
      * @return {Promise<{id, block, keysPair: {public, private}, data, balance, addressBook, generate, signData, verifyData, getAddress, setBlock, setWalletFile, save, init, transactions, transact}>}
      */
-    async getAccountAsync(accountName) {
-        let account = await this._accounts.getAsync(accountName);
-        let wallet = new Wallet(false, this._config);
-        wallet.keysPair.private = account.private;
-        wallet.keysPair.public = account.public;
-        wallet.id = account.id;
-        if(!wallet.id) {
-            wallet.createId();
+    async getAccountAsync(accountName = false) {
+        if(!accountName) {
+            accountName = 'default';
         }
-        wallet.init();
-        return wallet;
+
+        try {
+            let account = await this._accounts.getAsync(accountName);
+            if(!account) {
+                logger.error('Account "' + accountName + '" not found');
+                return false;
+            }
+
+            let wallet = new Wallet(false, this._config);
+            wallet.keysPair.private = account.private;
+            wallet.keysPair.public = account.public;
+            wallet.id = account.id;
+            if(!wallet.id) {
+                wallet.createId();
+            }
+            wallet.init();
+            return wallet;
+        } catch (e) {
+            logger.error('Account "' + accountName + '" not found');
+            return false;
+        }
+    }
+
+    /**
+     * Callback getAccount version
+     * @param accountName
+     * @param callback
+     */
+    getAccount(accountName, callback) {
+        this.getAccountAsync(accountName).then(function (account) {
+            if(!account) {
+                return callback(new Error('Account not found'));
+            }
+
+            return callback(null, account);
+        });
     }
 
     /**
@@ -89,8 +127,12 @@ class AccountManager {
         }
 
         app.get('/accounts/:accountName', async function (req, res) {
-            let wallet = await that.getAccountAsync(req.params.accountName);
-            res.send({id: wallet.id, public: wallet.keysPair.public});
+            try {
+                let wallet = await that.getAccountAsync(req.params.accountName);
+                res.send({id: wallet.id, public: wallet.keysPair.public});
+            } catch (e) {
+                res.send({error: true, message: 'Account ' + req.params.accountName + ' not found'});
+            }
         });
 
         app.post('/accounts/add', async function (req, res) {
@@ -101,14 +143,20 @@ class AccountManager {
             let privateKey = req.body.private;
 
             if(!accountName || !publicKey || !privateKey) {
-                res.send({error: true, message: 'accountName, publicKey or privateKey not found'});
+                res.send({error: true, message: 'accountName, public or private not found'});
                 return;
             }
 
             if(!id) {
                 id = false;
             }
-            await that.addAccountKeys(accountName, publicKey, privateKey, id);
+
+            try {
+                await that.addAccountKeys(accountName, publicKey, privateKey, id);
+            } catch (e) {
+                res.send({error: true, message: e.message});
+                return;
+            }
 
             res.send({accountName: accountName});
         });

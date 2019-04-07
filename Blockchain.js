@@ -1831,12 +1831,6 @@ function Blockchain(config) {
         logger.info("Plugins loaded");
     }
 
-    //EcmaContract Smartcontracts
-    if(typeof config.ecmaContract !== 'undefined' && config.ecmaContract.enabled) {
-        blockchainObject.ecmaContract = new EcmaContract();
-        storj.put('ecmaContract', blockchainObject.ecmaContract);
-    }
-
     //Wallet create
     if(wallet.id.length === 0) {
         wallet.generate();
@@ -1846,6 +1840,14 @@ function Blockchain(config) {
     let accountManager = new AccountManager(config);
     accountManager.addAccountWallet('default', wallet);
     storj.put('accountManager', accountManager);
+
+    //EcmaContract Smartcontracts
+    if(typeof config.ecmaContract !== 'undefined' && config.ecmaContract.enabled) {
+        blockchainObject.ecmaContract = new EcmaContract();
+        storj.put('ecmaContract', blockchainObject.ecmaContract);
+    }
+
+
 
     storj.put('blockchainObject', blockchainObject);
     return blockchainObject;
