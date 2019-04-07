@@ -59,6 +59,7 @@ function Blockchain(config) {
     const Block = require('./modules/block');
     const Signable = require('./modules/blocksModels/signable');
     const Wallet = require('./modules/wallet');
+    const AccountManager = require('./modules/AccountManager');
     const BlockHandler = require('./modules/blockHandler');
     const Transactor = require('./modules/transactor');
     const MessagesDispatcher = require('./modules/messagesDispatcher');
@@ -988,10 +989,10 @@ function Blockchain(config) {
                         if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
                             //До 5го блока синхронизация только по одному
                             if(receivedBlocks[0].index <= 5 && receivedBlocks[0].index !== 0) {
-                                receivedBlocks = [receivedBlocks[0],receivedBlocks[1]];
+                                receivedBlocks = [receivedBlocks[0], receivedBlocks[1]];
                             }
                             if(receivedBlocks[0].index === 0) {
-                                receivedBlocks = [receivedBlocks[1],receivedBlocks[2]];
+                                receivedBlocks = [receivedBlocks[1], receivedBlocks[2]];
                             }
                             replaceChain(receivedBlocks, function () {
                                 storj.put('chainResponseMutex', false);
@@ -1840,6 +1841,11 @@ function Blockchain(config) {
     if(wallet.id.length === 0) {
         wallet.generate();
     }
+
+    //Account manager
+    let accountManager = new AccountManager(config);
+    accountManager.addAccountWallet('default', wallet);
+    storj.put('accountManager', accountManager);
 
     storj.put('blockchainObject', blockchainObject);
     return blockchainObject;
