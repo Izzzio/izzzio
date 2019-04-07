@@ -1687,6 +1687,7 @@ class EcmaContract {
         app.get('/contracts/ecma/getInfo', async function (req, res) {
             res.send({
                 ready: that.ready,
+                lastBlock: that._lastKnownBlock
             });
 
         });

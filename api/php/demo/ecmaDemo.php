@@ -5,8 +5,8 @@
  */
 
 
-require 'NodeRPC.php';
-require 'EcmaSmartRPC.php';
+require '../NodeRPC.php';
+require '../EcmaSmartRPC.php';
 
 $countractSource = <<<CONTRACT
     class TestContract extends Contract {

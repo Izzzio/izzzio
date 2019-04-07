@@ -5,7 +5,7 @@
  */
 
 
-require 'NodeRPC.php';
+require '../NodeRPC.php';
 
 $izNode = new NodeRPC();
 
