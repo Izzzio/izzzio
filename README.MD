@@ -31,6 +31,8 @@ See [BigNet section](BigNet)
 
 ## Installing
 
+[![npm version](https://badge.fury.io/js/iz3node.svg)](https://www.npmjs.com/package/iz3node)
+
 Simplest way:
 
 ``npm i -g iz3node``
@@ -107,3 +109,7 @@ Make sure the "...VC++ 2015.3 v14.00(v140)" option is enabled.
 
 - [lailune](https://github.com/lailune) Andrey Nedobylsky - maintainer
 
+
+## 
+
+[![https://nodei.co/npm/iz3node.png?downloads=true&downloadRank=true&stars=true](https://nodei.co/npm/iz3node.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/iz3node)
