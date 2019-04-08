@@ -49,7 +49,7 @@ function validate(data, sign, publicKey) {
 
     let result;
     //convert key if it's not in PEM
-    publicKey = publicKey.indexOf('RSA PUBLIC KEY') < 0 ? this.hexToPem(publicKey, 'PUBLIC') : publicKey;
+    publicKey = publicKey.indexOf('RSA PUBLIC KEY') < 0 ? cryptography.hexToPem(publicKey, 'PUBLIC') : publicKey;
     const verify = crypto.createVerify(SIGN_TYPE);
     verify.update(data);
     result = verify.verify(publicKey, sign, inputOutputFormat);
