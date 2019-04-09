@@ -1233,6 +1233,24 @@ class EcmaContract {
         let wallet = await this.accountManager.getAccountAsync(accountName);
 
         code = uglifyJs.minify(code).code;
+
+
+
+
+
+        if(code.length > this.config.ecmaContract.lengthMax) {
+            //if(that.config.program.verbose) {
+                logger.error('Size contract is too large(' + code.length + '). Max allow size - ' + this.config.ecmaContract.lengthMax);
+            //}
+            code = null;
+            return;
+        }
+        throw("----------------");
+
+
+
+
+
         let deployBlock = new EcmaContractDeployBlock(code, {
             randomSeed: random.int(0, 10000),
             from: wallet.id,
