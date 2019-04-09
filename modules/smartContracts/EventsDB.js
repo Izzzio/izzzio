@@ -282,6 +282,26 @@ class EventsDB {
     }
 
     /**
+     * Executes RAW SQL query
+     * @param {string} query
+     * @param {array} bindParams
+     * @param {function} cb
+     */
+    rawQuery(query, bindParams, cb) {
+        let statement;
+
+        if(bindParams) {
+            statement = this.db.prepare(query, bindParams);
+        } else {
+            statement = this.db.prepare(query, []);
+        }
+
+        statement.all([], function (err, values) {
+            cb(err, values);
+        })
+    }
+
+    /**
      * Call contract event handlers
      * @param contract
      * @param event
