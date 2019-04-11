@@ -100,7 +100,6 @@ class MessagesDispatcher {
     }
 
     /**
-     * TODO: Shitty code
      * @param data
      * @param message
      * @param recepient
