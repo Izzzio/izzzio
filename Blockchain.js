@@ -215,7 +215,7 @@ function Blockchain(config) {
          * @return {boolean}
          */
         function transact(reciever, amount, fromTimestamp, transactCallback) {
-            cb(false);
+            transactCallback(false);
             return false;
         },
 
