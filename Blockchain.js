@@ -207,35 +207,21 @@ function Blockchain(config) {
         },
 
         /**
-         * Запускает выполнение транзакции перевода
-         * @param {string} reciever
-         * @param {float} amount
-         * @param {function} transactCallback
+         * @deprecated
+         * @param reciever
+         * @param amount
+         * @param fromTimestamp
+         * @param transactCallback
          * @return {boolean}
          */
         function transact(reciever, amount, fromTimestamp, transactCallback) {
-            wallet.transanctions = [];
-            if(!wallet.transact(reciever, amount, fromTimestamp)) {
-                return false;
-            }
-            let blockData = wallet.transanctions.pop();
-
-            transactor.transact(blockData, function (blockData, cb) {
-                generateNextBlockAuto(blockData, function (generatedBlock) {
-                    addBlock(generatedBlock);
-                    broadcastLastBlock();
-                    cb(generatedBlock);
-                    transactCallback(generatedBlock);
-                });
-            }, function () {
-                logger.info('Transaction accepted');
-            });
-
-            return true;
+            cb(false);
+            return false;
         },
 
         /**
          * Запускает принудительную пересинхронизацию сети
+         * @deprecated
          */
         function hardResync() {
             //Hard resync
@@ -259,7 +245,6 @@ function Blockchain(config) {
 
     storj.put('frontend', frontend);
 
-    blockHandler.index.registerRPCMethods();
 
     //************************************************************************************
 
@@ -1384,68 +1369,8 @@ function Blockchain(config) {
             return;
         }
         wallet.create();
-        getLatestBlock(function (block) {
-            if((!block || moment().utc().valueOf() - block.timestamp > config.generateEmptyBlockDelay) && !config.newNetwork) { //если сеть не синхронизирована то повторяем позже
-                setTimeout(function () {
-                    createWalletIfNotExsists();
-                }, config.emptyBlockInterval * 5);
-                return;
-            }
-
-            let blockData = wallet.transanctions.pop();
-            transactor.transact(blockData, function (blockData, cb) {
-                generateNextBlockAuto(blockData, function (generatedBlock) {
-                    addBlock(generatedBlock);
-                    broadcastLastBlock();
-                    setTimeout(keyringEmission, 10000);
-                    cb(generatedBlock);
-                });
-            }, function () {
-                // wallet.accepted = true;
-                logger.info('Wallet creation accepted');
-            });
-        });
     }
 
-    /**
-     * Creates new Wallet in blockchain
-     * @param cb
-     */
-    function createNewWallet(cb, instant) {
-        let wallet = new Wallet();
-        wallet.generate();
-
-        if(typeof instant !== 'undefined') {
-            transactor.options.acceptCount = 1;
-            rotateAddress();
-        }
-
-        getLatestBlock(function (block) {
-            if((!block || moment().utc().valueOf() - block.timestamp > config.generateEmptyBlockDelay) && !config.newNetwork) { //если сеть не синхронизирована то повторяем позже
-                setTimeout(function () {
-                    createNewWallet(cb);
-                }, config.emptyBlockInterval);
-                return;
-            }
-
-            let blockData = wallet.transanctions.pop();
-            transactor.transact(blockData, function (blockData, blockCb) {
-                generateNextBlockAuto(blockData, function (generatedBlock) {
-                    addBlock(generatedBlock);
-                    broadcastLastBlock();
-                    blockCb(generatedBlock);
-
-                    //cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
-                });
-            }, function (generatedBlock) {
-                wallet.accepted = true;
-                if(typeof instant !== 'undefined') {
-                    rotateAddress();
-                }
-                cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
-            });
-        });
-    }
 
     /**
      * Generates new sender address
@@ -1514,10 +1439,6 @@ function Blockchain(config) {
                 return false;
             }
 
-            if(!wallet.accepted) {
-                return false;
-            }
-
             //Technically we ready for transaction but this state is bad for normal mode
             if(maxBlock <= 5 || maxBlock === -1) {
                 return false;
@@ -1539,7 +1460,6 @@ function Blockchain(config) {
         if(
             maxBlock <= 5 &&
             maxBlock !== -1 &&
-            //wallet.accepted &&
             miningNow === 0 &&
             blockHandler.keyring.length === 0 && config.newNetwork
         ) {
@@ -1672,16 +1592,9 @@ function Blockchain(config) {
                     function terminateBlockchain() {
                         logger.info('Saving blockchain DB');
                         blockchain.close(function () {
-                            logger.info('Saving wallets cache');
-                            blockHandler.wallets.close(function () {
-                                logger.info('Saving transactions index');
-                                blockHandler.index.terminate(function () {
-                                    setTimeout(function () {
-                                        process.exit();
-                                    }, 2000);
-                                });
-
-                            });
+                            setTimeout(function () {
+                                process.exit();
+                            }, 2000);
                         });
                     }
 
@@ -1757,7 +1670,6 @@ function Blockchain(config) {
         createMessage: createMessage,
         broadcastMessage: broadcastMessage,
         createWalletIfNotExsists: createWalletIfNotExsists,
-        createNewWallet: createNewWallet,
         keyringEmission: keyringEmission,
         coinEmission: coinEmission,
         genesisTiemstamp: genesisTiemstamp,
@@ -1846,7 +1758,6 @@ function Blockchain(config) {
         blockchainObject.ecmaContract = new EcmaContract();
         storj.put('ecmaContract', blockchainObject.ecmaContract);
     }
-
 
 
     storj.put('blockchainObject', blockchainObject);

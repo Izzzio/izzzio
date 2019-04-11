@@ -3,18 +3,10 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-//const Smart = require("./smart");
 const Keyring = require("./blocksModels/keyring");
-const Transaction = require("./blocksModels/transaction");
-const WalletRegister = require("./blocksModels/walletRegister");
 const Wallet = require("./wallet");
 const Sync = require('sync');
 const fs = require('fs-extra');
-const formatToken = require('./formatToken');
-const moment = require('moment');
-
-const KeyValue = require('./keyvalue');
-const TransactionsIndex = require('./transactionIndex');
 
 const logger = new (require('./logger'))();
 const storj = require('./instanceStorage');
@@ -35,19 +27,10 @@ class BlockHandler {
         this.wallet = wallet;
         this.blockchain = blockchain;
 
-        if(!config.program.fastLoad) {
-            try {
-                fs.removeSync(config.workDir + '/wallets');
-            } catch (e) {
-            }
-        }
-        this.wallets = new KeyValue(config.walletsDB); // levelup(config.workDir + '/wallets');
         this.options = options;
         this.maxBlock = -1;
         this.enableLogging = true;
-        this.ourWalletBlocks = {income: [], outcome: []};
-        this.index = new TransactionsIndex(config);
-        this.index.initialize();
+
 
         /**
          * External block handlers
@@ -56,13 +39,6 @@ class BlockHandler {
          */
         this._blocksHandlers = {};
 
-
-        if(config.program.fastLoad) {
-            try {
-                this.ourWalletBlocks = JSON.parse(fs.readFileSync(config.workDir + '/ourWalletBlocks.json'));
-            } catch (e) {
-            }
-        }
 
         this.syncInProgress = false;
         storj.put('syncInProgress', false);
@@ -78,7 +54,6 @@ class BlockHandler {
 
         this.transactor = undefined;
         this.frontend = undefined;
-        this.runningSmarts = [];
     }
 
     /**
@@ -121,14 +96,7 @@ class BlockHandler {
     clearDb(cb) {
         let that = this;
         setTimeout(function () {
-            //try {
-            that.wallets.clear(function () {
-                cb();
-            });
-            /*} catch (e) {
-                console.log(e);
-            }*/
-
+            cb();
         }, 100);
     }
 
@@ -145,7 +113,6 @@ class BlockHandler {
         storj.put('syncInProgress', true);
 
         logger.info('Blockchain resynchronization started');
-        that.ourWalletBlocks = {income: [], outcome: []};
         that.clearDb(function () {
             that.playBlockchain(0, function () {
                 logger.info('Blockchain resynchronization finished');
@@ -256,53 +223,6 @@ class BlockHandler {
     }
 
     /**
-     * Get wallet by full any address
-     * @param id
-     * @param cb
-     */
-    getWallet(id, cb) {
-        let that = this;
-        id = id.toLowerCase();
-        if(id.indexOf('bl_') !== -1) {
-            let blockIndex = id.split('_')[1];
-            that.blockchain.get(blockIndex, function (err, val) {
-                if(err) {
-                    return cb(false);
-                }
-                let block;
-                try {
-                    block = JSON.parse(val);
-                    block.data = JSON.parse(block.data);
-                } catch (e) {
-                    return cb(false);
-                }
-                let id = block.data.id;
-                if(typeof id === 'undefined') {
-                    return cb(false);
-                }
-                that.wallets.get(id, function (err, val) {
-                    if(!err) {
-                        return cb(val);
-                    }
-                    cb(false);
-                });
-            });
-            return;
-        }
-        if(id.indexOf('_') !== -1) {
-            id = id.split('_')[0];
-        }
-
-        that.wallets.get(id, function (err, val) {
-            if(!err) {
-                cb(val);
-            } else {
-                cb(false);
-            }
-        })
-    }
-
-    /**
      * Обработка входящего блока
      * @param block
      * @param callback
@@ -321,11 +241,10 @@ class BlockHandler {
             try {
                 blockData = JSON.parse(block.data);
             } catch (e) {
-                that.log('Info: Not JSON block ' + block.index);
+                logger.info('Not JSON block ' + block.index);
                 return callback();
             }
 
-            // that.log(blockData.type + block.index);
 
             if(block.index === keyEmissionMaxBlock) {
                 if(that.keyring.length === 0) {
@@ -333,66 +252,50 @@ class BlockHandler {
                 }
 
                 if(that.isKeyFromKeyring(that.wallet.keysPair.public)) {
-                    logger.warning('THRUSTED NODE. BE CAREFUL.');
+                    logger.warning('TRUSTED NODE. BE CAREFUL.');
                 }
             }
 
-            that.index.checkBlockChange(block, blockData.type, function () {
 
-
-                switch (blockData.type) {
-                    case WalletRegister.prototype.constructor.name:
-                        that.handleWalletBlock(blockData, block, callback);
-                        break;
-                    case Transaction.prototype.constructor.name:
-                        if(that.handleTransaction(blockData, block, callback)) {
-                            fs.writeFileSync(that.config.workDir + '/ourWalletBlocks.json', JSON.stringify(that.ourWalletBlocks));
-                        } else {
-                            // logger.error('Block ' + block + ' rejected');
-                        }
-                        break;
-                    case Keyring.prototype.constructor.name:
-                        if(block.index >= keyEmissionMaxBlock || that.keyring.length !== 0) {
-                            logger.warning('Fake keyring in block ' + block.index);
-                            return callback();
-                        }
-                        logger.info('Keyring recived in block ' + block.index);
-                        that.keyring = blockData.keys;
-                        fs.writeFileSync(that.config.workDir + '/keyring.json', JSON.stringify(that.keyring));
+            switch (blockData.type) {
+                case Keyring.prototype.constructor.name:
+                    if(block.index >= keyEmissionMaxBlock || that.keyring.length !== 0) {
+                        logger.warning('Fake keyring in block ' + block.index);
                         return callback();
-                        break;
-                    /*                case Smart.prototype.constructor.name:
-                                        this.handleSmartBlock(blockData, block, callback);
-                                        break;*/
-                    case 'Empty':
-                        return callback();
-                        break;
-                    default:
+                    }
+                    logger.info('Keyring recived in block ' + block.index);
+                    that.keyring = blockData.keys;
+                    fs.writeFileSync(that.config.workDir + '/keyring.json', JSON.stringify(that.keyring));
+                    return callback();
+                    break;
+                case 'Empty':
+                    return callback();
+                    break;
+                default:
 
-                        /**
-                         * Запускаем на каждый тип блока свой обработчик
-                         */
-                        if(typeof that._blocksHandlers[blockData.type] !== 'undefined') {
-                            for (let i in that._blocksHandlers[blockData.type]) {
-                                if(that._blocksHandlers[blockData.type].hasOwnProperty(i)) {
-                                    try {
-                                        that._blocksHandlers[blockData.type][i](blockData, block, callback);
-                                    } catch (e) {
-                                        console.log(e);
-                                        return callback();
-                                    }
+                    /**
+                     * Запускаем на каждый тип блока свой обработчик
+                     */
+                    if(typeof that._blocksHandlers[blockData.type] !== 'undefined') {
+                        for (let i in that._blocksHandlers[blockData.type]) {
+                            if(that._blocksHandlers[blockData.type].hasOwnProperty(i)) {
+                                try {
+                                    that._blocksHandlers[blockData.type][i](blockData, block, callback);
+                                } catch (e) {
+                                    console.log(e);
+                                    return callback();
                                 }
                             }
-                        } else {
-                            if(that.config.program.verbose) {
-                                logger.info('Unexpected block type ' + block.index);
-                            }
-                            return callback();
                         }
+                    } else {
+                        if(that.config.program.verbose) {
+                            logger.info('Unexpected block type ' + block.index);
+                        }
+                        return callback();
+                    }
 
-                }
+            }
 
-            });
         } catch (e) {
             console.log(e);
             return callback();
@@ -401,202 +304,6 @@ class BlockHandler {
 
     }
 
-    checkBlock(block, callback) {
-
-    }
-
-
-    /**
-     * Обрабатывает блок создания кошелька
-     * @param {WalletRegister} blockData
-     * @param block
-     * @param callback
-     */
-    handleWalletBlock(blockData, block, callback) {
-        const that = this;
-        let tempRegister = new WalletRegister(blockData.id);
-        let testWallet = new Wallet();
-        if(testWallet.verifyData(tempRegister.data, blockData.sign, blockData.pubkey)) {
-            testWallet.id = blockData.id;
-            testWallet.block = block.index;
-            testWallet.keysPair.public = blockData.pubkey;
-            testWallet.balance = 0;
-            that.wallets.get(blockData.id, function (err, val) {
-                if(err) {
-                    that.wallets.del(blockData.id, {sync: true}, function (err) {
-                        that.wallets.put(blockData.id, JSON.stringify(testWallet), {sync: true}, function (err) {
-                            //If wallet is our wallet
-                            if(testWallet.id === that.wallet.id) {
-                                that.wallet.block = block.index;
-                                that.wallet.balance = testWallet.balance;
-                                that.wallet.accepted = true;
-                                that.wallet.update();
-                            }
-
-                            that.index.handleWalletRegister(block, blockData, function () {
-                                return callback();
-                            });
-
-
-                        });
-                    });
-                } else {
-                    logger.error('Uhm... Wallet recreation? Block: ' + block.index);
-                    return callback();
-                }
-            });
-
-
-        } else {
-            logger.error('Incorrect sign in block ' + block.index);
-            return callback();
-        }
-    }
-
-
-    /**
-     * Обрабатывает блок транзанкции
-     * Очень важно тщательно протестировать этот метод
-     * A little callback hell
-     * @param {Transaction} blockData
-     * @param block
-     * @param callback
-     */
-    handleTransaction(blockData, block, callback) {
-        if (this.config.disableInternalToken) { //выключаем обработку, если запрещены монеты в конфиге
-            callback();
-            return false;
-        }
-        const that = this;
-        if(blockData.amount <= 0) {
-            logger.error('Negative or zero amount in block ' + block.index);
-            callback();
-            return false;
-        }
-
-        if(blockData.from === blockData.to && !that.isKeyFromKeyring(blockData.pubkey) && block.index >= keyEmissionMaxBlock) { //Пресекаем попытку самоперевода, за исключением эмиссии
-            logger.error('Selfie in block ' + block.index);
-            callback();
-            return false;
-        }
-
-        that.wallets.get('transmutex_' + String(blockData.timestamp), function (err, val) {
-            if(!err) {
-                logger.error('Transaction clone in ' + block.index + '. Mutex: ' + String(blockData.timestamp));
-                callback();
-                return false;
-            } else {
-                that.wallets.put('transmutex_' + String(blockData.timestamp), true, function () {
-
-
-                    let tempTransaction = new Transaction(blockData.from, blockData.to, blockData.amount, blockData.timestamp, blockData.fromTimestamp);
-                    let testWallet = new Wallet();
-                    try {
-                        if(testWallet.verifyData(tempTransaction.data, blockData.sign, blockData.pubkey)) { //Проверка подписи с ключом переданным в сообщении
-                            that.wallets.get(blockData.from, function (err, val) {
-                                if(!err) {
-                                    let fromWallet = JSON.parse(val);
-                                    if(testWallet.verifyData(tempTransaction.data, blockData.sign, fromWallet.keysPair.public)) { //Проверка подписи с исходным ключом кошелька
-
-                                        if(
-                                            (fromWallet.balance >= blockData.amount && blockData.amount > 0) || //Если баланс отправителя позволяет и это положительная сумма
-                                            block.index < keyEmissionMaxBlock || that.isKeyFromKeyring(fromWallet.keysPair.public) //стартовая эмиссия и тестовая эмиссия
-                                        ) {
-                                            blockData.amount = Math.round(blockData.amount);
-                                            if(block.index >= keyEmissionMaxBlock /*&& !that.isKeyFromKeyring(fromWallet.keysPair.public)*/) { //Вычитаем из отправителя, если это не эмиссия
-                                                fromWallet.balance -= blockData.amount;
-                                            }
-
-                                            that.wallets.get(blockData.to, function (err, val) {
-                                                if(!err) {
-                                                    let toWallet = JSON.parse(val);
-                                                    let delayed = false;
-
-                                                    if(blockData.fromTimestamp <= moment().utc().valueOf()) { //Если транзакция отложенная, и время еще не наступило, то баланс не увеличиваем
-                                                        toWallet.balance += Math.round(blockData.amount);
-                                                    } else {
-                                                        delayed = true;
-                                                    }
-
-                                                    that.wallets.put(fromWallet.id, JSON.stringify(fromWallet), function () {
-                                                        that.wallets.put(toWallet.id, JSON.stringify(toWallet), function () {
-
-                                                            if(that.wallet.id === fromWallet.id || that.wallet.id === toWallet.id) { //Если один из задействованных кошельков это наш
-
-                                                                if(that.wallet.id === fromWallet.id && !(toWallet.id === fromWallet.id)) { //Если транзанкция была выполнена нами
-                                                                    that.log('Info: <<< Transaction to ' + toWallet.id + ' amount ' +
-                                                                        formatToken(blockData.amount, that.config.precision) +
-                                                                        ((block.index + that.options.acceptCount) > that.maxBlock ? ' (unaccepted)' : '') +
-                                                                        (delayed ? ' delayed to ' + moment(blockData.fromTimestamp).format() : '')
-                                                                    );
-                                                                    that.wallet.balance = fromWallet.balance;
-                                                                    that.ourWalletBlocks.outcome.push(block);
-                                                                } else {                                                        //Если транзакция пришла нам или выполнена процедура Selfie
-                                                                    that.log('Info: >>> Incoming transaction from ' + fromWallet.id + ' amount ' +
-                                                                        formatToken(blockData.amount, that.config.precision) +
-                                                                        ((block.index + that.options.acceptCount) > that.maxBlock ? ' (unaccepted)' : '') +
-                                                                        (delayed ? ' delayed to ' + moment(blockData.fromTimestamp).format() : '')
-                                                                    );
-                                                                    that.wallet.balance = toWallet.balance;
-                                                                    that.ourWalletBlocks.income.push(block);
-                                                                }
-
-                                                                that.wallet.update();
-                                                            }
-
-                                                            that.index.handleTransaction(block, block.hash, blockData, function () {
-                                                                callback();
-                                                                return true;
-                                                            });
-
-                                                            return true;
-                                                        });
-                                                    });
-
-                                                } else {
-                                                    logger.error('Recepient not found (' + blockData.to + ') in block ' + block.index);
-                                                    callback();
-                                                    return false;
-                                                }
-                                            });
-
-                                        } else {
-                                            if(fromWallet.balance >= blockData.amount) {
-                                                logger.error('Incorrect transanction in block ' + block.index);
-                                            } else {
-                                                logger.error('Insufficient funds (Have ' + formatToken(fromWallet.balance, that.config.precision) + '  need ' + formatToken(blockData.amount, that.config.precision) + ' for ' + blockData.from + ') transanction in block ' + block.index);
-                                            }
-
-                                            callback();
-                                            return false;
-                                        }
-                                    } else {
-                                        logger.error('Fake level 2 transanction in block ' + block.index);
-                                        callback();
-                                        return false;
-                                    }
-                                } else {
-                                    that.log(blockData);
-                                    logger.error('Sender not found (' + blockData.from + ') in block ' + block.index);
-                                    callback();
-                                    return false;
-                                }
-                            });
-                        } else {
-                            logger.error('Fake transaction in block ' + block.index);
-                            callback();
-                            return false;
-                        }
-                    } catch (e) {
-                        that.log(e);
-                        logger.error('Fake transaction in block ' + block.index);
-                        callback();
-                        return false;
-                    }
-                });
-            }
-        });
-    }
 
 }
 
