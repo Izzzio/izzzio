@@ -1235,8 +1235,7 @@ class EcmaContract {
         code = uglifyJs.minify(code).code;
 
         if(!checkContractLength(code.length)){
-            code = null;
-            return;
+            cb(null);
         }
 
         let deployBlock = new EcmaContractDeployBlock(code, {
@@ -1251,7 +1250,7 @@ class EcmaContract {
         testWallet.createId(deployBlock.pubkey);
         if(testWallet.id !== deployBlock.state.from) {
             logger.error('Contract deploy check author error');
-            return;
+            cb(null);
         }
 
         function generateBlock() {
@@ -1267,14 +1266,13 @@ class EcmaContract {
          * Check - if contract length is allowed
          */
         function checkContractLength(codeLength) {
-            let result = true;
             if(codeLength > that.config.ecmaContract.lengthMax) {
-                result = false;
                 //if(that.config.program.verbose) {
                 logger.error('Size contract is too large(' + codeLength + '). Max allow size - ' + that.config.ecmaContract.lengthMax);
                 //}
+                return false;
             }
-            return result;
+            return true;
         }
 
         that.blockchain.getLatestBlock(function (latestBlock) {
