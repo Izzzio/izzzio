@@ -1236,6 +1236,7 @@ class EcmaContract {
 
         if(!checkContractLength(code.length)){
             cb(null);
+            return;
         }
 
         let deployBlock = new EcmaContractDeployBlock(code, {
@@ -1251,6 +1252,7 @@ class EcmaContract {
         if(testWallet.id !== deployBlock.state.from) {
             logger.error('Contract deploy check author error');
             cb(null);
+            return;
         }
 
         function generateBlock() {
