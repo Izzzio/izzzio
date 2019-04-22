@@ -1480,7 +1480,8 @@ class EcmaContract {
             state.block = block;
             state.contractAddress = address;
             let contract = {code: code, state: state};
-
+            //console.log(contract);
+            console.log(state.block.data);
             that.contracts.put(address, JSON.stringify(contract), function (err) {
                 if(err) {
                     logger.error('Contract deploy handling error');
