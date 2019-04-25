@@ -1320,7 +1320,16 @@ class EcmaContract {
             that.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
 
                 that.events._handleBlockReplay(generatedBlock.index, function () {
-                    that._handleBlock(JSON.parse(generatedBlock.data), generatedBlock, true, (err) => {
+                    console.log(generatedBlock.data);
+                    let generatedBlockData = generatedBlock.data;
+                    if (typeof generatedBlockData !== "object"){
+                        try {
+                            generatedBlockData = JSON.parse(generatedBlock.data)
+                        } catch (e) {
+                            assert.assert(false, e.toString());
+                        }
+                    }
+                    that._handleBlock(generatedBlock.data, generatedBlock, true, (err) => {
                         if(err) {
                             cb(err);
                             return;
@@ -1471,17 +1480,17 @@ class EcmaContract {
     _handleContractDeploy(address, code, state, block, callback) {
         let that = this;
 
-
         /**
          * Initiate and run contract
          */
         function addNewContract() {
 
             state.block = block;
+            delete state.block.data.state;
             state.contractAddress = address;
+            
             let contract = {code: code, state: state};
-            //console.log(contract);
-            console.log(state.block.data);
+            
             that.contracts.put(address, JSON.stringify(contract), function (err) {
                 if(err) {
                     logger.error('Contract deploy handling error');
