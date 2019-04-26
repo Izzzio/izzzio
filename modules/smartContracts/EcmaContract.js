@@ -1485,8 +1485,13 @@ class EcmaContract {
          */
         function addNewContract() {
 
+            //exclude circullar links
+            let blockState={};
+            Object.assign(blockState, block.data.state);
+            block.data.state = blockState;
+            
             state.block = block;
-            delete state.block.data.state;
+
             state.contractAddress = address;
             
             let contract = {code: code, state: state};
