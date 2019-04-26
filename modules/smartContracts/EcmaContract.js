@@ -1489,7 +1489,7 @@ class EcmaContract {
             let blockState={};
             Object.assign(blockState, block.data.state);
             block.data.state = blockState;
-            
+
             state.block = block;
 
             state.contractAddress = address;
