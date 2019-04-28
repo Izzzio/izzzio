@@ -1485,15 +1485,8 @@ class EcmaContract {
          */
         function addNewContract() {
 
-            //exclude circullar links
-            let blockState={};
-            Object.assign(blockState, block.data.state);
-            block.data.state = blockState;
-
             state.block = block;
-
             state.contractAddress = address;
-            
             let contract = {code: code, state: state};
             
             that.contracts.put(address, JSON.stringify(contract), function (err) {
@@ -1576,11 +1569,6 @@ class EcmaContract {
      */
     _handleContractCall(address, method, args, state, block, testOnly, callback) {
 
-        //exclude circullar links
-        let blockState={};
-        Object.assign(blockState, block.data.state);
-        block.data.state = blockState;
-
         let that = this;
         if((method === 'contract.deploy') || (method === 'deploy')) {
             logger.error('Calling deploy method of contract is not allowed');
@@ -1656,9 +1644,14 @@ class EcmaContract {
         let verifyBlock = {};
         let testWallet = new Wallet(false, that.config);
 
+        //exclude circullar links
+        let blockState={};
+        Object.assign(blockState, blockData.state);
 
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
+
+
 
                 verifyBlock = new EcmaContractDeployBlock(blockData.ecmaCode, blockData.state);
 
@@ -1676,10 +1669,11 @@ class EcmaContract {
                     return
                 }
 
-                this._handleContractDeploy(block.index, blockData.ecmaCode, blockData.state, block, callback);
+                this._handleContractDeploy(block.index, blockData.ecmaCode, blockState, block, callback);
                 break;
 
             case EcmaContractCallBlock.blockType:
+
                 verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state);
                 if(verifyBlock.data !== blockData.data) {
                     logger.error('Contract invalid data in block ' + block.index);
@@ -1695,7 +1689,7 @@ class EcmaContract {
                     return
                 }
 
-                this._handleContractCall(blockData.address, blockData.method, blockData.args, blockData.state, block, testOnly, callback);
+                this._handleContractCall(blockData.address, blockData.method, blockData.args, blockState, block, testOnly, callback);
 
                 break;
             default:
