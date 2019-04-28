@@ -1320,7 +1320,7 @@ class EcmaContract {
             that.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
 
                 that.events._handleBlockReplay(generatedBlock.index, function () {
-                    console.log(generatedBlock.data);
+                    //console.log(generatedBlock.data);
                     let generatedBlockData = generatedBlock.data;
                     if (typeof generatedBlockData !== "object"){
                         try {
@@ -1575,6 +1575,11 @@ class EcmaContract {
      * @private
      */
     _handleContractCall(address, method, args, state, block, testOnly, callback) {
+
+        //exclude circullar links
+        let blockState={};
+        Object.assign(blockState, block.data.state);
+        block.data.state = blockState;
 
         let that = this;
         if((method === 'contract.deploy') || (method === 'deploy')) {
