@@ -3,25 +3,13 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-
-const crypto = require('crypto');
-
-const keypair = require('keypair');
-
-const NodeRSA = require('node-rsa');
-
 const fs = require('fs');
-//const CryptoJS = require("crypto-js");
-const Transaction = require("./blocks/transaction");
-const WalletRegister = require("./blocks/walletRegister");
 const moment = require('moment');
 const formatToken = require('./formatToken');
 const storj = require('./instanceStorage');
 const cryptography = storj.get('cryptography');
 
 const logger = new (require('./logger'))();
-
-const SIGN_TYPE = 'sha256';
 
 /**
  * Wallet object
@@ -81,17 +69,26 @@ let Wallet = function (walletFile, config) {
      */
     wallet.addressBook = {};
 
-    /**
-     * Transanctions queue
-     * @type {Array}
-     */
-    wallet.transanctions = [];
 
     /**
      Кошелёк утверждён блокчейном
      */
     wallet.accepted = false;
 
+    /**
+     * Generators list
+     * @type {{}}
+     * @private
+     */
+    wallet._generatorHooks = [];
+
+    /**
+     * Register wallet generator
+     * @param generator
+     */
+    wallet.registerGeneratorHook = function (generator) {
+        wallet._generatorHooks.push(generator);
+    };
 
     /**
      * Repair bad generated key
@@ -116,12 +113,6 @@ let Wallet = function (walletFile, config) {
             wallet.block = walletData.block;
             wallet.accepted = walletData.accepted;
 
-            //1.0.4b bug workaround
-            wallet.keysPair.private = repairKey(wallet.keysPair.private);
-            wallet.keysPair.public = repairKey(wallet.keysPair.public);
-            //1.0.4b bug workaround
-
-
         } catch (e) {
             wallet.log('Error: Invalid wallet file!');
         }
@@ -131,7 +122,20 @@ let Wallet = function (walletFile, config) {
      * Generates new data for wallet
      */
     wallet.generate = function () {
-        wallet.keysPair = cryptography.generateKeyPair();
+
+        let generated = false;
+        for (let generator of wallet._generatorHooks) {
+            let generatorResult = generator(wallet);
+            if(generatorResult) {
+                wallet.keysPair = generatorResult.keysPair;
+                generated = true;
+                break;
+            }
+        }
+
+        if(!generated) {
+            wallet.keysPair = cryptography.generateKeyPair();
+        }
 
         wallet.log('Info: Generated');
         this.createId();
@@ -160,13 +164,12 @@ let Wallet = function (walletFile, config) {
      */
     wallet.init = function () {
         if(wallet.id.length === 0) {
-            wallet.generate();
-        }
-
-        if(!wallet.selfValidate()) {
+           // wallet.generate();
+            logger.info('Empty wallet created');
+        } /*else if(!wallet.selfValidate()) {
             throw logger.fatal('Wallet self-validation error! Invalid key or sign checking');
 
-        }
+        }*/
 
         return wallet;
     };
@@ -262,53 +265,9 @@ let Wallet = function (walletFile, config) {
             return false;
         }
 
-        let walletCreateBlock = new WalletRegister(wallet.id);
-        walletCreateBlock = wallet.signBlock(walletCreateBlock);
-        wallet.transanctions.push(walletCreateBlock);
-
         return true;
     };
 
-    /**
-     * Создает транзакцию
-     * @param to ONLY CORRECT WALLET NUMBER!!!
-     * @param {Number} amount
-     * @param {Number|null} fromTimestamp - transaction activation timestamp in UTC
-     * @param {Boolean} keyringed
-     */
-    wallet.transact = function (to, amount, fromTimestamp, keyringed) {
-        //запрещаем транзакции если установлен флаг
-        if(config.disableInternalToken) {
-            return false;
-        }
-        to = String(to);
-        amount = Number(amount);
-
-        //1.0.4b bug workaround
-        wallet.keysPair.private = repairKey(wallet.keysPair.private);
-        wallet.keysPair.public = repairKey(wallet.keysPair.public);
-        //1.0.4b bug workaround
-
-        if(wallet.block === -1) {
-            wallet.log('Error: Wallet not registered!');
-            return false;
-        }
-
-        if(wallet.balance < amount && !keyringed) {
-            wallet.log('Error: Insufficient funds');
-            return false;
-        }
-
-        if(!fromTimestamp) {
-            fromTimestamp = moment().utc().valueOf();
-        }
-
-        let transaction = new Transaction(wallet.id, to, amount, moment().utc().valueOf(), fromTimestamp);
-        transaction = wallet.signBlock(transaction);
-        wallet.transanctions.push(transaction);
-
-        return true;
-    };
 
     wallet.update = function () {
         wallet.log('Info: Wallet balance: ' + formatToken(wallet.balance, config.precision));

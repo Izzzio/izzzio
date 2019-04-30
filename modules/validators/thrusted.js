@@ -60,7 +60,7 @@ let lastTimestampRequest = 0;
 let lastRecepient = '';
 
 const Block = require('../block');
-const Signable = require('../blocks/signable');
+const Signable = require('../blocksModels/signable');
 const moment = require('moment');
 
 /**

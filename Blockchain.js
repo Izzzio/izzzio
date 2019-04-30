@@ -53,11 +53,13 @@ function Blockchain(config) {
     const Sync = require('sync');
     const moment = require('moment');
     const url = require('url');
+    const path = require('path');
 
     //Blockchain
     const Block = require('./modules/block');
-    const Signable = require('./modules/blocks/signable');
+    const Signable = require('./modules/blocksModels/signable');
     const Wallet = require('./modules/wallet');
+    const AccountManager = require('./modules/AccountManager');
     const BlockHandler = require('./modules/blockHandler');
     const Transactor = require('./modules/transactor');
     const MessagesDispatcher = require('./modules/messagesDispatcher');
@@ -67,7 +69,6 @@ function Blockchain(config) {
 
     storj.put('app', app);
     storj.put('config', config);
-
 
 
     //Subsystems
@@ -113,10 +114,12 @@ function Blockchain(config) {
 
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
-    logger.info('Wallet address ' + wallet.getAddress(false));
-    if(wallet.block !== -1) {
-        logger.info('Tiny address ' + wallet.getAddress(true));
-        wallet.block = -1;
+    if(wallet.id.length !== 0) {
+        logger.info('Wallet address ' + wallet.getAddress(false));
+        if(wallet.block !== -1) {
+            logger.info('Tiny address ' + wallet.getAddress(true));
+            wallet.block = -1;
+        }
     }
     console.log('');
 
@@ -204,35 +207,21 @@ function Blockchain(config) {
         },
 
         /**
-         * Запускает выполнение транзакции перевода
-         * @param {string} reciever
-         * @param {float} amount
-         * @param {function} transactCallback
+         * @deprecated
+         * @param reciever
+         * @param amount
+         * @param fromTimestamp
+         * @param transactCallback
          * @return {boolean}
          */
         function transact(reciever, amount, fromTimestamp, transactCallback) {
-            wallet.transanctions = [];
-            if(!wallet.transact(reciever, amount, fromTimestamp)) {
-                return false;
-            }
-            let blockData = wallet.transanctions.pop();
-
-            transactor.transact(blockData, function (blockData, cb) {
-                generateNextBlockAuto(blockData, function (generatedBlock) {
-                    addBlock(generatedBlock);
-                    broadcastLastBlock();
-                    cb(generatedBlock);
-                    transactCallback(generatedBlock);
-                });
-            }, function () {
-                logger.info('Transaction accepted');
-            });
-
-            return true;
+            transactCallback(false);
+            return false;
         },
 
         /**
          * Запускает принудительную пересинхронизацию сети
+         * @deprecated
          */
         function hardResync() {
             //Hard resync
@@ -256,7 +245,6 @@ function Blockchain(config) {
 
     storj.put('frontend', frontend);
 
-    blockHandler.index.registerRPCMethods();
 
     //************************************************************************************
 
@@ -404,7 +392,7 @@ function Blockchain(config) {
                     'Content-Type': 'application/json',
                     'Content-Disposition': 'attachment; filename="blockchain.json"'
                 });
-                res.write('[');
+                res.write('{');
                 for (let i = 0; i < maxBlock + 1; i++) {
                     let result;
                     try {
@@ -412,9 +400,17 @@ function Blockchain(config) {
                     } catch (e) {
                         continue;
                     }
-                    res.write(JSON.stringify(result) + ',');
+
+                    if(Buffer.isBuffer(result)) {
+                        result = JSON.stringify(String(result));
+                    } else {
+                        result = JSON.stringify(result);
+                    }
+
+                    res.write('"' + i + '":' + result + ',');
                 }
-                res.write(']');
+                res.write('"maxBlock":' + maxBlock + '');
+                res.write('}');
                 res.end();
             });
         });
@@ -517,6 +513,7 @@ function Blockchain(config) {
      */
     function initConnection(ws) {
 
+
         if(peersBlackList.indexOf(ws._socket.remoteAddress) !== -1) {
             if(config.program.verbose) {
                 logger.info('Blacklisted peer ' + ws._socket.remoteAddress);
@@ -551,6 +548,7 @@ function Blockchain(config) {
             }
         }
 
+
         p2pErrorHandler(ws);
         sockets.push(ws);
         if(config.checkExternalConnectionData) {
@@ -570,6 +568,7 @@ function Blockchain(config) {
      */
     function initMessageHandler(ws) {
         ws.on('message', (data) => {
+
 
             //prevent multiple sockets on one busaddress
             if(!config.allowMultiplySocketsOnBus) {
@@ -601,7 +600,7 @@ function Blockchain(config) {
             }
 
             //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
-            if(!ws.haveBlockchainInfo) {
+            if(!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData) {
                 return;
             }
 
@@ -716,7 +715,7 @@ function Blockchain(config) {
          * @type {number}
          */
         fromBlock = (typeof fromBlock === 'undefined' ? 0 : Number(fromBlock));
-        if(fromBlock < 5) {
+        if(fromBlock <= 5) {
             limit = 3;
         }
 
@@ -788,7 +787,6 @@ function Blockchain(config) {
      * @returns {*|string|a}
      */
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
-        //return CryptoJS.SHA256(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
         return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
     }
 
@@ -803,6 +801,9 @@ function Blockchain(config) {
                 addBlockToChain(newBlock, false, cb);
             } else {
                 logger.error("Trying add invalid block");
+                if(cb) {
+                    cb();
+                }
             }
         });
 
@@ -849,12 +850,14 @@ function Blockchain(config) {
     function connectToPeers(newPeers) {
         let peers = getCurrentPeers();
 
+
         if(peers.length >= config.maxPeers) {
             return;
         }
         newPeers = newPeers.filter((v, i, a) => a.indexOf(v) === i);
 
         newPeers.forEach((peer) => {
+
             if(peers.indexOf(peer) !== -1) {
                 return;
             }
@@ -872,6 +875,7 @@ function Blockchain(config) {
                     ws.close();
                 });
             } catch (e) {
+                console.log(e);
             }
         });
     }
@@ -936,11 +940,11 @@ function Blockchain(config) {
                     lastKnownBlock = latestBlockReceived.index;
                     if(receivedBlocks.length === 1) {
                         if(lastKnownBlock !== latestBlockReceived.index) {
-                            logger.info('Synchronize: Recived last chain block ' + latestBlockReceived.index);
+                            logger.info('Synchronize: Received last chain block ' + latestBlockReceived.index);
                         }
                     } else {
                         if(config.program.verbose) {
-                            logger.info('Synchronize: Recived ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
+                            logger.info('Synchronize: Received ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
                         }
                     }
                     if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) { //когда получен один блок от того который у нас есть
@@ -968,6 +972,13 @@ function Blockchain(config) {
 
                     } else {
                         if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
+                            //До 5го блока синхронизация только по одному
+                            if(receivedBlocks[0].index <= 5 && receivedBlocks[0].index !== 0) {
+                                receivedBlocks = [receivedBlocks[0], receivedBlocks[1]];
+                            }
+                            if(receivedBlocks[0].index === 0) {
+                                receivedBlocks = [receivedBlocks[1], receivedBlocks[2]];
+                            }
                             replaceChain(receivedBlocks, function () {
                                 storj.put('chainResponseMutex', false);
                             });
@@ -999,65 +1010,81 @@ function Blockchain(config) {
      */
     function replaceChain(newBlocks, cb) {
 
-
-        let maxIndex = maxBlock - config.limitedConfidenceBlockZone;
-        if(maxIndex < 0) {
-            maxIndex = 0;
+        let fromBlock = newBlocks[0].index - 1;
+        if(fromBlock < 0) {
+            fromBlock = 0;
         }
 
-        const validChain = isValidChain(newBlocks);
-
-        if(!(newBlocks[0].index >= maxIndex)) {//ограничение доверия принимаемой цепочки блоков
-
-            if(config.program.verbose) {
-                logger.error('LimitedConfidence: Invalid chain');
-            }
-
-            if(typeof cb !== 'undefined') {
-                cb();
-            }
-
-            return;
-        }
-
-
-        if(
-            validChain // &&  newBlocks[0].index >= maxIndex
-        /*&& newBlocks.length >= maxBlock*/
-        ) {
-            //console.log(newBlocks);
-            //logger.info('Received blockchain is valid.');
-            logger.info('Synchronize: ' + newBlocks[0].index + ' of ' + newBlocks[newBlocks.length - 1].index);
-            Sync(function () {
-                for (let i of newBlocks) {
-                    addBlockToChainIndex.sync(null, i.index, i, true);
+        getBlockById(fromBlock, function (err, lBlock) {
+            if(err) {
+                logger.error(new Error('Can\'t get block no ' + newBlocks[0].index + ' ' + err));
+                if(typeof cb !== 'undefined') {
+                    cb();
                 }
-                responseLatestMsg(function (msg) {
-                    broadcast(msg);
-                });
+                return;
+            }
 
-                clearTimeout(replaceChainTimer);
-                replaceChainTimer = setTimeout(function () {
-                    //If receiving chain, no syncing
-                    if(storj.get('chainResponseMutex')) {
-                        return;
-                    }
-                    blockHandler.resync();
-                }, config.peerExchangeInterval + 2000);
+
+            let maxIndex = maxBlock - config.limitedConfidenceBlockZone;
+            if(maxIndex < 0) {
+                maxIndex = 0;
+            }
+
+            const validChain = isValidChain(fromBlock === 0 ? newBlocks : [lBlock].concat(newBlocks));
+
+            if(!(newBlocks[0].index >= maxIndex)) {//ограничение доверия принимаемой цепочки блоков
+
+                if(config.program.verbose) {
+                    logger.error('LimitedConfidence: Invalid chain');
+                }
 
                 if(typeof cb !== 'undefined') {
                     cb();
                 }
 
-            });
-
-        } else {
-            if(typeof cb !== 'undefined') {
-                cb();
+                return;
             }
-            logger.error('Received blockchain corrupted');
 
-        }
+
+            if(
+                validChain // &&  newBlocks[0].index >= maxIndex
+            /*&& newBlocks.length >= maxBlock*/
+            ) {
+                //console.log(newBlocks);
+                //logger.info('Received blockchain is valid.');
+                logger.info('Synchronize: ' + newBlocks[0].index + ' of ' + newBlocks[newBlocks.length - 1].index);
+                Sync(function () {
+                    for (let i of newBlocks) {
+                        addBlockToChainIndex.sync(null, i.index, i, true);
+                    }
+                    responseLatestMsg(function (msg) {
+                        broadcast(msg);
+                    });
+
+                    clearTimeout(replaceChainTimer);
+                    replaceChainTimer = setTimeout(function () {
+                        //If receiving chain, no syncing
+                        if(storj.get('chainResponseMutex')) {
+                            return;
+                        }
+                        blockHandler.resync();
+                    }, config.peerExchangeInterval + 2000);
+
+                    if(typeof cb !== 'undefined') {
+                        cb();
+                    }
+
+                });
+
+            } else {
+                if(typeof cb !== 'undefined') {
+                    cb();
+                }
+                logger.error('Received blockchain corrupted');
+
+            }
+
+        })
     }
 
     /**
@@ -1231,6 +1258,10 @@ function Blockchain(config) {
         initHttpServer();
         initP2PServer();
         createWalletIfNotExsists();
+        if(config.program.keyringEmission) {
+            keyringEmission();
+        }
+
 
         if(config.appEntry) {
             logger.info("Loading DApp...\n");
@@ -1334,72 +1365,12 @@ function Blockchain(config) {
      * Создаёт кошелёк в блокчейне, если он не создан.
      */
     function createWalletIfNotExsists() {
-        if(wallet.accepted) {
+        if(wallet.accepted || config.disableWalletDeploy) {
             return;
         }
         wallet.create();
-        getLatestBlock(function (block) {
-            if((!block || moment().utc().valueOf() - block.timestamp > config.generateEmptyBlockDelay) && !config.newNetwork) { //если сеть не синхронизирована то повторяем позже
-                setTimeout(function () {
-                    createWalletIfNotExsists();
-                }, config.emptyBlockInterval * 5);
-                return;
-            }
-
-            let blockData = wallet.transanctions.pop();
-            transactor.transact(blockData, function (blockData, cb) {
-                generateNextBlockAuto(blockData, function (generatedBlock) {
-                    addBlock(generatedBlock);
-                    broadcastLastBlock();
-                    setTimeout(keyringEmission, 10000);
-                    cb(generatedBlock);
-                });
-            }, function () {
-                // wallet.accepted = true;
-                logger.info('Wallet creation accepted');
-            });
-        });
     }
 
-    /**
-     * Creates new Wallet in blockchain
-     * @param cb
-     */
-    function createNewWallet(cb, instant) {
-        let wallet = new Wallet();
-        wallet.generate();
-
-        if(typeof instant !== 'undefined') {
-            transactor.options.acceptCount = 1;
-            rotateAddress();
-        }
-
-        getLatestBlock(function (block) {
-            if((!block || moment().utc().valueOf() - block.timestamp > config.generateEmptyBlockDelay) && !config.newNetwork) { //если сеть не синхронизирована то повторяем позже
-                setTimeout(function () {
-                    createNewWallet(cb);
-                }, config.emptyBlockInterval);
-                return;
-            }
-
-            let blockData = wallet.transanctions.pop();
-            transactor.transact(blockData, function (blockData, blockCb) {
-                generateNextBlockAuto(blockData, function (generatedBlock) {
-                    addBlock(generatedBlock);
-                    broadcastLastBlock();
-                    blockCb(generatedBlock);
-
-                    //cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
-                });
-            }, function (generatedBlock) {
-                wallet.accepted = true;
-                if(typeof instant !== 'undefined') {
-                    rotateAddress();
-                }
-                cb({id: wallet.id, block: generatedBlock.index, keysPair: wallet.keysPair});
-            });
-        });
-    }
 
     /**
      * Generates new sender address
@@ -1468,10 +1439,6 @@ function Blockchain(config) {
                 return false;
             }
 
-            if(!wallet.accepted) {
-                return false;
-            }
-
             //Technically we ready for transaction but this state is bad for normal mode
             if(maxBlock <= 5 || maxBlock === -1) {
                 return false;
@@ -1493,13 +1460,12 @@ function Blockchain(config) {
         if(
             maxBlock <= 5 &&
             maxBlock !== -1 &&
-            //wallet.accepted &&
             miningNow === 0 &&
             blockHandler.keyring.length === 0 && config.newNetwork
         ) {
             logger.info('Starting keyring emission');
 
-            let keyring = new (require('./modules/blocks/keyring'))([], wallet.id);
+            let keyring = new (require('./modules/blocksModels/keyring'))([], wallet.id);
             keyring.generateKeys(config.workDir + '/keyringKeys.json', config.keyringKeysCount, wallet);
             transactor.transact(keyring, function (blockData, cb) {
                 config.validators[0].generateNextBlock(blockData, function (generatedBlock) {
@@ -1522,7 +1488,7 @@ function Blockchain(config) {
      * где precision это максимальная точность при операциях с не дробными монетами
      */
     function coinEmission() {
-        if (config.disableInternalToken) {
+        if(config.disableInternalToken) {
             return;
         }
         if(!blockHandler.isKeyFromKeyring(wallet.keysPair.public)) {
@@ -1626,16 +1592,9 @@ function Blockchain(config) {
                     function terminateBlockchain() {
                         logger.info('Saving blockchain DB');
                         blockchain.close(function () {
-                            logger.info('Saving wallets cache');
-                            blockHandler.wallets.close(function () {
-                                logger.info('Saving transactions index');
-                                blockHandler.index.terminate(function () {
-                                    setTimeout(function () {
-                                        process.exit();
-                                    }, 2000);
-                                });
-
-                            });
+                            setTimeout(function () {
+                                process.exit();
+                            }, 2000);
                         });
                     }
 
@@ -1653,6 +1612,21 @@ function Blockchain(config) {
 
     }
 
+
+    /**
+     * Get block by id
+     * @param {number} id
+     * @param {function} cb
+     */
+    function getBlockById(id, cb) {
+        blockchain.get(id, function (err, val) {
+            if(err) {
+                cb(err);
+            } else {
+                cb(err, JSON.parse(val));
+            }
+        })
+    }
 
     blockchainObject = {
         config: config,
@@ -1696,7 +1670,6 @@ function Blockchain(config) {
         createMessage: createMessage,
         broadcastMessage: broadcastMessage,
         createWalletIfNotExsists: createWalletIfNotExsists,
-        createNewWallet: createNewWallet,
         keyringEmission: keyringEmission,
         coinEmission: coinEmission,
         genesisTiemstamp: genesisTiemstamp,
@@ -1731,15 +1704,7 @@ function Blockchain(config) {
          * @param {Number} id
          * @param {Function} cb
          */
-        getBlockById(id, cb) {
-            blockchain.get(id, function (err, val) {
-                if(err) {
-                    cb(err);
-                } else {
-                    cb(err, JSON.parse(val));
-                }
-            })
-        }
+        getBlockById: getBlockById
     };
 
     //Init2
@@ -1753,11 +1718,47 @@ function Blockchain(config) {
     //StarWave messaging protocol
     starwave.blockchain = blockchainObject;
 
+    //Plugins
+    if(config.plugins.length > 0) {
+        logger.info("Loading plugins...\n");
+        for (let plugin of config.plugins) {
+            try {
+                try {
+                    plugin = require(plugin)(blockchainObject, config, storj);
+                } catch (e) {
+                    if(!path.isAbsolute(plugin)) {
+                        plugin = './plugins/' + plugin;
+                    }
+                    plugin = require(plugin)(blockchainObject, config, storj);
+                }
+
+
+            } catch (e) {
+                logger.fatal("Plugin fatal:\n");
+                console.log(e);
+                process.exit(1);
+            }
+        }
+
+        logger.info("Plugins loaded");
+    }
+
+    //Wallet create
+    if(wallet.id.length === 0) {
+        wallet.generate();
+    }
+
+    //Account manager
+    let accountManager = new AccountManager(config);
+    accountManager.addAccountWallet('default', wallet);
+    storj.put('accountManager', accountManager);
+
     //EcmaContract Smartcontracts
     if(typeof config.ecmaContract !== 'undefined' && config.ecmaContract.enabled) {
         blockchainObject.ecmaContract = new EcmaContract();
         storj.put('ecmaContract', blockchainObject.ecmaContract);
     }
+
 
     storj.put('blockchainObject', blockchainObject);
     return blockchainObject;

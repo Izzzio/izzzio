@@ -16,7 +16,7 @@ class Event {
      */
     constructor(name, ...types) {
 
-        const SUPPORTED_TYPES = ['number', 'string', 'array', 'object'];
+        const SUPPORTED_TYPES = ['number', 'string', 'array', 'object', 'boolean', 'bool'];
 
         if(types.length > 10) {
             throw 'Event can take only 10 arguments';
@@ -39,6 +39,10 @@ class Event {
                     break;
                 case 'number':
                     types[a] = 'number';
+                    break;
+                case 'bool':
+                case 'boolean':
+                    types[a] = 'boolean';
                     break;
                 default:
                     assert.true(false, 'Unsupported event argument type ' + typeof types[a]);
@@ -82,6 +86,13 @@ class Event {
                         assert.true(false, 'Invalid argument type for argument no ' + a + '. Provided ' + typeof args[a] + ', object expected');
                     }
                     args[a] = JSON.stringify(args[a]);
+                    break;
+                case 'boolean':
+                case 'bool':
+                    if(typeof args[a] !== 'boolean') {
+                        assert.true(false, 'Invalid argument type for argument no ' + a + '. Provided ' + typeof args[a] + ', boolean expected');
+                    }
+                    args[a] = args[a] ? '1' : '0';
                     break;
                 case 'array':
                     if(Array.isArray(args[a])) {

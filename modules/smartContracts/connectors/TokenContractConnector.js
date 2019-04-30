@@ -9,14 +9,15 @@ const ContractConnector = require('./ContractConnector');
  * Contract can connects with any standard token contract
  */
 class TokenContractConnector extends ContractConnector {
-    constructor(ecmaContract, address) {
-        super(ecmaContract, address);
+    constructor(ecmaContract, address, accountName = false) {
+        super(ecmaContract, address, accountName);
         this.registerMethod('balanceOf', '_balanceOf');
         this.registerMethod('totalSupply', '_totalSupply');
 
         this.registerDeployMethod('transfer', '_transfer');
         this.registerDeployMethod('mint', '_mint');
         this.registerDeployMethod('burn', '_burn');
+
     }
 
     /**
@@ -70,6 +71,28 @@ class TokenContractConnector extends ContractConnector {
      */
     get contract() {
         return this.getPropertyPromise('contract');
+    }
+
+    /**
+     * Create payable transaction
+     * @param {string} address
+     * @param {string} method
+     * @param {string} txAmount
+     * @param {array} args
+     * @return {Promise<Block>}
+     */
+    pay(address, method, txAmount, args) {
+        let that = this;
+        return new Promise(async (resolve, reject) => {
+            that.ecmaContract.deployContractMethod(that.address, 'processPayableTransaction', [address, String(txAmount), method, args], await that._getState(), function (err, newBlock) {
+                if(err) {
+                    reject(err);
+                    return;
+                }
+                resolve(newBlock);
+            });
+        });
+
     }
 
 }

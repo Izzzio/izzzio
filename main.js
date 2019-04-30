@@ -1,6 +1,22 @@
+#!/usr/bin/env node
+
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
+
+ Copyright 2018 Izio Ltd (OOO "Изио")
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
  */
 
 'use strict';
@@ -11,12 +27,13 @@ let program = require('commander');
 
 program
     .version(version)
-    .description(' iZ3 blockchain core.')
+    .description(' iZ3 - IZZZIO blockchain core.')
     .option('-a, --autofix', 'Fix saved chain if possible. WARNING: You can lose important data')
     .option('--clear', 'Clear all saved chain and deletes wallet. WARNING: You can lose important data')
     .option('--clear-db', 'Clear all saved chain and calculated wallets.')
     .option('-c, --config [path]', 'Core config path', 'config.json')
     .option('--work-dir [path]', 'Working directory', false)
+    .option('--keyring-emission', 'Generate and deploy keyring', false)
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
     .option('--new-chain', 'Generates keyring and token emission if possible', false)
     .option('--fall-on-errors', 'Allow stop node on uncaught exceptions', false)
@@ -27,7 +44,7 @@ program
     .option('--fast-load', 'Don\'t checking databased on startup', false)
     .option('--verbose', 'More logging info', false)
     .option('--enable-address-rotation', 'Activates the rotation of the addresses', false)
-    .option('--no-splash', 'Disable this f*king splash screen', false)
+    .option('--no-splash', 'Disable splash screen', false)
     .parse(process.argv);
 
 const getid = require('./modules/getid');
@@ -95,15 +112,11 @@ const config = {
     //Wallet
     walletFile: './wallet.json',         //Адрес файла кошелька
     workDir: '.',
+    disableWalletDeploy: true,
 
     //Database
-    walletsDB: 'wallets',                   // false - для хранения в ОЗУ, mem://wallets.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
     blocksDB: 'blocks',                     // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
     blocksSavingInterval: 300000,            // false = для отключения автосохранения, или количество милилсекунд
-    transactionIndexDB: 'transactions.db',  // база данных для индекса транзакций, false - для работы с ОЗУ (каждый раз индекс будет перестроен)
-    transactionIndexPerf: true,             // режим высокой производительности индекса (требует много ОЗУ)
-    transactionIndexEnable: false,          // активировать построение индекса
-
 
     //Application
     appEntry: false,       //Точка входа в "приложение". False - если не требуется
@@ -120,6 +133,12 @@ const config = {
     //Cryptography
     hashFunction: 'SHA256',                 //функция вычисления хэша
     signFunction: '',                       //Функция вычисления цифровой подписи и генерации паролей(пустая-значит, по умолчанию используется), 'GOST' 'GOST256' 'NEWRSA'
+    keyLength: 2048,                        //Key length for some algorithms
+
+    //Enabled plugins
+    plugins: [
+        "iz3-basic-crypto"
+    ],
 
 };
 
@@ -134,6 +153,7 @@ Array.prototype.remove = function (from, to) {
 };
 
 global.PATH = {}; //object for saving paths
+global.PATH.configDir = path.dirname(program.config);
 
 try {
     let loadedConfig = JSON.parse(fs.readFileSync(program.config));
@@ -143,7 +163,7 @@ try {
         }
     }
 
-    global.PATH.configDir = process.cwd(); //setup config path to global var(undefined if no config)
+
     /*   try {
            fs.writeFileSync('config.json', JSON.stringify(config));
        } catch (e) {
@@ -220,33 +240,25 @@ if(program.generateWallets) {
 }
 
 global.PATH.mainDir = __dirname;
-//check how appEntry is written
+
 if(global.PATH.configDir) {
     if(config.appEntry) {
-        //try to find app file near the config
-        let fullPathToAppEntry = '';
-        let existenceFlag = false;
-        //ref path in config
-        try {
-            fullPathToAppEntry = global.PATH.mainDir + path.sep + config.appEntry;
-            fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
-            existenceFlag = true;
-        } catch (err) {
-
+        if(!fs.existsSync(config.appEntry)) {
+            config.appEntry = global.PATH.configDir + path.sep + config.appEntry;
+        } else {
+            config.appEntry = (path.dirname(config.appEntry) + path.sep + path.basename(config.appEntry));
         }
-        //if only filename written
-        if(!existenceFlag) {
-            try {
-                let fullPathToAppEntry = global.PATH.configDir + path.sep + config.appEntry;
-                fs.accessSync(fullPathToAppEntry, fs.constants.R_OK | fs.constants.W_OK);
-                config.appEntry = fullPathToAppEntry;
-            } catch (err) {
-                logger.warning('There is wrong filename in appEntry in config. appEntry will be set to "false"');
-                config.appEntry = false;
-            }
+        if(!fs.existsSync(config.appEntry)) {
+            config.appEntry = global.PATH.mainDir + path.sep + config.appEntry;
         }
 
+        config.appEntry = path.resolve(config.appEntry);
     }
+}
+
+if(!fs.existsSync(config.appEntry) && config.appEntry) {
+    logger.fatal('App entry not found ' + config.appEntry);
+    process.exit(1);
 }
 
 const blockchain = new Blockchain(config);

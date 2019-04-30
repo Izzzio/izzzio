@@ -89,6 +89,32 @@ class KeyValue {
     }
 
     /**
+     * Promised get
+     * @param {string} key
+     * @param {object} options
+     * @return {Promise<any>}
+     */
+    getAsync(key, options) {
+        if(!options) {
+            options = {};
+        }
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.get(key, options, function (err, result) {
+                if(err) {
+                    return reject(err);
+                }
+
+                if(that.type === STORAGE_TYPE.LEVELDB && result.toString().includes('JSON:')) {
+                    result = JSON.parse(result.toString().replace('JSON:', ''));
+                }
+
+                resolve(result);
+            })
+        })
+    }
+
+    /**
      * Put to key-value
      * @param key
      * @param value
@@ -122,6 +148,34 @@ class KeyValue {
     }
 
     /**
+     * Promised put
+     * @param {string} key
+     * @param {string} value
+     * @param {object} options
+     * @return {Promise<any>}
+     */
+    putAsync(key, value, options) {
+        if(!options) {
+            options = {};
+        }
+
+        if(typeof value === 'object' && this.type === STORAGE_TYPE.LEVELDB) {
+            value = 'JSON:' + JSON.stringify(value);
+        }
+
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.put(key, value, options, function (err, result) {
+                if(err) {
+                    return reject(err);
+                }
+
+                resolve(result);
+            })
+        })
+    }
+
+    /**
      * Delete by key
      * @param key
      * @param options
@@ -145,6 +199,28 @@ class KeyValue {
 
     }
 
+    /**
+     * Promised delete
+     * @param {string} key
+     * @param {object} options
+     * @return {Promise<any>}
+     */
+    delAsync(key, options) {
+        if(!options) {
+            options = {};
+        }
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.del(key, options, function (err, result) {
+                if(err) {
+                    return reject(err);
+                }
+
+                resolve(result);
+            })
+        })
+    }
+
 
     /**
      * Close database
@@ -166,6 +242,19 @@ class KeyValue {
                 that.levelup.close(callback);
                 break;
         }
+    }
+
+    /**
+     * Close async
+     * @return {Promise<any>}
+     */
+    closeAsync() {
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.close(function () {
+                resolve(result);
+            })
+        })
     }
 
     /**
@@ -199,6 +288,19 @@ class KeyValue {
         }
     }
 
+    /**
+     * Async clear
+     * @return {Promise<any>}
+     */
+    clearAsync() {
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.clear(function () {
+                resolve(result);
+            })
+        })
+    }
+
     save(callback) {
         let that = this;
         switch (that.type) {
@@ -216,6 +318,19 @@ class KeyValue {
                 }
                 break;
         }
+    }
+
+    /**
+     * Async save
+     * @return {Promise<any>}
+     */
+    saveAsync() {
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.save(function () {
+                resolve(result);
+            })
+        })
     }
 }
 

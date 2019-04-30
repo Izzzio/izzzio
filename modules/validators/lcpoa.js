@@ -17,7 +17,7 @@
 let blockchain = null;
 
 const Block = require('../block');
-const Signable = require('../blocks/signable');
+const Signable = require('../blocksModels/signable');
 
 /**
  * Хотим ли мы генерировать блоки поддержки сети:
