@@ -1320,7 +1320,16 @@ class EcmaContract {
             that.blockchain.generateNextBlockAuto(callBlock, function (generatedBlock) {
 
                 that.events._handleBlockReplay(generatedBlock.index, function () {
-                    that._handleBlock(JSON.parse(generatedBlock.data), generatedBlock, true, (err) => {
+                    //console.log(generatedBlock.data);
+                    let generatedBlockData = generatedBlock.data;
+                    if (typeof generatedBlockData !== "object"){
+                        try {
+                            generatedBlockData = JSON.parse(generatedBlock.data)
+                        } catch (e) {
+                            assert.assert(false, e.toString());
+                        }
+                    }
+                    that._handleBlock(generatedBlock.data, generatedBlock, true, (err) => {
                         if(err) {
                             cb(err);
                             return;
@@ -1471,7 +1480,6 @@ class EcmaContract {
     _handleContractDeploy(address, code, state, block, callback) {
         let that = this;
 
-
         /**
          * Initiate and run contract
          */
@@ -1480,7 +1488,7 @@ class EcmaContract {
             state.block = block;
             state.contractAddress = address;
             let contract = {code: code, state: state};
-
+            
             that.contracts.put(address, JSON.stringify(contract), function (err) {
                 if(err) {
                     logger.error('Contract deploy handling error');
@@ -1636,9 +1644,14 @@ class EcmaContract {
         let verifyBlock = {};
         let testWallet = new Wallet(false, that.config);
 
+        //exclude circullar links
+        let blockState={};
+        Object.assign(blockState, blockData.state);
 
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
+
+
 
                 verifyBlock = new EcmaContractDeployBlock(blockData.ecmaCode, blockData.state);
 
@@ -1656,10 +1669,11 @@ class EcmaContract {
                     return
                 }
 
-                this._handleContractDeploy(block.index, blockData.ecmaCode, blockData.state, block, callback);
+                this._handleContractDeploy(block.index, blockData.ecmaCode, blockState, block, callback);
                 break;
 
             case EcmaContractCallBlock.blockType:
+
                 verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state);
                 if(verifyBlock.data !== blockData.data) {
                     logger.error('Contract invalid data in block ' + block.index);
@@ -1675,7 +1689,7 @@ class EcmaContract {
                     return
                 }
 
-                this._handleContractCall(blockData.address, blockData.method, blockData.args, blockData.state, block, testOnly, callback);
+                this._handleContractCall(blockData.address, blockData.method, blockData.args, blockState, block, testOnly, callback);
 
                 break;
             default:
