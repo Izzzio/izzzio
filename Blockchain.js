@@ -110,6 +110,7 @@ function Blockchain(config) {
     console.log('Initialize...');
     console.log('');
     console.log('Message bus address: ' + config.recieverAddress);
+    //console.log('hash: ' + cryptography.hash(config.recieverAddress));
     console.log('');
 
     let wallet = Wallet(config.walletFile, config).init();
@@ -556,6 +557,7 @@ function Blockchain(config) {
         }
         initMessageHandler(ws);
         write(ws, metaMsg());         //посылаем метаинформацию
+
         write(ws, queryChainLengthMsg());
         write(ws, queryChainLengthMsg());
         sendAllBlockchain(ws, maxBlock - 1);
@@ -594,7 +596,6 @@ function Blockchain(config) {
             }
 
             //проверяем сообщения, содержащие информацию о блокчейне
-
             if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
                 return;
             }
