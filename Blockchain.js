@@ -110,7 +110,6 @@ function Blockchain(config) {
     console.log('Initialize...');
     console.log('');
     console.log('Message bus address: ' + config.recieverAddress);
-    //console.log('hash: ' + cryptography.hash(config.recieverAddress));
     console.log('');
 
     let wallet = Wallet(config.walletFile, config).init();
@@ -145,7 +144,8 @@ function Blockchain(config) {
         MY_PEERS: 3,
         BROADCAST: 4,
         META: 5,
-        SW_BROADCAST: 6
+        SW_BROADCAST: 6,
+        PASS: 7,
     };
 
     let maxBlock = -1;
@@ -556,6 +556,7 @@ function Blockchain(config) {
             blockchainInfo.onConnection(ws, write);
         }
         initMessageHandler(ws);
+        write(ws, passwordMsg());     //посылаем пароль
         write(ws, metaMsg());         //посылаем метаинформацию
 
         write(ws, queryChainLengthMsg());
@@ -593,6 +594,11 @@ function Blockchain(config) {
                 message = JSON.parse(data);
             } catch (e) {
                 logger.error('' + e)
+            }
+
+            //не даем обрабатывать сообщения, пока не проверили пароль входа в сеть
+            if(config.passwordForEnter && !ws.passwordChecked && message.type !== MessageType.PASS) {
+                return;
             }
 
             //проверяем сообщения, содержащие информацию о блокчейне
@@ -689,6 +695,15 @@ function Blockchain(config) {
                 case MessageType.SW_BROADCAST:
                     lastMsgIndex = starwave.handleMessage(message, messagesHandlers, ws);
                     break;
+                case MessageType.PASS:
+                    if (message.data === _getPassword()) {
+                        ws.passwordChecked = true; //флаг того, что пароль правильный и этот пир может продолжать общаться с нодой
+                    } else {
+                        //ws.passwordChecked = false;
+                        ws.close();
+                    }
+                    break;
+
             }
         });
     }
@@ -1195,6 +1210,17 @@ function Blockchain(config) {
     }
 
     /**
+     *
+     * @param pass
+     * @returns {{type: number, data: string}}
+     */
+    function passwordMsg(pass = _getPassword()) {
+        return {
+            'type': MessageType.PASS, 'data': pass,
+        }
+    }
+
+    /**
      * Write to socket
      * @param ws
      * @param message
@@ -1378,6 +1404,15 @@ function Blockchain(config) {
      */
     function rotateAddress() {
         config.recieverAddress = getid() + getid() + getid();
+    }
+
+    /**
+     * возвращает строку пароля для сравнения
+     * @returns {string}
+     * @private
+     */
+    function _getPassword() {
+        return cryptography.hash(config.passwordForEnter).toString();
     }
 
 
