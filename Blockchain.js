@@ -556,7 +556,11 @@ function Blockchain(config) {
             blockchainInfo.onConnection(ws, write);
         }
         initMessageHandler(ws);
-        write(ws, passwordMsg());     //посылаем пароль
+
+        if (config.passwordForEnter) {
+            write(ws, passwordMsg());     //посылаем пароль
+        }
+
         write(ws, metaMsg());         //посылаем метаинформацию
 
         write(ws, queryChainLengthMsg());
@@ -696,11 +700,14 @@ function Blockchain(config) {
                     lastMsgIndex = starwave.handleMessage(message, messagesHandlers, ws);
                     break;
                 case MessageType.PASS:
-                    if (message.data === _getPassword()) {
-                        ws.passwordChecked = true; //флаг того, что пароль правильный и этот пир может продолжать общаться с нодой
-                    } else {
-                        //ws.passwordChecked = false;
-                        ws.close();
+                    //проверяем пароль только если он у нас самих есть в конфиге
+                    if (config.passwordForEnter) {
+                        if (message.data === _getPassword()) {
+                            ws.passwordChecked = true; //флаг того, что пароль правильный и этот пир может продолжать общаться с нодой
+                        } else {
+                            //ws.passwordChecked = false;
+                            ws.close();
+                        }
                     }
                     break;
 
