@@ -155,6 +155,9 @@ function Blockchain(config) {
     let lastMsgIndex = 0;
     let messagesHandlers = [];
 
+    let passwordMessageSendingIntervalTimer; //object for saving interval timer for  password echange procedure
+    let passwordMessageSendingInterval = 2000; //period for password exchange iterations
+
     /**
      * Модуль, работающий с блоками разных типов
      * @type {BlockHandler}
@@ -558,6 +561,7 @@ function Blockchain(config) {
         initMessageHandler(ws);
 
         if (config.passwordForEnter) {
+           // passwordMessageSendingIntervalTimer = setInterval
             write(ws, passwordMsg());     //посылаем пароль
         }
 
@@ -600,18 +604,18 @@ function Blockchain(config) {
                 logger.error('' + e)
             }
 
-            //не даем обрабатывать сообщения, пока не проверили пароль входа в сеть
-            if(config.passwordForEnter && !ws.passwordChecked && message.type !== MessageType.PASS) {
+            //не даем обрабатывать сообщения(кроме метаинформации), пока не проверили пароль входа в сеть
+            if(config.passwordForEnter && !ws.passwordChecked && message.type !== MessageType.PASS && message.type !== MessageType.META) {
+                return;
+            }
+
+            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета(пропускаем только парольные)
+            if(!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData && message.type !== MessageType.PASS) {
                 return;
             }
 
             //проверяем сообщения, содержащие информацию о блокчейне
             if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
-                return;
-            }
-
-            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
-            if(!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData) {
                 return;
             }
 
@@ -700,19 +704,54 @@ function Blockchain(config) {
                     lastMsgIndex = starwave.handleMessage(message, messagesHandlers, ws);
                     break;
                 case MessageType.PASS:
-                    //проверяем пароль только если он у нас самих есть в конфиге
-                    if (config.passwordForEnter) {
-                        if (message.data === _getPassword()) {
-                            ws.passwordChecked = true; //флаг того, что пароль правильный и этот пир может продолжать общаться с нодой
-                        } else {
-                            //ws.passwordChecked = false;
-                            ws.close();
-                        }
-                    }
+                    passwordCheckingProtocol(ws, message);
                     break;
 
             }
         });
+    }
+
+    /**
+     * процедура обмена паролями сокетов друг с другом
+     * @param ws
+     * @param message
+     */
+    function passwordCheckingProtocol(ws, message) {
+        //проверяем пароль только если он у нас самих есть в конфиге
+        if (config.passwordForEnter) {
+            if (message.data === ''){
+                //данные пустые, значит, пришел запрос кодовой фразы
+                let ourKeyWord = getid() + getid();
+                write(ws, passwordMsg(ourKeyWord, true));
+                ws.keyWord = ourKeyWord;
+            } else {
+                //если нет, значит, либо пришел хэш для проверки, либо пришло сообщение с keyWord в ответ на запрос
+                if (message.keyWordResponse) {
+                    //ответ на запрос кодового слова(посылаем хэш keyword + pass) с запрошенным кодовым словом в поле data
+                    let externalKeyWord = message.data;
+                    //складываем внешнее кодовое слово с нашим паролем и отправляем
+                    let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord));
+                    write(ws, passMes);
+                } else {
+                    //пришел хэш для проверки
+                    if (ws.keyWord) {
+                        //если есть кодовое слово, связанное с сокетом, то проверяем
+                        if (message.data === _getPassPhraseForChecking(ws.keyWord)) {
+                            ws.passwordChecked = true; //флаг того, что пароль правильный и этот пир может продолжать общаться с нодой
+                        } else {
+                            //снимаем кодовое слово с этого сокета(для повторной проверки потребуется новое)
+                            ws.keyWord = undefined;
+                            //разрываем соединение
+                            ws.passwordChecked = undefined;
+                            ws.close();
+                        }
+                    } else {
+                        //непонятное сообщение. игнорируем его
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1217,13 +1256,14 @@ function Blockchain(config) {
     }
 
     /**
-     *
-     * @param pass
-     * @returns {{type: number, data: string}}
+     * message for initiating password procedure
+     * @param data
+     * @param keyWordResponse //ставится true ТОЛЬКО если в data посылается keyWord при ответе на запрос этого ключевого слова
+     * @returns {{type: number, data: *, response }}
      */
-    function passwordMsg(pass = _getPassword()) {
+    function passwordMsg(data, keyWordResponse) {
         return {
-            'type': MessageType.PASS, 'data': pass,
+            'type': MessageType.PASS, 'data': data, 'keyWordResponse': keyWordResponse,
         }
     }
 
@@ -1418,8 +1458,8 @@ function Blockchain(config) {
      * @returns {string}
      * @private
      */
-    function _getPassword() {
-        return cryptography.hash(config.passwordForEnter).toString();
+    function _getPassPhraseForChecking(keyWord) {
+        return cryptography.hash(config.passwordForEnter + keyWord).toString();
     }
 
 
