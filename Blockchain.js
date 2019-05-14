@@ -562,7 +562,7 @@ function Blockchain(config) {
 
         if (config.passwordForEnter) {
            // passwordMessageSendingIntervalTimer = setInterval
-            write(ws, passwordMsg());     //посылаем пароль
+            write(ws, passwordMsg());     //посылаем запрос на ключевое слово
         }
 
         write(ws, metaMsg());         //посылаем метаинформацию
@@ -739,6 +739,7 @@ function Blockchain(config) {
                         if (message.data === _getPassPhraseForChecking(ws.keyWord)) {
                             ws.passwordChecked = true; //флаг того, что пароль правильный и этот пир может продолжать общаться с нодой
                         } else {
+                            //не прошел проверку.
                             //снимаем кодовое слово с этого сокета(для повторной проверки потребуется новое)
                             ws.keyWord = undefined;
                             //разрываем соединение
@@ -1261,7 +1262,7 @@ function Blockchain(config) {
      * @param keyWordResponse //ставится true ТОЛЬКО если в data посылается keyWord при ответе на запрос этого ключевого слова
      * @returns {{type: number, data: *, response }}
      */
-    function passwordMsg(data, keyWordResponse) {
+    function passwordMsg(data = '', keyWordResponse) {
         return {
             'type': MessageType.PASS, 'data': data, 'keyWordResponse': keyWordResponse,
         }
