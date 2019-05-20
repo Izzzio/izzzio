@@ -719,11 +719,12 @@ function Blockchain(config) {
     function passwordCheckingProtocol(ws, message) {
         //проверяем пароль только если он у нас самих есть в конфиге
         if (config.passwordForEnter) {
-            if (message.data === ''){
-                //данные пустые, значит, пришел запрос кодовой фразы
+            if (message.data === '' && !ws.keyWord){
+                //данные пустые,и с сокетом не связано кодовое слово, значит, пришел запрос кодовой фразы
                 let ourKeyWord = getid() + getid();
                 write(ws, passwordMsg(ourKeyWord, true));
                 ws.keyWord = ourKeyWord;
+                console.log("COMPLETE HASH="+_getPassPhraseForChecking(ourKeyWord));
             } else {
                 //если нет, значит, либо пришел хэш для проверки, либо пришло сообщение с keyWord в ответ на запрос
                 if (message.keyWordResponse) {
@@ -731,6 +732,7 @@ function Blockchain(config) {
                     let externalKeyWord = message.data;
                     //складываем внешнее кодовое слово с нашим паролем и отправляем
                     let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord));
+
                     write(ws, passMes);
                 } else {
                     //пришел хэш для проверки
