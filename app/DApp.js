@@ -97,7 +97,8 @@ class DApp {
             accounting: {
                 wallet: {
                     getCurrent: that.getCurrentWallet
-                }
+                },
+                manager: this.accounts
             }
         };
 

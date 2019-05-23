@@ -4,8 +4,6 @@
  */
 
 const fs = require('fs');
-const Transaction = require("./blocksModels/transaction");
-const WalletRegister = require("./blocksModels/walletRegister");
 const moment = require('moment');
 const formatToken = require('./formatToken');
 const storj = require('./instanceStorage');
@@ -71,11 +69,6 @@ let Wallet = function (walletFile, config) {
      */
     wallet.addressBook = {};
 
-    /**
-     * Transanctions queue
-     * @type {Array}
-     */
-    wallet.transanctions = [];
 
     /**
      Кошелёк утверждён блокчейном
@@ -119,12 +112,6 @@ let Wallet = function (walletFile, config) {
             wallet.addressBook = walletData.addressBook;
             wallet.block = walletData.block;
             wallet.accepted = walletData.accepted;
-
-            //1.0.4b bug workaround
-            //wallet.keysPair.private = repairKey(wallet.keysPair.private);
-            //wallet.keysPair.public = repairKey(wallet.keysPair.public);
-            //1.0.4b bug workaround
-
 
         } catch (e) {
             wallet.log('Error: Invalid wallet file!');
@@ -278,53 +265,9 @@ let Wallet = function (walletFile, config) {
             return false;
         }
 
-        let walletCreateBlock = new WalletRegister(wallet.id);
-        walletCreateBlock = wallet.signBlock(walletCreateBlock);
-        wallet.transanctions.push(walletCreateBlock);
-
         return true;
     };
 
-    /**
-     * Создает транзакцию
-     * @param to ONLY CORRECT WALLET NUMBER!!!
-     * @param {Number} amount
-     * @param {Number|null} fromTimestamp - transaction activation timestamp in UTC
-     * @param {Boolean} keyringed
-     */
-    wallet.transact = function (to, amount, fromTimestamp, keyringed) {
-        //запрещаем транзакции если установлен флаг
-        if(config.disableInternalToken) {
-            return false;
-        }
-        to = String(to);
-        amount = Number(amount);
-
-        //1.0.4b bug workaround
-       // wallet.keysPair.private = repairKey(wallet.keysPair.private);
-       // wallet.keysPair.public = repairKey(wallet.keysPair.public);
-        //1.0.4b bug workaround
-
-        if(wallet.block === -1) {
-            wallet.log('Error: Wallet not registered!');
-            return false;
-        }
-
-        if(wallet.balance < amount && !keyringed) {
-            wallet.log('Error: Insufficient funds');
-            return false;
-        }
-
-        if(!fromTimestamp) {
-            fromTimestamp = moment().utc().valueOf();
-        }
-
-        let transaction = new Transaction(wallet.id, to, amount, moment().utc().valueOf(), fromTimestamp);
-        transaction = wallet.signBlock(transaction);
-        wallet.transanctions.push(transaction);
-
-        return true;
-    };
 
     wallet.update = function () {
         wallet.log('Info: Wallet balance: ' + formatToken(wallet.balance, config.precision));
