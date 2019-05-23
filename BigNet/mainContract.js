@@ -39,6 +39,9 @@ const CONTRACT_OWNER = '-----BEGIN RSA PUBLIC KEY-----\n' +
     'eIC3eapWvK4HFtAtX1uIyod3LruSVssrNtLEqWOgD5MwOlv1KWAR0ZDZ3cYNL8Of8QIDAQAB\n' +
     '-----END RSA PUBLIC KEY-----\n';
 
+//Real net config
+//const CONTRACT_OWNER = 'izM1Tr1nhKaeDMqUaZjHqaWzjZmCndnUhML';
+
 /**
  * Minimal zero-cost resources
  * @type {{timeLimit: number, callLimit: number, ram: number}}
@@ -159,7 +162,6 @@ class mainToken extends TokenContract {
 
     /**
      * Checks address type actuality
-     * TODO: Check block aviable
      * @param {string} address contract address
      */
     checkContractAddress(address) {
