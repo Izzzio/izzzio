@@ -111,6 +111,10 @@ function Blockchain(config) {
     console.log('');
     console.log('Message bus address: ' + config.recieverAddress);
     console.log('');
+    if(config.networkPassword) {
+        console.log('Network with password access control');
+        console.log('');
+    }
 
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
@@ -144,7 +148,8 @@ function Blockchain(config) {
         MY_PEERS: 3,
         BROADCAST: 4,
         META: 5,
-        SW_BROADCAST: 6
+        SW_BROADCAST: 6,
+        PASS: 7,
     };
 
     let maxBlock = -1;
@@ -555,7 +560,13 @@ function Blockchain(config) {
             blockchainInfo.onConnection(ws, write);
         }
         initMessageHandler(ws);
+
+        if(config.networkPassword) {
+            write(ws, passwordMsg());     //посылаем запрос на ключевое слово
+        }
+
         write(ws, metaMsg());         //посылаем метаинформацию
+
         write(ws, queryChainLengthMsg());
         write(ws, queryChainLengthMsg());
         sendAllBlockchain(ws, maxBlock - 1);
@@ -590,17 +601,25 @@ function Blockchain(config) {
             try {
                 message = JSON.parse(data);
             } catch (e) {
-                logger.error('' + e)
-            }
-
-            //проверяем сообщения, содержащие информацию о блокчейне
-
-            if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
+                if(config.program.verbose) {
+                    logger.error(e);
+                }
+                data = null;
                 return;
             }
 
-            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
-            if(!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData) {
+            //не даем обрабатывать сообщения(кроме метаинформации), пока не проверили пароль входа в сеть
+            if(config.networkPassword && !ws.passwordChecked && message.type !== MessageType.PASS && message.type !== MessageType.META) {
+                return;
+            }
+
+            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета(пропускаем только парольные)
+            if(!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData && message.type !== MessageType.PASS) {
+                return;
+            }
+
+            //проверяем сообщения, содержащие информацию о блокчейне
+            if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
                 return;
             }
 
@@ -688,8 +707,63 @@ function Blockchain(config) {
                 case MessageType.SW_BROADCAST:
                     lastMsgIndex = starwave.handleMessage(message, messagesHandlers, ws);
                     break;
+                case MessageType.PASS:
+                    passwordCheckingProtocol(ws, message);
+                    break;
+
             }
         });
+    }
+
+    /**
+     * процедура обмена паролями сокетов друг с другом
+     * @param ws
+     * @param message
+     */
+    function passwordCheckingProtocol(ws, message) {
+        //проверяем пароль только если он у нас самих есть в конфиге
+        if(config.networkPassword) {
+            if(message.data === '' && !ws.keyWord) {
+                //данные пустые,и с сокетом не связано кодовое слово, значит, пришел запрос кодовой фразы
+                let ourKeyWord = getid() + getid();
+                write(ws, passwordMsg(ourKeyWord, true));
+                ws.keyWord = ourKeyWord;
+                if(config.program.verbose) {
+                    logger.info("Connection digest hash generated " + _getPassPhraseForChecking(ourKeyWord));
+                }
+            } else {
+                //если нет, значит, либо пришел хэш для проверки, либо пришло сообщение с keyWord в ответ на запрос
+                if(message.keyWordResponse) {
+                    //ответ на запрос кодового слова(посылаем хэш keyword + pass) с запрошенным кодовым словом в поле data
+                    let externalKeyWord = message.data;
+                    //складываем внешнее кодовое слово с нашим паролем и отправляем
+                    let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord));
+
+                    write(ws, passMes);
+                } else {
+                    //пришел хэш для проверки
+                    if(ws.keyWord) {
+                        //если есть кодовое слово, связанное с сокетом, то проверяем
+                        if(message.data === _getPassPhraseForChecking(ws.keyWord)) {
+                            ws.passwordChecked = true; //флаг того, что пароль правильный и этот пир может продолжать общаться с нодой
+                        } else {
+                            if(config.program.verbose) {
+                                logger.error('Connection digest hash invalid ' + message.data + ' vs ' + _getPassPhraseForChecking(ws.keyWord) + ' from ' + ws._socket.remoteAddress);
+                            }
+                            //не прошел проверку.
+                            //снимаем кодовое слово с этого сокета(для повторной проверки потребуется новое)
+                            ws.keyWord = undefined;
+                            //разрываем соединение
+                            ws.passwordChecked = undefined;
+                            ws.close();
+                        }
+                    } else {
+                        //непонятное сообщение. игнорируем его
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1196,6 +1270,18 @@ function Blockchain(config) {
     }
 
     /**
+     * message for initiating password procedure
+     * @param data
+     * @param keyWordResponse //ставится true ТОЛЬКО если в data посылается keyWord при ответе на запрос этого ключевого слова
+     * @returns {{type: number, data: *, response }}
+     */
+    function passwordMsg(data = '', keyWordResponse) {
+        return {
+            'type': MessageType.PASS, 'data': data, 'keyWordResponse': keyWordResponse,
+        }
+    }
+
+    /**
      * Write to socket
      * @param ws
      * @param message
@@ -1218,7 +1304,9 @@ function Blockchain(config) {
     const broadcast = function (message, excludeIp) {
         sockets.forEach(function (socket) {
             if(typeof excludeIp === 'undefined' || socket._socket.recieverAddress !== excludeIp) {
-                write(socket, message);
+                if(socketPasswordOk(socket)) {
+                    write(socket, message);
+                }
             } else {
 
             }
@@ -1230,6 +1318,19 @@ function Blockchain(config) {
      */
     function broadcastConnectedPeers() {
         broadcast(peersBroadcast(getCurrentPeers()));
+    }
+
+    /**
+     * Прошёл-ли сокет проверку пароля
+     * @param socket
+     * @return {boolean}
+     */
+    function socketPasswordOk(socket) {
+        if(config.networkPassword) {
+            return !!socket.passwordChecked;
+        } else {
+            return true;
+        }
     }
 
     /**
@@ -1289,7 +1390,7 @@ function Blockchain(config) {
      */
     function getCurrentPeers(fullSockets) {
         return sockets.map(function (s) {
-            if(s && s.readyState === 1) {
+            if(s && s.readyState === 1 && socketPasswordOk(s)) {
                 if(fullSockets) {
                     return s;
                 } else {
@@ -1379,6 +1480,15 @@ function Blockchain(config) {
      */
     function rotateAddress() {
         config.recieverAddress = getid() + getid() + getid();
+    }
+
+    /**
+     * возвращает строку пароля для сравнения
+     * @returns {string}
+     * @private
+     */
+    function _getPassPhraseForChecking(keyWord) {
+        return cryptography.hash(config.networkPassword + keyWord).toString();
     }
 
 
