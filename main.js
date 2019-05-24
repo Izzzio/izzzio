@@ -121,6 +121,7 @@ const config = {
 
     //Application
     appEntry: false,       //Точка входа в "приложение". False - если не требуется
+    startMessage: false,   //Сообщение, которое выводится при запуске ноды
 
     //SmartContracts
     ecmaContract: {
@@ -262,6 +263,10 @@ if(global.PATH.configDir) {
 if(!fs.existsSync(config.appEntry) && config.appEntry) {
     logger.fatal('App entry not found ' + config.appEntry);
     process.exit(1);
+}
+
+if(config.startMessage) {
+    console.log(config.startMessage);
 }
 
 const blockchain = new Blockchain(config);

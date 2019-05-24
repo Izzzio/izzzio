@@ -949,7 +949,9 @@ function Blockchain(config) {
                     ws.close();
                 });
             } catch (e) {
-                console.log(e);
+                if(config.program.verbose) {
+                    logger.error(e);
+                }
             }
         });
     }
