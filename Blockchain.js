@@ -736,7 +736,7 @@ function Blockchain(config) {
      */
     function passwordCheckingProtocol(ws, message) {
 
-        if(message.myName === config.recieverAddress){
+        if(message.myName === config.recieverAddress) {
             ws.close();
             return;
         }
@@ -763,7 +763,7 @@ function Blockchain(config) {
                     //ответ на запрос кодового слова(посылаем хэш keyword + pass) с запрошенным кодовым словом в поле data
                     let externalKeyWord = message.data;
                     //складываем внешнее кодовое слово с нашим паролем и отправляем
-                    let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord),undefined, config.recieverAddress);
+                    let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord), undefined, config.recieverAddress);
 
                     write(ws, passMes);
                 } else {
