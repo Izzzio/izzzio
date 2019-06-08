@@ -716,17 +716,37 @@ function Blockchain(config) {
     }
 
     /**
+     * есть ли пришедшее кодовое слово в списке отосланных нами
+     * @param keyWord
+     * @returns {boolean}
+     */
+    function checkKeyWordExistence(keyWord) {
+        for (let socket of sockets) {
+            if(socket.keyWord === keyWord) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * процедура обмена паролями сокетов друг с другом
      * @param ws
      * @param message
      */
     function passwordCheckingProtocol(ws, message) {
+
+        if(message.myName === config.recieverAddress) {
+            ws.close();
+            return;
+        }
+
         //проверяем пароль только если он у нас самих есть в конфиге
         if(config.networkPassword) {
-            if(message.data === '' && !ws.keyWord) {
-                //данные пустые,и с сокетом не связано кодовое слово, значит, пришел запрос кодовой фразы
+            if(message.data === '') {
+                //данные пустые, значит, пришел запрос кодовой фразы
                 let ourKeyWord = getid() + getid();
-                write(ws, passwordMsg(ourKeyWord, true));
+                write(ws, passwordMsg(ourKeyWord, true, config.recieverAddress));
                 ws.keyWord = ourKeyWord;
                 if(config.program.verbose) {
                     logger.info("Connection digest hash generated " + _getPassPhraseForChecking(ourKeyWord));
@@ -734,10 +754,16 @@ function Blockchain(config) {
             } else {
                 //если нет, значит, либо пришел хэш для проверки, либо пришло сообщение с keyWord в ответ на запрос
                 if(message.keyWordResponse) {
+                    //проверяем, нет ли присланного слова в нашем списке сохраненных. если есть, то запрашиваем новое кодовое слово.
+                    if(checkKeyWordExistence(message.data)) {
+                        write(ws, passwordMsg(undefined, undefined, config.recieverAddress));
+                        return;
+                    }
+
                     //ответ на запрос кодового слова(посылаем хэш keyword + pass) с запрошенным кодовым словом в поле data
                     let externalKeyWord = message.data;
                     //складываем внешнее кодовое слово с нашим паролем и отправляем
-                    let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord));
+                    let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord), undefined, config.recieverAddress);
 
                     write(ws, passMes);
                 } else {
@@ -751,7 +777,7 @@ function Blockchain(config) {
                                 logger.error('Connection digest hash invalid ' + message.data + ' vs ' + _getPassPhraseForChecking(ws.keyWord) + ' from ' + ws._socket.remoteAddress);
                             }
                             //не прошел проверку.
-                            //снимаем кодовое слово с этого сокета(для повторной проверки потребуется новое)
+                            //снимаем кодовое слово с этого сокета
                             ws.keyWord = undefined;
                             //разрываем соединение
                             ws.passwordChecked = undefined;
@@ -932,7 +958,7 @@ function Blockchain(config) {
 
         newPeers.forEach((peer) => {
 
-            if(peers.indexOf(peer) !== -1) {
+            if(peers.indexOf(peer) !== -1 || typeof peer !== 'string') {
                 return;
             }
 
@@ -1273,11 +1299,12 @@ function Blockchain(config) {
      * message for initiating password procedure
      * @param data
      * @param keyWordResponse //ставится true ТОЛЬКО если в data посылается keyWord при ответе на запрос этого ключевого слова
+     * @param myName идентефикатор ноды для обнаружения себя
      * @returns {{type: number, data: *, response }}
      */
-    function passwordMsg(data = '', keyWordResponse) {
+    function passwordMsg(data = '', keyWordResponse, myName) {
         return {
-            'type': MessageType.PASS, 'data': data, 'keyWordResponse': keyWordResponse,
+            'type': MessageType.PASS, 'data': data, 'keyWordResponse': keyWordResponse, 'myName': myName,
         }
     }
 
