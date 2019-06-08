@@ -24,6 +24,9 @@ keyring.json
 testApp.zip
 transactions.db
 wallet.json
+wallet1.json
 DHtest
 EcmaContracts
 out
+emerge
+runtime2
