@@ -443,35 +443,41 @@ function Blockchain(config) {
      */
     function initP2PServer() {
 
-        let wss = null;
-        if(config.sslMode) {
-            const https = require('https');
-            const server = https.createServer().listen(config.p2pPort);
-            wss = new WebSocket.Server({server});
-            console.log("\n!!!Warning: Node running in SSL mode. This mode can be used only by public nodes with correct certeficate.\n")
-        } else {
-            wss = new WebSocket.Server({port: config.p2pPort, perMessageDeflate: false});
-        }
-
-        wss.on('connection', function (ws) {
-            if(config.program.verbose) {
-                logger.info('Input connection ' + ws._socket.remoteAddress);
+        if(!config.program.leechMode) {
+            let wss = null;
+            if(config.sslMode) {
+                const https = require('https');
+                const server = https.createServer().listen(config.p2pPort);
+                wss = new WebSocket.Server({server});
+                console.log("\n!!!Warning: Node running in SSL mode. This mode can be used only by public nodes with correct certificate.\n")
+            } else {
+                wss = new WebSocket.Server({port: config.p2pPort, perMessageDeflate: false});
             }
-            initConnection(ws)
-        });
-        logger.init('Listening p2p port on: ' + config.p2pPort);
+
+            wss.on('connection', function (ws) {
+                if(config.program.verbose) {
+                    logger.info('Input connection ' + ws._socket.remoteAddress);
+                }
+                initConnection(ws)
+            });
+            logger.init('Listening p2p port on: ' + config.p2pPort);
+        } else {
+            logger.warning('P2P server disabled by leech mode');
+        }
 
         if(config.upnp.enabled) {
 
-            //Node info broadcast
-            upnpAdvertisment = new dnssd.Advertisement(dnssd.tcp(config.upnp.token), config.p2pPort, {
-                txt: {
-                    GT: String(getGenesisBlock().timestamp),
-                    RA: config.recieverAddress,
-                    type: 'Generic iZ3 Node'
-                }
-            });
-            upnpAdvertisment.start();
+            if(!config.program.leechMode) {
+                //Node info broadcast
+                upnpAdvertisment = new dnssd.Advertisement(dnssd.tcp(config.upnp.token), config.p2pPort, {
+                    txt: {
+                        GT: String(getGenesisBlock().timestamp),
+                        RA: config.recieverAddress,
+                        type: 'Generic iZ3 Node'
+                    }
+                });
+                upnpAdvertisment.start();
+            }
 
             //Detecting other nodes
             upnpBrowser = dnssd.Browser(dnssd.tcp(config.upnp.token))
@@ -495,7 +501,7 @@ function Blockchain(config) {
 
                     for (let a in service.addresses) {
                         if(service.addresses.hasOwnProperty(a)) {
-                            service.addresses[a] = 'ws://' + service.addresses + ':' + service.port;
+                            service.addresses[a] = 'ws://' + service.addresses[a] + ':' + service.port;
                         }
                     }
 
@@ -716,17 +722,37 @@ function Blockchain(config) {
     }
 
     /**
+     * есть ли пришедшее кодовое слово в списке отосланных нами
+     * @param keyWord
+     * @returns {boolean}
+     */
+    function checkKeyWordExistence(keyWord) {
+        for (let socket of sockets) {
+            if(socket.keyWord === keyWord) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * процедура обмена паролями сокетов друг с другом
      * @param ws
      * @param message
      */
     function passwordCheckingProtocol(ws, message) {
+
+        if(message.myName === config.recieverAddress) {
+            ws.close();
+            return;
+        }
+
         //проверяем пароль только если он у нас самих есть в конфиге
         if(config.networkPassword) {
-            if(message.data === '' && !ws.keyWord) {
-                //данные пустые,и с сокетом не связано кодовое слово, значит, пришел запрос кодовой фразы
+            if(message.data === '') {
+                //данные пустые, значит, пришел запрос кодовой фразы
                 let ourKeyWord = getid() + getid();
-                write(ws, passwordMsg(ourKeyWord, true));
+                write(ws, passwordMsg(ourKeyWord, true, config.recieverAddress));
                 ws.keyWord = ourKeyWord;
                 if(config.program.verbose) {
                     logger.info("Connection digest hash generated " + _getPassPhraseForChecking(ourKeyWord));
@@ -734,10 +760,16 @@ function Blockchain(config) {
             } else {
                 //если нет, значит, либо пришел хэш для проверки, либо пришло сообщение с keyWord в ответ на запрос
                 if(message.keyWordResponse) {
+                    //проверяем, нет ли присланного слова в нашем списке сохраненных. если есть, то запрашиваем новое кодовое слово.
+                    if(checkKeyWordExistence(message.data)) {
+                        write(ws, passwordMsg(undefined, undefined, config.recieverAddress));
+                        return;
+                    }
+
                     //ответ на запрос кодового слова(посылаем хэш keyword + pass) с запрошенным кодовым словом в поле data
                     let externalKeyWord = message.data;
                     //складываем внешнее кодовое слово с нашим паролем и отправляем
-                    let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord));
+                    let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord), undefined, config.recieverAddress);
 
                     write(ws, passMes);
                 } else {
@@ -751,7 +783,7 @@ function Blockchain(config) {
                                 logger.error('Connection digest hash invalid ' + message.data + ' vs ' + _getPassPhraseForChecking(ws.keyWord) + ' from ' + ws._socket.remoteAddress);
                             }
                             //не прошел проверку.
-                            //снимаем кодовое слово с этого сокета(для повторной проверки потребуется новое)
+                            //снимаем кодовое слово с этого сокета
                             ws.keyWord = undefined;
                             //разрываем соединение
                             ws.passwordChecked = undefined;
@@ -932,7 +964,7 @@ function Blockchain(config) {
 
         newPeers.forEach((peer) => {
 
-            if(peers.indexOf(peer) !== -1) {
+            if(peers.indexOf(peer) !== -1 || typeof peer !== 'string') {
                 return;
             }
 
@@ -1273,11 +1305,12 @@ function Blockchain(config) {
      * message for initiating password procedure
      * @param data
      * @param keyWordResponse //ставится true ТОЛЬКО если в data посылается keyWord при ответе на запрос этого ключевого слова
+     * @param myName идентефикатор ноды для обнаружения себя
      * @returns {{type: number, data: *, response }}
      */
-    function passwordMsg(data = '', keyWordResponse) {
+    function passwordMsg(data = '', keyWordResponse, myName) {
         return {
-            'type': MessageType.PASS, 'data': data, 'keyWordResponse': keyWordResponse,
+            'type': MessageType.PASS, 'data': data, 'keyWordResponse': keyWordResponse, 'myName': myName,
         }
     }
 

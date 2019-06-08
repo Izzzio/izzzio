@@ -45,6 +45,7 @@ program
     .option('--verbose', 'More logging info', false)
     .option('--enable-address-rotation', 'Activates the rotation of the addresses', false)
     .option('--no-splash', 'Disable splash screen', false)
+    .option('--leech-mode', 'Disable p2p server', false)
     .parse(process.argv);
 
 const getid = require('./modules/getid');
