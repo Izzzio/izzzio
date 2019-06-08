@@ -443,35 +443,41 @@ function Blockchain(config) {
      */
     function initP2PServer() {
 
-        let wss = null;
-        if(config.sslMode) {
-            const https = require('https');
-            const server = https.createServer().listen(config.p2pPort);
-            wss = new WebSocket.Server({server});
-            console.log("\n!!!Warning: Node running in SSL mode. This mode can be used only by public nodes with correct certeficate.\n")
-        } else {
-            wss = new WebSocket.Server({port: config.p2pPort, perMessageDeflate: false});
-        }
-
-        wss.on('connection', function (ws) {
-            if(config.program.verbose) {
-                logger.info('Input connection ' + ws._socket.remoteAddress);
+        if(!config.program.leechMode) {
+            let wss = null;
+            if(config.sslMode) {
+                const https = require('https');
+                const server = https.createServer().listen(config.p2pPort);
+                wss = new WebSocket.Server({server});
+                console.log("\n!!!Warning: Node running in SSL mode. This mode can be used only by public nodes with correct certificate.\n")
+            } else {
+                wss = new WebSocket.Server({port: config.p2pPort, perMessageDeflate: false});
             }
-            initConnection(ws)
-        });
-        logger.init('Listening p2p port on: ' + config.p2pPort);
+
+            wss.on('connection', function (ws) {
+                if(config.program.verbose) {
+                    logger.info('Input connection ' + ws._socket.remoteAddress);
+                }
+                initConnection(ws)
+            });
+            logger.init('Listening p2p port on: ' + config.p2pPort);
+        } else {
+            logger.warning('P2P server disabled by leech mode');
+        }
 
         if(config.upnp.enabled) {
 
-            //Node info broadcast
-            upnpAdvertisment = new dnssd.Advertisement(dnssd.tcp(config.upnp.token), config.p2pPort, {
-                txt: {
-                    GT: String(getGenesisBlock().timestamp),
-                    RA: config.recieverAddress,
-                    type: 'Generic iZ3 Node'
-                }
-            });
-            upnpAdvertisment.start();
+            if(!config.program.leechMode) {
+                //Node info broadcast
+                upnpAdvertisment = new dnssd.Advertisement(dnssd.tcp(config.upnp.token), config.p2pPort, {
+                    txt: {
+                        GT: String(getGenesisBlock().timestamp),
+                        RA: config.recieverAddress,
+                        type: 'Generic iZ3 Node'
+                    }
+                });
+                upnpAdvertisment.start();
+            }
 
             //Detecting other nodes
             upnpBrowser = dnssd.Browser(dnssd.tcp(config.upnp.token))
@@ -495,7 +501,7 @@ function Blockchain(config) {
 
                     for (let a in service.addresses) {
                         if(service.addresses.hasOwnProperty(a)) {
-                            service.addresses[a] = 'ws://' + service.addresses + ':' + service.port;
+                            service.addresses[a] = 'ws://' + service.addresses[a] + ':' + service.port;
                         }
                     }
 
