@@ -1373,6 +1373,8 @@ class EcmaContract {
         };
 
         if(typeof this._contractInstanceCache[address] === 'undefined') {
+
+            this._contractInstanceCache[address] = true;
             this.createContractInstance(address, code, state, function (instance) {
                 let timer = setTimeout(function () {
                     destroyInstanceTimer(instance);
@@ -1388,40 +1390,47 @@ class EcmaContract {
 
         } else {
 
-            //If contract VM disposed, create new VM
-            if(this._contractInstanceCache[address].instance.vm.isolate.isDisposed) {
+            if(this._contractInstanceCache[address] === true) {
+                setTimeout(function () {
+                    that.getOrCreateContractInstance(address, code, state, cb);
+                }, 100);
+            } else {
 
-                let code = this._contractInstanceCache[address].instance.vm.script;
-                clearTimeout(this._contractInstanceCache[address].timer);
-                try {
+                //If contract VM disposed, create new VM
+                if(this._contractInstanceCache[address].instance.vm.isolate.isDisposed) {
 
-                    this._contractInstanceCache[address].instance.vm.destroy();
-                } catch (e) {
-                }
-                try {
-                    this._contractInstanceCache[address].instance.db.close(function () {
+                    let code = this._contractInstanceCache[address].instance.vm.script;
+                    clearTimeout(this._contractInstanceCache[address].timer);
+                    try {
+
+                        this._contractInstanceCache[address].instance.vm.destroy();
+                    } catch (e) {
+                    }
+                    try {
+                        this._contractInstanceCache[address].instance.db.close(function () {
+                            that._contractInstanceCache[address] = undefined;
+                            delete that._contractInstanceCache[address];
+                            that.getOrCreateContractInstance(address, code, state, cb);
+                        });
+                    } catch (e) {
                         that._contractInstanceCache[address] = undefined;
                         delete that._contractInstanceCache[address];
                         that.getOrCreateContractInstance(address, code, state, cb);
-                    });
-                } catch (e) {
-                    that._contractInstanceCache[address] = undefined;
-                    delete that._contractInstanceCache[address];
-                    that.getOrCreateContractInstance(address, code, state, cb);
-                }
-            } else {
-
-                clearTimeout(this._contractInstanceCache[address].timer);
-                this._contractInstanceCache[address].timer = setTimeout(function () {
-                    if(that._contractInstanceCache[address]) {
-                        destroyInstanceTimer(that._contractInstanceCache[address].instance);
                     }
-                }, this._contractInstanceCacheLifetime);
+                } else {
 
-                process.nextTick(function () {
-                    cb(that._contractInstanceCache[address].instance);
-                });
+                    clearTimeout(this._contractInstanceCache[address].timer);
+                    this._contractInstanceCache[address].timer = setTimeout(function () {
+                        if(that._contractInstanceCache[address]) {
+                            destroyInstanceTimer(that._contractInstanceCache[address].instance);
+                        }
+                    }, this._contractInstanceCacheLifetime);
 
+                    process.nextTick(function () {
+                        cb(that._contractInstanceCache[address].instance);
+                    });
+
+                }
             }
         }
     }
