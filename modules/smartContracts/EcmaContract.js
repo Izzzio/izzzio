@@ -65,6 +65,11 @@ class EcmaContract {
         this.cryptography = storj.get('cryptography');
 
         /**
+         * @var {Plugins}
+         */
+        this.plugins = storj.get('plugins');
+
+        /**
          * @var{AccountManager}
          */
         this.accountManager = storj.get('accountManager');
@@ -907,6 +912,7 @@ class EcmaContract {
         vm.injectSource(__dirname + '/internalModules/TokenContractConnector.js');
         vm.injectSource(__dirname + '/internalModules/SellerContractConnector.js');
 
+        vm.setObjectGlobal('plugins', that.plugins.getAllFunctionsAsObject());
 
     }
 

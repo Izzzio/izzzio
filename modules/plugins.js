@@ -10,7 +10,24 @@ class Plugins {
      * @param {function} functionObject 
      */
     registerFunction(functionName, functionObject) {
-        this[`_${functionName}`] = functionObject;    
+        if (typeof (functionObject) === 'function') {
+            this[`_${functionName}`] = functionObject;
+        } else {
+            logger.warning(`Object registered by name ${functionName} is not a function. Registration canceled.`)
+        }
+    }
+
+    /**
+     * returns object 
+     */
+    getAllFunctionsAsObject() {
+        let obj = {};
+        for(let prop in this) {
+            if (prop !== 'getAllFunctionsAsObject' && prop !== 'registerFunction') {
+                obj[prop] = this[prop];    
+            }
+        }
+        return obj;
     }
 }
 
