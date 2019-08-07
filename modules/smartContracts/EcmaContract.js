@@ -912,7 +912,7 @@ class EcmaContract {
         vm.injectSource(__dirname + '/internalModules/TokenContractConnector.js');
         vm.injectSource(__dirname + '/internalModules/SellerContractConnector.js');
 
-        vm.setObjectGlobal('plugins', that.plugins.getAllFunctionsAsObject());
+        vm.setObjectGlobal('plugins', that.plugins.getAllRegisteredFunctionsAsObject());
 
     }
 

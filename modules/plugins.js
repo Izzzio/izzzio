@@ -20,7 +20,7 @@ class Plugins {
     /**
      * returns object 
      */
-    getAllFunctionsAsObject() {
+    getAllRegisteredFunctionsAsObject() {
         let obj = {};
         for(let prop in this) {
             if (prop !== 'getAllFunctionsAsObject' && prop !== 'registerFunction') {
