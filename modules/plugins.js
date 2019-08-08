@@ -9,9 +9,18 @@ class Plugins {
      * @param {string} functionName 
      * @param {function} functionObject 
      */
-    registerFunction(functionName, functionObject) {
+    registerFunction(functionName, functionObject, namespace = 'common') {
         if (typeof (functionObject) === 'function') {
-            this[`_${functionName}`] = functionObject;
+            if (namespace) {
+                //check if we already have such namespace. if not, we create
+                if (!this[namespace]) {
+                    this[namespace] = {};    
+                }
+                this[namespace][`_${functionName}`] = functionObject;
+            } else {
+                logger.warning(`You cannot register  without namespace`);
+                return;
+            }
         } else {
             logger.warning(`Object registered by name ${functionName} is not a function. It's registration canceled.`)
         }

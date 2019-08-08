@@ -887,6 +887,11 @@ class EcmaContract {
         });
 
         /**
+         * Support external plugins
+         */
+        vm.setObjectGlobal('plugins', that.plugins.getAllRegisteredFunctionsAsObject());
+
+        /**
          * Support for require external contracts
          */
         vm.injectSource(__dirname + '/internalModules/Require.js');
@@ -912,7 +917,7 @@ class EcmaContract {
         vm.injectSource(__dirname + '/internalModules/TokenContractConnector.js');
         vm.injectSource(__dirname + '/internalModules/SellerContractConnector.js');
 
-        vm.setObjectGlobal('plugins', that.plugins.getAllRegisteredFunctionsAsObject());
+        
 
     }
 
