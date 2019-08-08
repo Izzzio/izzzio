@@ -38,6 +38,11 @@ function Blockchain(config) {
     //Crypto
     //const CryptoJS = require("crypto-js");
 
+    //Plugins
+    const Plugins = require('./modules/plugins');
+    const plugins = new Plugins();
+    storj.put('plugins', plugins);
+
     //Networking
     const express = require("express");
     const auth = require('http-auth');

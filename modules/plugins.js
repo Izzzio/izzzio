@@ -8,6 +8,7 @@ class Plugins {
      * add external function from plugin as private function of the class
      * @param {string} functionName 
      * @param {function} functionObject 
+     * @param {string} namespace 
      */
     registerFunction(functionName, functionObject, namespace = 'common') {
         if (typeof (functionObject) === 'function') {
@@ -16,7 +17,7 @@ class Plugins {
                 if (!this[namespace]) {
                     this[namespace] = {};    
                 }
-                this[namespace][`_${functionName}`] = functionObject;
+                this[namespace][`${functionName}`] = functionObject;
             } else {
                 logger.warning(`You cannot register  without namespace`);
                 return;
@@ -27,7 +28,7 @@ class Plugins {
     }
 
     /**
-     * returns object 
+     * returns object of all registered plugins
      */
     getAllRegisteredFunctionsAsObject() {
         let obj = {};
