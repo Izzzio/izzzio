@@ -13,7 +13,7 @@ class Plugins {
         if (typeof (functionObject) === 'function') {
             this[`_${functionName}`] = functionObject;
         } else {
-            logger.warning(`Object registered by name ${functionName} is not a function. Registration canceled.`)
+            logger.warning(`Object registered by name ${functionName} is not a function. It's registration canceled.`)
         }
     }
 
@@ -23,7 +23,7 @@ class Plugins {
     getAllRegisteredFunctionsAsObject() {
         let obj = {};
         for(let prop in this) {
-            if (prop !== 'getAllFunctionsAsObject' && prop !== 'registerFunction') {
+            if (prop !== 'getAllFunctionsAsObject' && prop !== 'registerFunction' && this.hasOwnProperty(prop)) {
                 obj[prop] = this[prop];    
             }
         }
