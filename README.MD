@@ -1,10 +1,10 @@
-![iZ3 logo](https://github.com/Izzzio/iz3node/raw/master/logo.png)
+![iZ3 logo](https://github.com/Izzzio/izzzio/raw/master/logo.png)
 
 ![ES6](https://img.shields.io/badge/es-6-brightgreen.svg)
-![GitHub contributors](https://img.shields.io/github/contributors/izzzio/iz3node.svg)
-![GitHub last commit](https://img.shields.io/github/last-commit/izzzio/iz3node.svg)
-![Github search hit counter](https://img.shields.io/github/search/izzzio/iz3node/goto.svg)
-![GitHub top language](https://img.shields.io/github/languages/top/izzzio/iz3node.svg)
+![GitHub contributors](https://img.shields.io/github/contributors/izzzio/izzzio.svg)
+![GitHub last commit](https://img.shields.io/github/last-commit/izzzio/izzzio.svg)
+![Github search hit counter](https://img.shields.io/github/search/izzzio/izzzio/goto.svg)
+![GitHub top language](https://img.shields.io/github/languages/top/izzzio/izzzio.svg)
 # iZ³ - IZZZIO Blockchain Node
 
 IZZZIO (iZ³) - fully customizable blockchain platform. This platform provides super-flexible configuration of each functional link of the network. The network supports the following functions:
@@ -99,7 +99,7 @@ Make sure the "...VC++ 2015.3 v14.00(v140)" option is enabled.
 
 ## Contributing
 
-1. Fork it ( [https://github.com/Izzzio/iz3node/fork](https://github.com/Izzzio/iz3node/fork) )
+1. Fork it ( [https://github.com/Izzzio/izzzio/fork](https://github.com/Izzzio/izzzio/fork) )
 2. Create your feature branch (git checkout -b my-new-feature)
 3. Commit your changes (git commit -am 'Add some feature')
 4. Push to the branch (git push origin my-new-feature)
