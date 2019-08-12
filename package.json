@@ -6,7 +6,7 @@
   "homepage": "https://izzz.io",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Izzzio/iz3node.git"
+    "url": "https://github.com/Izzzio/izzzio.git"
   },
   "scripts": {
     "depency": "npm install",
