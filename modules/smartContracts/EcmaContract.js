@@ -889,7 +889,15 @@ class EcmaContract {
         /**
          * Support external plugins
          */
-        vm.setObjectGlobal('plugins', that.plugins.getAllRegisteredFunctionsAsObject());
+        vm.setObjectGlobal('plugins', that.plugins.getAllRegisteredFunctionsAsObject(function (err, val) {
+                let sync = vmSync();
+                if(!err) {
+                    sync.return(val);
+                } else {
+                    sync.fails(false);
+                }
+            })
+        );
 
         /**
          * Support for require external contracts
