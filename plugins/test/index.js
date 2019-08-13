@@ -19,7 +19,14 @@
 const logger = new (require(global.PATH.mainDir + '/modules/logger'))("TestPlugin");
 
 function testMessage() {
-    return logger.info("#########################################Test plugin added############################################");
+    return logger.info("#########################################Test sync function############################################");
+}
+
+function asyncTest(cb) {
+    setTimeout(function(){
+        console.log("#########################################Test async function############################################");
+        cb(); 
+    }, 500);
 }
 
 module.exports = function register(blockchain, config, storj) {
@@ -27,7 +34,8 @@ module.exports = function register(blockchain, config, storj) {
 
     let plugins = storj.get('plugins');
 
-    plugins.registerFunction("testMessage", testMessage, "test");
+    plugins.registerFunction("testMessage", testMessage);
+    plugins.registerFunction("asyncTestMessage", asyncTest, true);
 
     logger.info('OK');
 };
