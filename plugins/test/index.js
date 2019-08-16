@@ -18,14 +18,10 @@
 
 const logger = new (require(global.PATH.mainDir + '/modules/logger'))("TestPlugin");
 
-function testMessage() {
-    return logger.info("#########################################Test sync function############################################");
-}
-
-function asyncTest(cb) {
+function asyncTest(cb, ...args) {
     setTimeout(function(){
-        console.log("#########################################Test async function############################################");
-        cb(); 
+        console.log(args[0]);
+        cb('', 'success'); 
     }, 500);
 }
 
