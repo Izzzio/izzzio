@@ -18,11 +18,13 @@
 
 const logger = new (require(global.PATH.mainDir + '/modules/logger'))("TestPlugin");
 
-function asyncTest(cb, ...args) {
+function testFunction(cb, ...args) {
     setTimeout(function(){
         console.log(args[0]);
-        cb('', 'success'); 
-    }, 500);
+        return cb('', args[1]); 
+    }, 0);
+    /*console.log(args[0]);
+     cb('', args[1]); */
 }
 
 module.exports = function register(blockchain, config, storj) {
@@ -30,8 +32,7 @@ module.exports = function register(blockchain, config, storj) {
 
     let plugins = storj.get('plugins');
 
-    plugins.registerFunction("testMessage", testMessage);
-    plugins.registerFunction("asyncTestMessage", asyncTest, true);
+    plugins.registerFunction("testFunction", testFunction);
 
     logger.info('OK');
 };

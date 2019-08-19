@@ -8,12 +8,13 @@ class Plugins {
 
     constructor() {
         that = this;
+        /**
+         * object to store registered functions
+         */
+        this.functions = {};
     }
 
-    /**
-     * object to store registered functions
-     */
-    functions = {};
+    
 
     /**
      * add external function from plugin as private function of the class
@@ -35,8 +36,8 @@ class Plugins {
     getAllRegisteredFunctionsAsObject (cb) {
         let obj = {};
             for (let funcName in that.functions) {
-                if (this.functions.hasOwnProperty(funcName)) {
-                    obj[funcName] = function(...args) {
+                if (that.functions.hasOwnProperty(funcName)) {
+                    obj[funcName.replace('_','')] = function(...args) {
                         return that.functions[funcName](cb, ...args);
                     }    
                 }    
