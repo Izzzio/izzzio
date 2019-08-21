@@ -889,7 +889,7 @@ class EcmaContract {
         /**
          * Support external plugins
          */
-        vm.setObjectGlobal('plugins', that.plugins.getAllRegisteredFunctionsAsObject(function (err, val) {
+        vm.setObjectGlobal('_plugins', that.plugins.getAllRegisteredFunctionsAsObject(function (err, val) {
                 let sync = vmSync();
                 if(!err) {
                     sync.return(val);
@@ -898,6 +898,21 @@ class EcmaContract {
                 }
             })
         );
+
+        vm.injectScript('new ' + function () {
+            let waitForReturn = global.waitForReturn;
+            let _plugins = global._plugins;
+            global._plugins = undefined;
+            let funcObj = {};
+            for (let key in _plugins) {
+                funcObj[key] = function(...args) {
+                    _plugins[key](...args);
+                    return waitForReturn();
+                }
+            }
+            global.plugins = funcObj;
+        });
+
 
         /**
          * Support for require external contracts
