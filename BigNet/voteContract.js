@@ -80,7 +80,6 @@ class voteContract extends Contract {
         this._voteVariants = new BlockchainArray('_voteVariants');
         this._VoteEvent = new Event('Vote', 'string', 'number');
         this._ChangeVoteState = new Event('ChangeVoteState', 'string');
-        plugins.testFunction('hello', 'result');
         if (contracts.isDeploy()) { //Calls on deploying
             if (!BlockchainArray.isArray(variants)) {
                 variants = VOTE_VARIANTS;

@@ -339,7 +339,7 @@ class EcmaContract {
             global.waitForReturn = function waitForReturn() {
                 while (true) {
 
-                    if(global._execResult.status !== 0) {
+                    if(typeof global._execResult !== 'undefined' && global._execResult.status !== 0) {
                         if(global._execResult.status === 2) {
                             global._execResult.status = 0;
                             return null;
