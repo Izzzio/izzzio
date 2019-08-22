@@ -913,6 +913,10 @@ class EcmaContract {
             global.plugins = funcObj;
         });
 
+        for (let s of that.plugins.injectedScripts) {
+            vm.injectScript("" + s);    
+        }
+
 
         /**
          * Support for require external contracts

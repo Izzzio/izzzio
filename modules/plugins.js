@@ -12,6 +12,7 @@ class Plugins {
          * object to store registered functions
          */
         this.functions = {};
+        this.injectedScripts = [];
     }
 
     
@@ -43,6 +44,10 @@ class Plugins {
                 }    
             }
         return obj;
+    }
+
+    injectScript(script) {
+        this.injectedScripts.push(script);
     }
 }
 
