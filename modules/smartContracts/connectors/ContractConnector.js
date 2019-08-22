@@ -129,6 +129,25 @@ class ContractConnector {
             });
         };
     }
+
+    /**
+     * Direct deploy contract method
+     * @param {String} method Method name
+     * @param {Array|Object} args Method args or signed block
+     * @return {Promise<any>}
+     */
+    deployContractMethod(method, args){
+        let that = this;
+        return new Promise(async function (resolve, reject) {
+            that.ecmaContract.deployContractMethod(that.address, method, args, await that._getState(), function (err, generatedBlock) {
+                if(err) {
+                    reject(err);
+                    return;
+                }
+                resolve(generatedBlock);
+            }, that.accountName);
+        });
+    }
 }
 
 module.exports = ContractConnector;

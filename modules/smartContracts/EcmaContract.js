@@ -334,7 +334,7 @@ class EcmaContract {
             global.waitForReturn = function waitForReturn() {
                 while (true) {
 
-                    if(global._execResult.status !== 0) {
+                    if(typeof global._execResult !== 'undefined' && global._execResult.status !== 0) {
                         if(global._execResult.status === 2) {
                             global._execResult.status = 0;
                             return null;
@@ -1222,23 +1222,28 @@ class EcmaContract {
 
     /**
      * Deploy contract with current wallet
-     * @param {string} code
-     * @param {string} resourceRent
-     * @param {Function} cb
-     * @param {string|boolean} accountName
+     * @param {string|object} code Smart contract code or Signed deploy block
+     * @param {string} resourceRent resource rent amount
+     * @param {Function} cb deployed callback
+     * @param {string|boolean} accountName Account name
      */
     async deployContract(code, resourceRent, cb, accountName = false) {
         let that = this;
 
-        let wallet = await this.accountManager.getAccountAsync(accountName);
+        let deployBlock;
+        if(typeof code === 'string') {
+            let wallet = await this.accountManager.getAccountAsync(accountName);
 
-        code = uglifyJs.minify(code).code;
-        let deployBlock = new EcmaContractDeployBlock(code, {
-            randomSeed: random.int(0, 10000),
-            from: wallet.id,
-            resourceRent: String(resourceRent)
-        });
-        deployBlock = wallet.signBlock(deployBlock);
+            code = uglifyJs.minify(code).code;
+            deployBlock = new EcmaContractDeployBlock(code, {
+                randomSeed: random.int(0, 10000),
+                from: wallet.id,
+                resourceRent: String(resourceRent)
+            });
+            deployBlock = wallet.signBlock(deployBlock);
+        } else {
+            deployBlock = code
+        }
 
         let testWallet = new Wallet(false, this.config);
 
@@ -1284,12 +1289,12 @@ class EcmaContract {
      * Deploy call contract method
      * @param {string} address
      * @param {string} method
-     * @param {Object} args
+     * @param {Array|Object} args
      * @param {Object} state
      * @param {Function} cb
      * @param {string} accountName
      */
-    deployContractMethod(address, method, args, state, cb, accountName = false) {
+    deployContractMethod(address, method, args = [], state = {}, cb, accountName = false) {
         let that = this;
 
         that.getContractLimits(address, async function (limits) {
@@ -1299,14 +1304,27 @@ class EcmaContract {
                 return cb(new Error('Contract ' + address + ' calling limits exceed'));
             }
 
+            let callBlock;
+
+
             let wallet = await that.accountManager.getAccountAsync(accountName);
 
-            state.from = wallet.id;
-            state.contractAddress = address;
-            state.masterContractAddress = that.config.ecmaContract.masterContract ? that.config.ecmaContract.masterContract : false;
 
-            let callBlock = new EcmaContractCallBlock(address, method, args, state);
-            callBlock = wallet.signBlock(callBlock);
+            //If method is string - its method name. Object - is signed block
+            if(Array.isArray(args)) {
+
+                state.from = wallet.id;
+                state.contractAddress = address;
+                state.masterContractAddress = that.config.ecmaContract.masterContract ? that.config.ecmaContract.masterContract : false;
+
+                callBlock = new EcmaContractCallBlock(address, method, args, state);
+                callBlock = wallet.signBlock(callBlock);
+            }else{
+                callBlock = args;
+                state.from = callBlock.state.from;
+                state.contractAddress = callBlock.state.contractAddress;
+                state.masterContractAddress = callBlock.state.masterContractAddress;
+            }
 
             let testWallet = new Wallet(false, that.config);
 
@@ -1784,13 +1802,34 @@ class EcmaContract {
             }
         });
 
+        app.post('/contracts/ecma/deploySignedMethod/:address', async function (req, res) {
+
+            let source = req.body.source;
+            source = JSON.parse(source);
+
+            let contract = new ContractConnector(that, req.params.address);
+
+            try {
+                res.send({result:await contract.deployContractMethod(req.params.method, source)});
+            } catch (e) {
+                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+            }
+        });
+
         app.post('/contracts/ecma/deployContract', async function (req, res) {
             try {
                 let src = req.body.source;
                 let resourceRent = req.body.resourceRent;
+
                 if(typeof src === 'undefined' || src.length === 0) {
                     res.send({error: true, message: 'Empty source'});
                     return;
+                }
+
+                //If we got an object - is a signed block. String - contract source
+                try{
+                    src = JSON.parse(src);
+                }catch (e) {
                 }
 
                 let accountName = req.params.accountName ? req.params.accountName : false;
