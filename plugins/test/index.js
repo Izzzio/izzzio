@@ -18,6 +18,16 @@
 
 const logger = new (require(global.PATH.mainDir + '/modules/logger'))("TestPlugin");
 
+class TestClass {
+    constructor(message) {
+        this.message = message;
+    }
+
+    writeln() {
+        console.log(this.message);
+    }
+}
+
 function testFunction(cb, ...args) {
     setTimeout(function(){
         console.log(args[0]);
@@ -33,6 +43,7 @@ module.exports = function register(blockchain, config, storj) {
     let plugins = storj.get('plugins');
 
     plugins.registerFunction("testFunction", testFunction);
+    plugins.injectScript(TestClass);
 
     logger.info('OK');
 };

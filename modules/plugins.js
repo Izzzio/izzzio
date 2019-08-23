@@ -47,7 +47,7 @@ class Plugins {
     }
 
     injectScript(script) {
-        this.injectedScripts.push(script);
+        this.injectedScripts.push("" + script);
     }
 }
 
