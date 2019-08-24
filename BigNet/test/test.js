@@ -320,6 +320,17 @@ class App extends DApp {
         //logger.info('new: ' + newResources);
     }
 
+    /**
+     * Test contract test
+     * @return {Promise<void>}
+     */
+    async testContractTest() {
+        let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
+        const testContractCode = fs.readFileSync('../testContract.js').toString();
+        const newBlock = await that.contracts.ecmaPromise.deployContract(testContractCode, 1);
+        await setTimeout(()=>{}, 1000);
+    }
+
 
     /**
      * Run tests
@@ -327,10 +338,12 @@ class App extends DApp {
      */
     async run() {
 
+
         await this.tokenTest();
         await this.c2cTest();
         await this.voteContractTest();
         await this.voteContractChangeResources();
+        await this.testContractTest();
 
         console.log('');
         console.log('');

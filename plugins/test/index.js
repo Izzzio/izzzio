@@ -23,8 +23,8 @@ class TestClass {
         this.message = message;
     }
 
-    writeln() {
-        console.log(this.message);
+    writeln(mes = this.message) {
+        console.log(mes);
     }
 }
 
