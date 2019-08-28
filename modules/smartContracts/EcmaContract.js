@@ -1323,7 +1323,7 @@ class EcmaContract {
                 callBlock = args;
                 state.from = callBlock.state.from;
                 state.contractAddress = callBlock.state.contractAddress;
-                state.masterContractAddress = callBlock.state.masterContractAddress;
+                state.masterContractAddress = that.config.ecmaContract.masterContract ? that.config.ecmaContract.masterContract : false;//callBlock.state.masterContractAddress;
             }
 
             let testWallet = new Wallet(false, that.config);
