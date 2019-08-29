@@ -42,8 +42,8 @@ module.exports = function register(blockchain, config, storj) {
 
     let plugins = storj.get('plugins');
 
-    plugins.registerFunction("testFunction", testFunction);
-    plugins.injectScript(TestClass);
+    plugins.ecma.registerFunction("testFunction", testFunction);
+    plugins.ecma.injectScript(TestClass);
 
     logger.info('OK');
 };

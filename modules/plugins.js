@@ -2,6 +2,8 @@
  * Class realises universal functions for external plugins in project
  */
 const logger = new (require('./logger'))();
+const storj = require('./instanceStorage');
+let cryptography = storj.get('cryptography');
 let that;
 
 class Plugins {
@@ -12,7 +14,22 @@ class Plugins {
          * object to store registered functions
          */
         this.functions = {};
-        this.injectedScripts = [];
+        this._injectedScripts = [];
+
+        this.ecma = {
+            registerFunction: that._registerFunction,
+            injectScript: that._injectScript,
+            getAllRegisteredFunctionsAsObject: that._getAllRegisteredFunctionsAsObject,  
+            injectedScripts: that._injectedScripts,
+        }
+
+        this.crypto = {
+            registerHash: cryptography.registerHash,
+            registerGenerator: cryptography.registerGenerator,
+            registerSign : cryptography.registerSign,
+            registerGeneratorHook: cryptography.registerGeneratorHook,
+        }
+
     }
 
     
@@ -22,9 +39,9 @@ class Plugins {
      * @param {string} functionName 
      * @param {function} functionObject 
      */
-    registerFunction(functionName, functionObject) {
+    _registerFunction(functionName, functionObject) {
         if (typeof (functionObject) === 'function') {
-                this.functions[`_${functionName}`] = functionObject;
+                that.functions[`_${functionName}`] = functionObject;
         } else {
             logger.warning(`Object registered by name ${functionName} is not a function. It's registration canceled.`)
         }
@@ -34,7 +51,7 @@ class Plugins {
      * returns object of all registered plugins
      * @param {function} cb 
      */
-    getAllRegisteredFunctionsAsObject (cb) {
+    _getAllRegisteredFunctionsAsObject (cb) {
         let obj = {};
             for (let funcName in that.functions) {
                 if (that.functions.hasOwnProperty(funcName)) {
@@ -46,8 +63,8 @@ class Plugins {
         return obj;
     }
 
-    injectScript(script) {
-        this.injectedScripts.push("" + script);
+    _injectScript(script) {
+        that._injectedScripts.push("" + script);
     }
 }
 

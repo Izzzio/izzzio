@@ -20,7 +20,7 @@ class testContract extends Contract {
         console.log('Plugins Started!');
         let testClass = new TestClass();
         testClass.writeln('Test Class OK');
-        console.log(plugins.testFunction('hello','bye'));
+        console.log(plugins.ecma.testFunction('hello','bye'));
     }
 
 
