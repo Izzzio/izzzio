@@ -913,37 +913,7 @@ class EcmaContract {
             global.plugins = {};
             global.plugins.ecma = funcObj;
 
-            global.plugins.crypto = {
-                /**
-                 * System defined hash function
-                 * @param data
-                 * @return {Buffer}
-                 */
-                hash: function (data) {
-                    return that.cryptography.hash(String(data));
-                },
-    
-                /**
-                 * Verify signature with system defined function
-                 * @param data
-                 * @param sign
-                 * @param publicKey
-                 * @return {boolean|*}
-                 */
-                verifySign: function (data, sign, publicKey) {
-                    return that.blockchain.wallet.verifyData(data, sign, String(publicKey));
-                },
-    
-                /**
-                 * Sign data with system defined function
-                 * @param data
-                 * @param privateKey
-                 * @return {*|{data, sign}|{data: *, sign: *}}
-                 */
-                /*signData: function (data, privateKey) {
-                    return that.blockchain.wallet.signData(data, String(privateKey));
-                }*/
-            };
+            global.plugins.crypto = global.crypto;
         });
 
         for (let s of that.plugins.ecma.injectedScripts) {

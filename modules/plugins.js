@@ -32,7 +32,6 @@ class Plugins {
 
     }
 
-    
 
     /**
      * add external function from plugin as private function of the class
