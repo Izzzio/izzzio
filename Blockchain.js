@@ -199,7 +199,7 @@ function Blockchain(config) {
          */
         function getLastBlock(cb) {
             getLatestBlock(function (lastestBlock) {
-                cb(lastestBlock, lastKnownBlock);
+                cb(lastestBlock, lastestBlock.index);
             });
         },
 
