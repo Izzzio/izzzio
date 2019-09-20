@@ -91,3 +91,5 @@ plugins/GOSTModules
 .idea/vcs.xml
 .idea/workspace.xml
 docs
+
+Tests/PluginsTest/test/temp
