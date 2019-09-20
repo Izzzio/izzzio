@@ -1,7 +1,7 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ class AccountManager {
         try {
             let account = await this._accounts.getAsync(accountName);
             if(!account) {
-                logger.error('Account "' + accountName + '" not found');
+                logger.error('Account "' + accountName + '" not found 1');
                 return false;
             }
 
@@ -94,7 +94,8 @@ class AccountManager {
             wallet.init();
             return wallet;
         } catch (e) {
-            logger.error('Account "' + accountName + '" not found');
+            logger.error(e);
+            logger.error('Account "' + accountName + '" not found 2');
             return false;
         }
     }

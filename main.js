@@ -4,7 +4,7 @@
  iZ³ | Izzzio blockchain - https://izzz.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.

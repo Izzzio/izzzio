@@ -1,17 +1,17 @@
 {
-  "name": "test",
+  "name": "iz3-plugin-demo",
   "version": "1.0.0",
-  "description": "test",
+  "description": "Demo iz3node plugin",
   "main": "index.js",
   "dependencies": {
     
   },
   "homepage": "https://izzz.io",
-  "author": "Andrey Nedobylskiy",
+  "author": "Andrey Nedobylskiy & Kirill Revenkov",
   "license": "GPL",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Izzzio/iz3node.git"
+    "url": "https://github.com/Izzzio/izzzio.git"
   },
   "keywords": [
     "blockchain",
@@ -19,6 +19,7 @@
     "izzzio",
     "izzz",
     "iz3",
-    "bignet"
+    "bignet",
+    "plugin"
   ]
 }

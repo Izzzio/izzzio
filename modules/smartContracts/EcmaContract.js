@@ -905,19 +905,40 @@ class EcmaContract {
             global._plugins = undefined;
             let funcObj = {};
             for (let key in _plugins) {
-                funcObj[key] = function(...args) {
-                    _plugins[key](...args);
-                    return waitForReturn();
+                if(!_plugins.hasOwnProperty(key)) {
+                    continue;
                 }
+
+                //If namespaced method
+                if(key.indexOf('.') !== -1) {
+                    let nKey = key.split('.');
+                    let namespace = nKey[0];
+                    nKey = nKey[1];
+
+                    if(typeof funcObj[namespace] === 'undefined') {
+                        funcObj[namespace] = {};
+                    }
+
+                    funcObj[namespace][nKey] = function (...args) {
+                        _plugins[key](...args);
+                        return waitForReturn();
+                    }
+
+                } else { //Method without namespace
+                    funcObj[key] = function (...args) {
+                        _plugins[key](...args);
+                        return waitForReturn();
+                    }
+                }
+
             }
             global.plugins = {};
-            global.plugins.ecma = funcObj;
-
-            global.plugins.crypto = global.crypto;
+            global.plugins = funcObj;
         });
 
+        //Inject plugins scripts
         for (let s of that.plugins.ecma.injectedScripts) {
-            vm.injectScript("" + s);    
+            vm.injectScript("" + s);
         }
 
 
@@ -947,7 +968,6 @@ class EcmaContract {
         vm.injectSource(__dirname + '/internalModules/TokenContractConnector.js');
         vm.injectSource(__dirname + '/internalModules/SellerContractConnector.js');
 
-        
 
     }
 

@@ -1,7 +1,7 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ module.exports = function register(blockchain, config, storj) {
 
     let plugins = storj.get('plugins');
 
-    plugins.ecma.registerFunction("testFunction", testFunction);
+    plugins.ecma.registerFunction('testNamespace',"testFunction", testFunction);
     plugins.ecma.injectScript(TestClass);
 
     logger.info('OK');
