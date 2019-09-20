@@ -16,35 +16,29 @@
  limitations under the License.
  */
 
-/**
- * BigNet network starter
- */
 
-
-const logger = new (require(global.PATH.mainDir + '/modules/logger'))("NetworkStart");
+const logger = new (require(global.PATH.mainDir + '/modules/logger'))("PluginsTest");
 
 /**
  * @type {{assert: module.exports.assert, lt: module.exports.lt, true: module.exports.true, false: module.exports.false, gt: module.exports.gt, defined: module.exports.defined}}
  */
 const assert = require(global.PATH.mainDir + '/modules/testing/assert');
-/*
+
 const storj = require(global.PATH.mainDir + '/modules/instanceStorage');
-const Wallet = require(global.PATH.mainDir + '/modules/wallet');*/
+const Wallet = require(global.PATH.mainDir + '/modules/wallet');
 
 const DApp = require(global.PATH.mainDir + '/app/DApp');
+const TokenContractConnector = require(global.PATH.mainDir + '/modules/smartContracts/connectors/TokenContractConnector');
 const fs = require('fs');
 
 
 let that;
 
-/**
- * Master contract
- */
-const masterContract = fs.readFileSync('./mainContract.js').toString();
+const mainTokenContract = fs.readFileSync('../mainContract.js').toString();
 
 
 /**
- * Deploy master contracts APP
+ * EDU DApp
  */
 class App extends DApp {
 
@@ -56,7 +50,7 @@ class App extends DApp {
         that = this;
 
         process.on('SIGINT', () => {
-            console.log('Terminating deploy...');
+            console.log('Terminating tests...');
             process.exit();
         });
 
@@ -67,14 +61,39 @@ class App extends DApp {
 
         //Preparing environment
         logger.info('Deploying contract...');
-        that.contracts.ecmaContract.deployContract(masterContract, 0, async function (deployedContract) {
-            assert.true(deployedContract.address === that.getMasterContractAddress(), 'Invalid master contract address ' + that.getMasterContractAddress());
-            logger.info("Master contract deployed");
+        that.contracts.ecmaContract.deployContract(mainTokenContract, 0, function (deployedContract) {
+            assert.true(deployedContract.address === that.getMasterContractAddress(), 'Invalid master contract address');
+            that.run();
         });
 
 
     }
 
+    /**
+     * Test contract test
+     * @return {Promise<void>}
+     */
+    async testContractTest() {
+        let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
+        const testContractCode = fs.readFileSync('../testContract.js').toString();
+        const newBlock = await that.contracts.ecmaPromise.deployContract(testContractCode, 1);
+        await setTimeout(()=>{}, 1000);
+    }
+
+
+    /**
+     * Run tests
+     * @return {Promise<void>}
+     */
+    async run() {
+        await this.testContractTest();
+
+        console.log('');
+        console.log('');
+        console.log('');
+        logger.info('Tests passed');
+        process.exit();
+    }
 
 }
 

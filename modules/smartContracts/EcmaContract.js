@@ -65,6 +65,11 @@ class EcmaContract {
         this.cryptography = storj.get('cryptography');
 
         /**
+         * @var {Plugins}
+         */
+        this.plugins = storj.get('plugins');
+
+        /**
          * @var{AccountManager}
          */
         this.accountManager = storj.get('accountManager');
@@ -880,6 +885,62 @@ class EcmaContract {
             };
             MockDate = undefined;
         });
+
+        /**
+         * Support external plugins
+         */
+        vm.setObjectGlobal('_plugins', that.plugins.ecma.getAllRegisteredFunctionsAsObject(function (err, val) {
+                let sync = vmSync();
+                if(!err) {
+                    sync.return(val);
+                } else {
+                    sync.fails(false);
+                }
+            })
+        );
+
+        vm.injectScript('new ' + function () {
+            let waitForReturn = global.waitForReturn;
+            let _plugins = global._plugins;
+            global._plugins = undefined;
+            let funcObj = {};
+            for (let key in _plugins) {
+                if(!_plugins.hasOwnProperty(key)) {
+                    continue;
+                }
+
+                //If namespaced method
+                if(key.indexOf('.') !== -1) {
+                    let nKey = key.split('.');
+                    let namespace = nKey[0];
+                    nKey = nKey[1];
+
+                    if(typeof funcObj[namespace] === 'undefined') {
+                        funcObj[namespace] = {};
+                    }
+
+                    funcObj[namespace][nKey] = function (...args) {
+                        _plugins[key](...args);
+                        return waitForReturn();
+                    }
+
+                } else { //Method without namespace
+                    funcObj[key] = function (...args) {
+                        _plugins[key](...args);
+                        return waitForReturn();
+                    }
+                }
+
+            }
+            global.plugins = {};
+            global.plugins = funcObj;
+        });
+
+        //Inject plugins scripts
+        for (let s of that.plugins.ecma.injectedScripts) {
+            vm.injectScript("" + s);
+        }
+
 
         /**
          * Support for require external contracts

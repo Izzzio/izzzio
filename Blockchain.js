@@ -38,6 +38,11 @@ function Blockchain(config) {
     //Crypto
     //const CryptoJS = require("crypto-js");
 
+    //Plugins
+    const Plugins = require('./modules/plugins');
+    const plugins = new Plugins();
+    storj.put('plugins', plugins);
+
     //Networking
     const express = require("express");
     const auth = require('http-auth');
@@ -1673,9 +1678,21 @@ function Blockchain(config) {
             throw ('Error: No consensus validators loaded!');
         }
 
+        //Loading validators
         for (let a in config.validators) {
             if(config.validators.hasOwnProperty(a)) {
-                config.validators[a] = new (require('./modules/validators/' + config.validators[a]))(blockchainObject);
+                try { //Trying to load validator from path
+                    config.validators[a] = (require('./modules/validators/' + config.validators[a]));
+                } catch (e) { //If error trying to load validator from modules
+                    try {
+                        config.validators[a] = (require(config.validators[a]));
+                    } catch (e) {
+                        logger.fatal('Validator ' + config.validators[a] + ' not found');
+                        process.exit(1);
+                    }
+                }
+
+                config.validators[a] = new config.validators[a](blockchainObject);
             }
         }
 

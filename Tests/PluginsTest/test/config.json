@@ -24,7 +24,7 @@
   "walletFile": "./temp/wallet.json",
   "walletsDB": "mem://wallets.json",
   "blocksDB": "mem://blocks.json",
-  "appEntry": "./BigNet/test/test.js",
+  "appEntry": "./Tests/PluginsTest/test/test.js",
   "ecmaContract": {
     "enabled": true,
     "allowDebugMessages": true,
@@ -32,5 +32,5 @@
     "masterContract": 5
   },
   "signFunction": "NEWRSA",
-  "plugins": [ "iz3-basic-crypto" , "test" ]
+  "plugins": [ "iz3-basic-crypto" , "iz3-plugin-demo" ]
 }

@@ -1,7 +1,7 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -320,6 +320,17 @@ class App extends DApp {
         //logger.info('new: ' + newResources);
     }
 
+    /**
+     * Test contract test
+     * @return {Promise<void>}
+     */
+    async testContractTest() {
+        let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
+        const testContractCode = fs.readFileSync('../testContract.js').toString();
+        const newBlock = await that.contracts.ecmaPromise.deployContract(testContractCode, 1);
+        await setTimeout(()=>{}, 1000);
+    }
+
 
     /**
      * Run tests
@@ -327,10 +338,12 @@ class App extends DApp {
      */
     async run() {
 
+
         await this.tokenTest();
         await this.c2cTest();
         await this.voteContractTest();
         await this.voteContractChangeResources();
+        await this.testContractTest();
 
         console.log('');
         console.log('');

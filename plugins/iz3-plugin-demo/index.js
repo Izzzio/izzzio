@@ -16,12 +16,34 @@
  limitations under the License.
  */
 
-const logger = new (require(global.PATH.mainDir + '/modules/logger'))("StarWaveCrypto");
+const logger = new (require(global.PATH.mainDir + '/modules/logger'))("TestPlugin");
+
+class TestClass {
+    constructor(message) {
+        this.message = message;
+    }
+
+    writeln(mes = this.message) {
+        console.log(mes);
+    }
+}
+
+function testFunction(cb, ...args) {
+    setTimeout(function(){
+        console.log(args[0]);
+        return cb('', args[1]); 
+    }, 0);
+    /*console.log(args[0]);
+     cb('', args[1]); */
+}
 
 module.exports = function register(blockchain, config, storj) {
     logger.info('Initialize...');
 
-    storj.put('StarWaveCrypto', require('./starwaveCrypto'));
+    let plugins = storj.get('plugins');
+
+    plugins.ecma.registerFunction('testNamespace',"testFunction", testFunction);
+    plugins.ecma.injectScript(TestClass);
 
     logger.info('OK');
 };
