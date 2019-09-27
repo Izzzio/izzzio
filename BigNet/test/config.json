@@ -32,5 +32,5 @@
     "masterContract": 5
   },
   "signFunction": "NEWRSA",
-  "plugins": [ "iz3-basic-crypto" , "test" ]
+  "plugins": [ "iz3-basic-crypto"  ]
 }
