@@ -35,7 +35,7 @@
     "sqlite3": "git+https://github.com/lailune/node-sqlite3.git",
     "sync": "^0.2.5",
     "uglify-es": "^3.3.10",
-    "ws": "^1.1.0"
+    "ws": ">=3.3.1"
   },
   "engines": {
     "node": ">=8.2.0"
@@ -45,7 +45,7 @@
     "email": "info@izzz.io"
   },
   "author": "Andrey Nedobyslky <admin@twister-vl.ru> (https://github.com/lailune)",
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "keywords": [
     "blockchain",
     "izzz",
