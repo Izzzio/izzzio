@@ -6,40 +6,58 @@ const URL = require("URL");
 class NodeRPC {
 
     constructor (baseUrl = 'http://localhost:3001/', pass = '') {
-        _baseUrl = baseUrl;
-        _password = pass;
-        _METHODS = [
+        this._baseUrl = baseUrl;
+        this._password = pass;
+        this._METHODS = [
             {name:'getInfo', httpMethod: 'GET'},
             {name:'createWallet', httpMethod: 'POST'},
             {name:'changeWallet', httpMethod: 'POST'},
         ];
     }
 
+    /**
+     * URL request
+     * @param {string} method 
+     * @param {string} url 
+     * @param {Array} params 
+     * @param {string} password 
+     * @returns {object}
+     */
     static _urlRequest(method = 'GET', url, params = [], password = '') {
-        /*let fullUrl = url; 
-        if (method.toUpperCase() === 'POST' && params.length > 0) {
-            fullUrl += '?' + params.join('&');
-        }
-        let promise = fetch(fullUrl, {
-            method: method.toUpperCase() === 'POST' ? 'POST' : 'GET',
+        return new Promise((resolve, reject) =>{
+            let fullUrl = url; 
+            if (params.length > 0) {
+                fullUrl += '?' + params.join('&');
+            }
+            let urlObj = new URL(fullUrl);
+            let options = {
+                method: method.toUpperCase() === 'POST' ? 'POST' : 'GET',
+                timeout: 0,
+            }
 
-        })*/
-        let urlObj = new URL(url);
-        let options = {
-            /*host: urlObj.host,
-            port: urlObj.port,
-            path: urlObj.path,*/
-            method: method.toUpperCase() === 'POST' ? 'POST' : 'GET',
-            timeout: 0,
-        }
+            if (password) {
+                options.auth = "1337:" + password;
+            }
 
-        if (password) {
-            options.auth = "1337:" + password;
-        }
+            const req = http.request(fullUrl, options, (res)=>{
+                return resolve(res);
+            })
 
+            req.on('error', (e) => {
+                return reject(e);
+            });
 
+            req.end();
+        })
     }
 
+    _request(method, params = [], paramStr = '') {
+        if (!this._METHODS.find(x => x.name === method.toUpperCase())) {
+            console.error('Invalid metod ' + method);
+            return;
+        }
 
+        
+    }
 
 }
