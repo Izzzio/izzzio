@@ -40,7 +40,9 @@ class NodeRPC {
             }
 
             const req = http.request(fullUrl, options, (res)=>{
-                return resolve(res);
+                res.on('end', () => {
+                    return resolve(res);
+                })
             })
 
             req.on('error', (e) => {
@@ -57,7 +59,7 @@ class NodeRPC {
             return;
         }
 
-        
+
     }
 
 }
