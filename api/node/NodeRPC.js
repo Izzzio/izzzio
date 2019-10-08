@@ -3,16 +3,17 @@ const Http = require("http");
 const Https = require("https");
 const URL = require("URL");
 
+const _METHODS = [
+    {getInfo: 'GET'},
+    {createWallet: 'POST'},
+    {changeWallet: 'POST'},
+];
+
 class NodeRPC {
 
-    constructor (baseUrl = 'http://localhost:3001/', pass = '') {
+    constructor (RPCUrl = 'http://localhost:3001/', pass = '') {
         this._baseUrl = baseUrl;
         this._password = pass;
-        this._METHODS = [
-            {name:'getInfo', httpMethod: 'GET'},
-            {name:'createWallet', httpMethod: 'POST'},
-            {name:'changeWallet', httpMethod: 'POST'},
-        ];
     }
 
     /**
@@ -53,13 +54,83 @@ class NodeRPC {
         })
     }
 
-    _request(method, params = [], paramStr = '') {
-        if (!this._METHODS.find(x => x.name === method.toUpperCase())) {
+    /**
+     * Make RPC request
+     * @param {string} method 
+     * @param {array} params 
+     * @param {string} paramStr 
+     * @returns promise
+     */
+    async _request(method = "", params = [], paramStr = '') {
+        //method = method.toLowerCase();
+        if (!_METHODS[method]) {
             console.error('Invalid metod ' + method);
             return;
         }
+        let res;
+        try {
+            res = await NodeRPC._urlRequest(_METHODS[method], this._baseUrl + method + paramStr, params, this._password);
+        } catch (e) {
+            console.error('Request error: ' + e); 
+        };
 
+        if (res.toLowerCase() === 'true') {
+            return {status: 'ok'};
+        } else if (res.toLowerCase() === 'false') {
+            console.error('Can\'t call method ' + $method);
+        }
 
+        let response;
+        try{
+         response = JSON.parse(res);
+        } catch {
+            console.error('RPC Error: ' + res);   
+        }
+        return response;
+    }
+
+    /**
+     * Returns current blockchain status and node info
+     * @returns promise
+     */
+    getInfo() {
+        return this._request('getInfo');    
+    }
+
+    /**
+     * Generate and register new wallet with id, block id, private and public keysPair
+     * @returns promise
+     */
+    createWallet() {
+        return this._request('createWallet');
+    }
+
+    /**
+     * Get current wallet address
+     */
+    async getWallet() {
+        let info = await this.getInfo();    
+        return info.wallet.id;
+    }
+
+    /**
+     * Change current wallet for node. The transactions list was recalculated Which can take a long time
+     * @param {string} id 
+     * @param {string} private 
+     * @param {string} public 
+     */
+    async changeWalletByData(id, private, public) {
+        let walletId = await this.getWallet();
+        if (walletId === id) {
+            return {status:'ok'};
+        }
+
+        return this._request('changeWallet', [
+            'id=' + id,
+            'public=' + public,
+            `private=` + private,
+            'balance=0'
+        ]);
     }
 
 }
