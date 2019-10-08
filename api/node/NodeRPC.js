@@ -3,17 +3,18 @@ const Http = require("http");
 const Https = require("https");
 const URL = require("URL");
 
-const _METHODS = [
-    {getInfo: 'GET'},
-    {createWallet: 'POST'},
-    {changeWallet: 'POST'},
-];
+
 
 class NodeRPC {
 
     constructor (RPCUrl = 'http://localhost:3001/', pass = '') {
         this._baseUrl = baseUrl;
         this._password = pass;
+        this.METHODS = [
+            {getInfo: 'GET'},
+            {createWallet: 'POST'},
+            {changeWallet: 'POST'},
+        ];
     }
 
     /**
@@ -63,13 +64,13 @@ class NodeRPC {
      */
     async _request(method = "", params = [], paramStr = '') {
         //method = method.toLowerCase();
-        if (!_METHODS[method]) {
+        if (!this.METHODS[method]) {
             console.error('Invalid metod ' + method);
             return;
         }
         let res;
         try {
-            res = await NodeRPC._urlRequest(_METHODS[method], this._baseUrl + method + paramStr, params, this._password);
+            res = await NodeRPC._urlRequest(this.METHODS[method], this._baseUrl + method + paramStr, params, this._password);
         } catch (e) {
             console.error('Request error: ' + e); 
         };
