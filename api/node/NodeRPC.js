@@ -34,7 +34,7 @@ class NodeRPC {
             let options = {
                 method: method.toUpperCase() === 'POST' ? 'POST' : 'GET',
                 timeout: 0,
-            }
+            };
 
             if (password) {
                 options.auth = "1337:" + password;
@@ -116,10 +116,10 @@ class NodeRPC {
     /**
      * Change current wallet for node. The transactions list was recalculated Which can take a long time
      * @param {string} id 
-     * @param {string} private 
-     * @param {string} public 
+     * @param {string} privateKey 
+     * @param {string} publicKey 
      */
-    async changeWalletByData(id, private, public) {
+    async changeWalletByData(id, privateKey, publicKey) {
         let walletId = await this.getWallet();
         if (walletId === id) {
             return {status:'ok'};
@@ -127,8 +127,8 @@ class NodeRPC {
 
         return this._request('changeWallet', [
             'id=' + id,
-            'public=' + public,
-            `private=` + private,
+            'public=' + publicKey,
+            `private=` + privateKey,
             'balance=0'
         ]);
     }
