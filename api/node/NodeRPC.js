@@ -60,7 +60,7 @@ class NodeRPC {
      * @param {string} method 
      * @param {array} params 
      * @param {string} paramStr 
-     * @returns promise
+     * @returns {Promise}
      */
     async _request(method = "", params = [], paramStr = '') {
         //method = method.toLowerCase();
@@ -92,7 +92,7 @@ class NodeRPC {
 
     /**
      * Returns current blockchain status and node info
-     * @returns promise
+     * @returns {Promise}
      */
     getInfo() {
         return this._request('getInfo');    
@@ -100,7 +100,7 @@ class NodeRPC {
 
     /**
      * Generate and register new wallet with id, block id, private and public keysPair
-     * @returns promise
+     * @returns {Promise}
      */
     createWallet() {
         return this._request('createWallet');
@@ -119,6 +119,7 @@ class NodeRPC {
      * @param {string} id 
      * @param {string} privateKey 
      * @param {string} publicKey 
+     * @returns {Promise}
      */
     async changeWalletByData(id, privateKey, publicKey) {
         let walletId = await this.getWallet();
