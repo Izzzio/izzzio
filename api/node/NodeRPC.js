@@ -136,3 +136,4 @@ class NodeRPC {
     }
 
 }
+export default NodeRPC;

@@ -93,3 +93,5 @@ class EcmaSmartRPC extends NodeRPC {
     }
 
 }
+
+export default EcmaSmartRPC;
