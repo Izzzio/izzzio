@@ -16,11 +16,13 @@ Official Telegram group: [https://t.me/izzzio](https://t.me/izzzio)
 
 Welcome for any descussions and questions!
 
+Do not forget. Creating something new always starts with communication. We welcome any questions (even if they seem silly to you) and treat each participant with respect.
+
 ## How to contribute
 
 We recommend starting with a project WIKI [https://github.com/Izzzio/izzzio/wiki](https://github.com/Izzzio/izzzio/wiki).
 
-Also from the [README.md] file.
+Also from the [README.md](https://github.com/Izzzio/izzzio/blob/master/README.MD) file.
 
 You can start with both improving documentation or solving [issues](https://github.com/Izzzio/izzzio/issues).
 
@@ -45,8 +47,8 @@ We ask you to follow several stylistic rules that will allow you to write clean 
 * All JavaScript must adhere to [JavaScript Standard Style](https://standardjs.com/) with some expections:
 1. We always use curly braces in statements, cycles, functions and etc.
 2. You can ignore space before a function declaration's parentheses
-3. Trailing commas It's ok
-4. *We always using semicolons*
+3. Trailing commas it's ok
+4. _We always using semicolons_
 * Please! Describe each function or method with JSHint
 * This is open source software. Consider the people who will read your code, and make it look nice for them. It's sort of like driving a car: Perhaps you love doing donuts when you're alone, but with passengers the goal is to make the ride as smooth as possible. 
 
