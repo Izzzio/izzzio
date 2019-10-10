@@ -1,20 +1,17 @@
 //import { METHODS } from "http";
-const Http = require("http");
+const http = require("http");
 const Https = require("https");
-const URL = require("URL");
-
-
 
 class NodeRPC {
 
     constructor (RPCUrl = 'http://localhost:3001/', pass = '') {
-        this._baseUrl = baseUrl;
+        this._baseUrl = RPCUrl;
         this._password = pass;
-        this.METHODS = [
-            {getInfo: 'GET'},
-            {createWallet: 'POST'},
-            {changeWallet: 'POST'},
-        ];
+        this.METHODS = {    
+            getInfo: 'GET',
+            createWallet: 'POST',
+            changeWallet: 'POST',
+        };
     }
 
     /**
@@ -31,7 +28,6 @@ class NodeRPC {
             if (params.length > 0) {
                 fullUrl += '?' + params.join('&');
             }
-            let urlObj = new URL(fullUrl);
             let options = {
                 method: method.toUpperCase() === 'POST' ? 'POST' : 'GET',
                 timeout: 0,
@@ -136,4 +132,4 @@ class NodeRPC {
     }
 
 }
-export default NodeRPC;
+module.exports = NodeRPC;

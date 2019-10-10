@@ -330,15 +330,15 @@ class App extends DApp {
 
 
         await this.tokenTest();
-        await this.c2cTest();
-        await this.voteContractTest();
-        await this.voteContractChangeResources();
+        //await this.c2cTest();
+        //await this.voteContractTest();
+        //await this.voteContractChangeResources();
 
         console.log('');
         console.log('');
         console.log('');
         logger.info('Tests passed');
-        process.exit();
+        //process.exit();
     }
 
 }
