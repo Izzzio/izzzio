@@ -21,6 +21,10 @@ IZZZIO (iZ³) - fully customizable blockchain platform. This platform provides s
 + DApp operating system
 + Special P2P hi-speed messaging protocol - StarWave and StarWaveCrypto for encrypted messaging
 
+## Docs
+
+Programming guide and references you can found in our [WIKI pages https://github.com/Izzzio/izzzio/wiki](https://github.com/Izzzio/izzzio/wiki)
+
 ## BigNet
 
 BigNet is a public network of smart contracts developed by IZZZIO specifically for business tasks. The network allows you to run your decentralized applications, while being safe from changing the rate of cryptocurrencies, and increasing the cost of transactions. Because they are free :)
@@ -97,7 +101,20 @@ Check needed options in right panel:
 Make sure the "...VC++ 2015.3 v14.00(v140)" option is enabled.
 
 
+## Communication
+
+Our DISCORD channel: [https://discord.gg/5EmW96a](https://discord.gg/5EmW96a)
+
+Official Telegram group: [https://t.me/izzzio](https://t.me/izzzio)
+
+Welcome for any descussions and questions!
+
 ## Contributing
+
+Hi and welcome!
+Please! Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+
+After reading use the following steps:
 
 1. Fork it ( [https://github.com/Izzzio/izzzio/fork](https://github.com/Izzzio/izzzio/fork) )
 2. Create your feature branch (git checkout -b my-new-feature)
@@ -109,7 +126,14 @@ Make sure the "...VC++ 2015.3 v14.00(v140)" option is enabled.
 
 - [lailune](https://github.com/lailune) Andrey Nedobylsky - maintainer
 
+## Hall of fame
 
-## 
+In this section we publish the best contributors.
+
+* Dmitry Elsukov [demndik](https://github.com/demndik)
+* Kirill Revenkov [Arucard89](https://github.com/Arucard89)
+
+
+***
 
 [![https://nodei.co/npm/iz3node.png?downloads=true&downloadRank=true&stars=true](https://nodei.co/npm/iz3node.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/iz3node)
