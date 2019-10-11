@@ -1,25 +1,47 @@
 const NodeRPC = require('../NodeRPC');
+const EcmaSmartRPC = require('../EcmaSmartRPC');
 
-let izNode = new NodeRPC('http://localhost:3015/');
+let izNode = new EcmaSmartRPC('http://localhost:3015/');
 
-async function main() {
-    console.log('Try to create wallet');
-    try
-    {
-        let wallet = await izNode.getWallet();//izNode.createWallet();
-    } catch (e) {
-        console.log(e);
+let countractSource = `class TestContract extends Contract {
+
+    init(){
+        this.vars = new KeyValue('TestContract');
+        super.init();
     }
     
-    console.log(wallet);
-    console.log('Try to change wallet');
-    let cw = await izNode.changeWallet(wallet);
-    
-    console.log('New wallet address ' + wallet['id']);
-    //console.log( "New tiny address: " + NodeRPC.getTinyAddress($wallet) );
-    console.log( "Current address: " + izNode.getWallet());
-    console.log();
+    get contract(){
+        return {"name":"TestContract"}
+    }
 
+    deploy() {
+        console.log('DEPLOY');
+        this.vars.put('t', 10);
+    }
+
+    call() {
+        let t = Number(this.vars.get('t'));
+        t++;
+        console.log('CALLINGS', t);
+        this.vars.put('t', t);
+    }
+    
+    plus(a,b){
+        console.log('PLUS',a,b);
+        return Number(a)+Number(b);
+    }
 }
 
-main().then(()=>console.log('Done'));
+global.registerContract(TestContract);`;
+
+async function main() {
+    result = await izNode.ecmaDeployContract(countractSource);
+    console.log(result);
+}
+
+main()
+.then(()=>console.log('Done'))
+.catch(e=>{
+    console.log('something went wrong');
+    console.log(e);
+});

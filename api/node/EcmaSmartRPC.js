@@ -1,3 +1,4 @@
+const NodeRPC = require('./NodeRPC');
 
 class EcmaSmartRPC extends NodeRPC {
     

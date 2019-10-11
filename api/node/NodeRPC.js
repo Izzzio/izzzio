@@ -1,6 +1,8 @@
 //import { METHODS } from "http";
 const http = require("http");
 const Https = require("https");
+//const Buffer  = require('Buffer');
+//const buffer = new Buffer();
 
 class NodeRPC {
 
@@ -22,31 +24,52 @@ class NodeRPC {
      * @param {string} password 
      * @returns {object}
      */
-    static _urlRequest(method = 'GET', url, params = [], password = '') {
+    static _urlRequest(method = 'GET', url = "", params = [], password = '') {
         return new Promise((resolve, reject) =>{
             let fullUrl = url; 
+            let postBody = "";
             if (params.length > 0) {
-                fullUrl += '?' + params.join('&');
+                postBody = params.map(v=>{
+                                let splitted = v.split("=");
+                                return encodeURIComponent(splitted[0]) + '=' + encodeURIComponent(splitted[1]);
+                            })
+                            .join('&');
             }
             let options = {
                 method: method.toUpperCase() === 'POST' ? 'POST' : 'GET',
                 timeout: 0,
             };
 
+            if (postBody){
+                options.headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Length': Buffer.byteLength(postBody)
+                };
+            }
+            
+
             if (password) {
                 options.auth = "1337:" + password;
             }
+            
 
-            const req = http.request(fullUrl, options, (res)=>{
+            const req = http.request(fullUrl, options, (res)=> {
+
+                res.on('data', (data) => {
+                    res.data = data;
+                    //return resolve(res);
+                })
+
                 res.on('end', () => {
                     return resolve(res);
-                })
-            })
+                });
+            });
 
             req.on('error', (e) => {
                 return reject(e);
             });
 
+            req.write(postBody);
             req.end();
         })
     }
@@ -69,19 +92,22 @@ class NodeRPC {
             res = await NodeRPC._urlRequest(this.METHODS[method], this._baseUrl + method + paramStr, params, this._password);
         } catch (e) {
             console.error('Request error: ' + e); 
-        };
+        }
 
-        if (res.toLowerCase() === 'true') {
-            return {status: 'ok'};
-        } else if (res.toLowerCase() === 'false') {
-            console.error('Can\'t call method ' + $method);
+        if (!res.data){
+            if (res.statusMessage.toLowerCase === "ok") {
+                return {status: 'ok'};
+            } else {
+                console.error('Can\'t call method ' + method);
+            }
         }
 
         let response;
         try{
-         response = JSON.parse(res);
-        } catch {
-            console.error('RPC Error: ' + res);   
+            let jsonRes = Buffer.from(res.data).toString();
+            response = JSON.parse(jsonRes);
+        } catch (e) {
+            console.error('RPC Error: ' + e);   
         }
         return response;
     }
