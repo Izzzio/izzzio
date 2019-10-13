@@ -12,7 +12,8 @@
     "depency": "npm install",
     "build": "build.sh",
     "start": "node main.js",
-    "test": "cd BigNet/test && test"
+    "test": "cd BigNet/test && test",
+    "terminal": "node api/node/terminal/terminal --experimental-repl-await"
   },
   "dependencies": {
     "big-number": "^1.0.0",
