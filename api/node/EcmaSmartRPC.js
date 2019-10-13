@@ -61,7 +61,7 @@ class EcmaSmartRPC extends NodeRPC {
      * @returns {Promise}
      */
     ecmaDeployMethod(contractAddress, method, params) {
-        return $this._request('contracts/ecma/deployMethod', ['argsEncoded=' + JSON.stringify(params)], '/' + contractAddress + '/' + method);
+        return this._request('contracts/ecma/deployMethod', ['argsEncoded=' + JSON.stringify(params)], '/' + contractAddress + '/' + method);
     }
 
     /**

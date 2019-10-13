@@ -29,8 +29,17 @@ let countractSource = `class TestContract extends Contract {
 global.registerContract(TestContract);`;
 
 async function main() {
-    result = await izNode.ecmaDeployContract(countractSource);
-    console.log(result);
+    let newContract = (await izNode.ecmaDeployContract(countractSource)).result;
+    let newAddress = newContract['address'];
+    console.log("Deployed contract address: " + newAddress);
+    let contractInfo = (await izNode.ecmaGetContractProperty(newAddress, 'contract')).result;
+    console.log("Deployed contract info: " + contractInfo);
+    console.log("Deploy contract method 'call'");
+    let withDeploy = (await izNode.ecmaDeployMethod(newAddress, 'call', [])).result;
+    console.log("New deploy block: "+ withDeploy['index']);
+    console.log("Call contract method without deploy plus(2,3):");
+    let withoutDeploy = (await izNode.ecmaCallMethod(newAddress, 'plus', [2, 3])).result;
+    console.log("Result: " + withoutDeploy);
 }
 
 main()

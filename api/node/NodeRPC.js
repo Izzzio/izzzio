@@ -34,7 +34,7 @@ class NodeRPC {
                 //convert "['param1=value1', 'param2=value2']" to object {param1:value1, param2:value2}
                 postBody = params.reduce((prev, cur)=>{
                     let splitted = cur.split("=");
-                    prev[splitted.shift()] = splitted.join("=").replace(/\n/g, '').replace(/ +/g, ' '); //remove \n and unnecessary spaces
+                    prev[splitted.shift()] = splitted.join("=").replace(/ +/g, ' '); //remove \n and unnecessary spaces
                     return prev;  
                 }, {});
             }
