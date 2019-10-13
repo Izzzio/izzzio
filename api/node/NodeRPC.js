@@ -24,16 +24,19 @@ class NodeRPC {
      * @param {string} password 
      * @returns {object}
      */
-    static _urlRequest(method = 'GET', url = "", params = [], password = '') {
+    static _urlRequest(method = 'GET', url = "", params = [], password = '', login = "1337") {
         return new Promise((resolve, reject) =>{
             let fullUrl = url; 
             let postBody = "";
-            if (params.length > 0) {
-                postBody = params.map(v=>{
-                                let splitted = v.split("=");
-                                return encodeURIComponent(splitted[0]) + '=' + encodeURIComponent(splitted[1]);
-                            })
-                            .join('&');
+
+            if (Array.isArray(params) && params.length > 0) {
+
+                //convert "['param1=value1', 'param2=value2']" to object {param1:value1, param2:value2}
+                postBody = params.reduce((prev, cur)=>{
+                    let splitted = cur.split("=");
+                    prev[splitted.shift()] = splitted.join("=").replace(/\n/g, '').replace(/ +/g, ' '); //remove \n and unnecessary spaces
+                    return prev;  
+                }, {});
             }
             let options = {
                 method: method.toUpperCase() === 'POST' ? 'POST' : 'GET',
@@ -42,14 +45,14 @@ class NodeRPC {
 
             if (postBody){
                 options.headers = {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Content-Length': Buffer.byteLength(postBody)
+                    'Content-Type': 'application/json',
+                   // 'Content-Length': Buffer.byteLength(postBody)
                 };
             }
             
 
             if (password) {
-                options.auth = "1337:" + password;
+                options.auth = login + ":" + password;
             }
             
 
@@ -57,8 +60,7 @@ class NodeRPC {
 
                 res.on('data', (data) => {
                     res.data = data;
-                    //return resolve(res);
-                })
+                });
 
                 res.on('end', () => {
                     return resolve(res);
@@ -69,9 +71,11 @@ class NodeRPC {
                 return reject(e);
             });
 
-            req.write(postBody);
+            if (req.method === "POST") {
+                req.write(JSON.stringify(postBody));
+            }
             req.end();
-        })
+        });
     }
 
     /**
