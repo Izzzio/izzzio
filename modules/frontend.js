@@ -112,7 +112,7 @@ class Frontend {
                 logger.info(new Error('Can\'t get block by id: ' + req.params.id + ' ' + err));
                 res.send({error: true, message: err.message});
             } else {
-                res.send(JSON.stringify(block));
+                res.send(block);
             }
         });
     }
