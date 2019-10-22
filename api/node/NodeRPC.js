@@ -1,8 +1,4 @@
-//import { METHODS } from "http";
 const http = require("http");
-const Https = require("https");
-//const Buffer  = require('Buffer');
-//const buffer = new Buffer();
 
 class NodeRPC {
 
