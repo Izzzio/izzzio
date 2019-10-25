@@ -9,6 +9,7 @@ class EcmaSmartRPC extends NodeRPC {
             'contracts/ecma/getInfo':'GET',
             'contracts/ecma/getContractInfo':'GET',
             'contracts/ecma/getContractProperty': 'GET',
+            'contracts/ecma/getBlockById': 'GET',
             'contracts/ecma/callMethod': 'POST',
             'contracts/ecma/deployMethod': 'POST',
             'contracts/ecma/deployContract': 'POST',
@@ -21,6 +22,14 @@ class EcmaSmartRPC extends NodeRPC {
      */
     ecmaGetInfo() {
         return this._request('contracts/ecma/getInfo');
+    }
+
+    /**
+     * Get block with id
+     * @param {number|string} blockId 
+     */
+    ecmaGetBlockById(blockId) {
+        return this._request('contracts/ecma/getBlockById', [], '/' + blockId)    
     }
 
     /**

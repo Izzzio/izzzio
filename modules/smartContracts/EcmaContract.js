@@ -1812,6 +1812,14 @@ class EcmaContract {
             }
         });
 
+        app.get('/contracts/ecma/getBlockById/:blockId', async function (req, res) {
+            try {
+                res.send({result: await blocks.getById(req.params.blockId)});
+            } catch (e) {
+                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+            }    
+        });
+
         app.post('/contracts/ecma/callMethod/:address/:method', async function (req, res) {
 
             if(typeof req.body.argsEncoded !== 'undefined') {
