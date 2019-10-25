@@ -7,6 +7,7 @@ const express = require("express");
 const Wallet = require("./wallet");
 const storj = require('./instanceStorage');
 const utils = require('./utils');
+const logger = new (require('./logger'))();
 
 /**
  * Wallet and RPC interface
@@ -31,6 +32,10 @@ class Frontend {
         //app.get('/', this.index);
         app.get('/getInfo', function (req, res) {
             that.getInfo(req, res)
+        });
+
+        app.get('/getBlock/:id', function (req, res) {
+            that.getBlock(req, res)
         });
 
         app.get('/isReadyForTransaction', function (req, res) {
@@ -98,6 +103,18 @@ class Frontend {
             });
         });
 
+    }
+
+    getBlock(req, res) {
+        let that = this;
+        that.blockchainObject.getBlockById(parseInt(req.params.id), function (err, block) {
+            if (err) {
+                logger.info(new Error('Can\'t get block by id: ' + req.params.id + ' ' + err));
+                res.send({error: true, message: err.message});
+            } else {
+                res.send(block);
+            }
+        });
     }
 
     isReadyForTransaction(req, res) {
