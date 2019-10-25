@@ -31,6 +31,8 @@ async function main() {
     let newContract = (await izNode.ecmaDeployContract(contractSource)).result;
     let newAddress = newContract['address'];
     console.log("Deployed contract address: " + newAddress);
+    let allInfo = (await izNode.ecmaGetInfo());
+    console.log('All info ' + JSON.stringify(allInfo));
     let contractInfo = (await izNode.ecmaGetContractProperty(newAddress, 'contract')).result;
     console.log("Deployed contract info: " + JSON.stringify(contractInfo));
     console.log("Deploy contract method 'call'");
@@ -39,6 +41,8 @@ async function main() {
     console.log("Call contract method without deploy plus(2,3):");
     let withoutDeploy = (await izNode.ecmaCallMethod(newAddress, 'plus', [2, 3])).result;
     console.log("Result: " + withoutDeploy);
+    let blockByID = (await izNode.ecmaGetBlockById(3));
+    console.log('Block ' + JSON.stringify(blockByID));
 }
 
 main()
