@@ -41,7 +41,7 @@ async function main() {
     console.log("Call contract method without deploy plus(2,3):");
     let withoutDeploy = (await izNode.ecmaCallMethod(newAddress, 'plus', [2, 3])).result;
     console.log("Result: " + withoutDeploy);
-    let blockByID = (await izNode.ecmaGetBlockById(3));
+    let blockByID = (await izNode.getBlockById(3));
     console.log('Block ' + JSON.stringify(blockByID));
 }
 
