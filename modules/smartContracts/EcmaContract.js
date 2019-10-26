@@ -1812,22 +1812,6 @@ class EcmaContract {
             }
         });
 
-        app.get('/contracts/ecma/getBlockById/:blockId', async function (req, res) {
-
-            try {
-                that.blockchain.getBlockById(parseInt(req.params.blockId), function (err, block) {
-                    if (err) {
-                        logger.info(new Error('Can\'t get block by id: ' + req.params.blockId + ' ' + err));
-                        res.send({error: true, message: err.message});
-                    } else {
-                        res.send(block);
-                    }
-                });
-            } catch (e) {
-                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
-            }    
-        });
-
         app.post('/contracts/ecma/callMethod/:address/:method', async function (req, res) {
 
             if(typeof req.body.argsEncoded !== 'undefined') {

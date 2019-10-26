@@ -9,6 +9,7 @@ class NodeRPC {
             getInfo: 'GET',
             createWallet: 'POST',
             changeWallet: 'POST',
+            getBlock: 'GET',
         };
     }
 
@@ -155,6 +156,14 @@ class NodeRPC {
             `private=` + privateKey,
             'balance=0'
         ]);
+    }
+
+    /**
+     * Get block with id
+     * @param {number|string} blockId 
+     */
+    getBlockById(blockId) {
+        return this._request('getBlock', [], '/' + blockId);
     }
 
 }
