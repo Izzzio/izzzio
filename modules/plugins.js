@@ -23,6 +23,10 @@ class Plugins {
             injectedScripts: that._injectedScripts,
         };
 
+        this.db = {
+            registerFunction: that._registerDBFunction,
+        };
+
         this.crypto = {
             registerHash: cryptography.registerHash,
             registerGenerator: cryptography.registerGenerator,
@@ -32,6 +36,14 @@ class Plugins {
 
     }
 
+    /**
+     * add external DB function from plugin as a private function of the class
+     * @param {string} functionName name of the DB function
+     * @param {function} functionObject object of the function
+     */
+    _registerDBFunction(functionName, functionObject) {
+        this._registerFunction('DB', functionName, functionObject);    
+    }
 
     /**
      * add external function from plugin as private function of the class

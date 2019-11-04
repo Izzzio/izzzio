@@ -31,7 +31,7 @@ class TestClass {
 function testFunction(cb, ...args) {
     setTimeout(function(){
         console.log(args[0]);
-        return cb('', args[1]); 
+        return cb('', args[1]);  // doesn't matter what first argument is
     }, 0);
     /*console.log(args[0]);
      cb('', args[1]); */
