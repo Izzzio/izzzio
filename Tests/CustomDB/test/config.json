@@ -1,0 +1,36 @@
+{
+  "p2pPort": 6017,
+  "httpServer": "localhost",
+  "httpPort": 3015,
+  "initialPeers": [
+  ],
+  "recieverAddress": "nodeOne",
+  "blockHashFilter": {
+    "blockEndls": [
+      "f3c3",
+      "a001",
+      "f6de",
+      "86d0",
+      "5027"
+    ]
+  },
+  "genesisTiemstamp": 1534080014000,
+  "generateEmptyBlockDelay": 86400000,
+  "enableMessaging": false,
+  "rpcPassword": "",
+  "blockAcceptCount": 0,
+  "maxPeers": 25,
+  "workDir": "./temp",
+  "walletFile": "./temp/wallet.json",
+  "walletsDB": "./temp/wallets.json",
+  "blocksDB": "./temp/blocks.json",
+  "appEntry": "./Tests/CustomDB/test/test.js",
+  "ecmaContract": {
+    "enabled": true,
+    "allowDebugMessages": true,
+    "contractInstanceCacheLifetime": 10000,
+    "masterContract": 5
+  },
+  "signFunction": "NEWRSA",
+  "plugins": [ "iz3-basic-crypto" , "iz3-db-demo" ]
+}

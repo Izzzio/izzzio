@@ -33,7 +33,7 @@ class KeyValue {
         if(!name) {
             name = undefined;
         }
-
+        
         if (plugins.DB && plugins.DB.modulePath && name) {
             this.pluginDB = require(plugins.DB.modulePath()).init(name, this.config.workDir);
             this.type = STORAGE_TYPE.PLUGINDB;

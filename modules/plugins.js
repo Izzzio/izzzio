@@ -24,7 +24,7 @@ class Plugins {
         };
 
         this.db = {
-            registerModule: that.registerModule,
+            registerModule: that._registerModule,
             registerFunction: that._registerDBFunction,
         };
 
@@ -43,7 +43,7 @@ class Plugins {
      */
     _registerModule(modulePath) {
         const path = modulePath;
-        this._registerDBFunction('modulePath', () => {
+        that._registerDBFunction('modulePath', () => {
             return path;
         });
     }
@@ -54,7 +54,7 @@ class Plugins {
      * @param {function} functionObject object of the function
      */
     _registerDBFunction(functionName, functionObject) {
-        this._registerFunction('DB', functionName, functionObject);    
+        that._registerFunction('DB', functionName, functionObject);    
     }
 
 
