@@ -24,6 +24,7 @@ class Plugins {
         };
 
         this.db = {
+            registerModule: that.registerModule,
             registerFunction: that._registerDBFunction,
         };
 
@@ -37,6 +38,17 @@ class Plugins {
     }
 
     /**
+     * returns path to the DB module
+     * @param {string} modulePath path to the file with new DB class
+     */
+    _registerModule(modulePath) {
+        const path = modulePath;
+        this._registerDBFunction('modulePath', () => {
+            return path;
+        });
+    }
+
+    /**
      * add external DB function from plugin as a private function of the class
      * @param {string} functionName name of the DB function
      * @param {function} functionObject object of the function
@@ -44,6 +56,7 @@ class Plugins {
     _registerDBFunction(functionName, functionObject) {
         this._registerFunction('DB', functionName, functionObject);    
     }
+
 
     /**
      * add external function from plugin as private function of the class

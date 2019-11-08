@@ -9,10 +9,12 @@ const levelup = require('levelup');
 const memdown = require('memdown');
 const leveldown = require('leveldown');
 const fs = require('fs-extra');
+const plugins = storj.get('plugins');
 
 const STORAGE_TYPE = {
     MEMORY: 0,
     LEVELDB: 1,
+    PLUGINDB: 2,
 };
 
 /**
@@ -26,26 +28,30 @@ class KeyValue {
         this.config = storj.get('config');
         this.levelup = null;
         this.name = name;
+        this.pluginDB = null;
 
         if(!name) {
             name = undefined;
         }
 
-        if(typeof name !== 'undefined' && name.indexOf('mem://') !== -1) { //Memory with saving storage
-            this.type = STORAGE_TYPE.MEMORY;
-            this.name = name.split('mem://')[1];
+        if (plugins.DB && plugins.DB.modulePath && name) {
+            this.pluginDB = require(plugins.DB.modulePath()).init(name, this.config.workDir);
+            this.type = STORAGE_TYPE.PLUGINDB;
+        } else {
+            if(typeof name !== 'undefined' && name.indexOf('mem://') !== -1) { //Memory with saving storage
+                this.type = STORAGE_TYPE.MEMORY;
+                this.name = name.split('mem://')[1];
 
-            try {
-                this.memKeyValue = JSON.parse(fs.readFileSync(this.config.workDir + '/' + this.name));
-            } catch (e) {
-                //console.log(e);
+                try {
+                    this.memKeyValue = JSON.parse(fs.readFileSync(this.config.workDir + '/' + this.name));
+                } catch (e) {
+                    //console.log(e);
+                }
+            } else if(typeof name !== 'undefined') { //LevelDB storage
+                this.type = STORAGE_TYPE.LEVELDB;
+                this.levelup = levelup(leveldown(this.config.workDir + '/' + name));
             }
 
-
-        } else if(typeof name !== 'undefined') { //LevelDB storage
-            this.type = STORAGE_TYPE.LEVELDB;
-            this.levelup = levelup(leveldown(this.config.workDir + '/' + name));
-            //this.levelup = levelup(memdown());//levelup(this.config.workDir + '/blocks');
         }
     }
 
@@ -55,6 +61,14 @@ class KeyValue {
      */
     getLevelup() {
         return this.levelup;
+    }
+    
+    /**
+     * Returns plugin DB object if exists
+     * @return {null|*}
+     */
+    getPluginDB() {
+        return this.pluginDB;
     }
 
     /**
@@ -82,6 +96,9 @@ class KeyValue {
                 break;
             case STORAGE_TYPE.LEVELDB:
                 that.levelup.get(key, options, callback);
+                break;
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.get(key, options, callback);
                 break;
         }
 
@@ -142,6 +159,9 @@ class KeyValue {
                 }*/
                 that.levelup.put(key, value, callback);
                 break;
+
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.put(key, value, callback);
         }
 
 
@@ -194,6 +214,9 @@ class KeyValue {
             case STORAGE_TYPE.LEVELDB:
                 that.levelup.del(key, options, callback);
                 break;
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.del(key, options, callback);
+                break;
         }
 
 
@@ -241,6 +264,9 @@ class KeyValue {
             case STORAGE_TYPE.LEVELDB:
                 that.levelup.close(callback);
                 break;
+            case STORAGE_TYPE.PLUGINDB:
+                    that.pluginDB.close(callback);
+                    break;
         }
     }
 
@@ -285,6 +311,8 @@ class KeyValue {
                     }
                 }
                 break;
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.close(callback);
         }
     }
 
@@ -317,6 +345,8 @@ class KeyValue {
                     callback();
                 }
                 break;
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.save(callback);
         }
     }
 
