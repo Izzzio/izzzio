@@ -2,22 +2,24 @@ const levelup = require('levelup');
 const memdown = require('memdown');
 const leveldown = require('leveldown');
 const fs = require('fs-extra');
+let that;
 
 class CustomDB {
     constructor(name, workdir){
         this.workDir = workdir;
         this.name = name;
-        this.levelup = levelup(leveldown('haha' + '/' + workdir + '/' + name));        
+        this.levelup = levelup(leveldown(this.workDir + '/' + name));     
+        that = this;   
     }
 
     get(key, options, callback) {
-        console.log('Custom DB get');
-        this.levelup.get(key, options, callback);    
+        console.log('Custom DB get' + {key, options, callback});
+        that.levelup.get(key, options, callback);    
     }
 
     put(key, value, options, callback) {
         console.log('Custom DB put');
-        this.levelup.put(key, value, callback);   
+        that.levelup.put(key, value, callback);   
     }
 
     del(key, options, callback) {
@@ -34,8 +36,8 @@ class CustomDB {
         console.log('Custom DB clear');
         try {
             that.levelup.close(function () {
-                fs.removeSync(this.workDir + '/' + this.name);
-                this.levelup = levelup(leveldown(this.workDir + '/' + this.name));
+                fs.removeSync(that.workDir + '/' + that.name);
+                that.levelup = levelup(leveldown(that.workDir + '/' + that.name));
                 if(typeof callback !== 'undefined') {
                     callback();
                 }
@@ -55,6 +57,6 @@ class CustomDB {
     }
 }
 
-module.exports = function init (name, workdir) {
+exports.init = function init (name, workdir) {
     return new CustomDB (name, workdir);
 };

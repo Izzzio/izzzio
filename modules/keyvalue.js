@@ -9,7 +9,7 @@ const levelup = require('levelup');
 const memdown = require('memdown');
 const leveldown = require('leveldown');
 const fs = require('fs-extra');
-const plugins = storj.get('plugins');
+const plugins = storj.get('plugins');//.ecma.getAllRegisteredFunctionsAsObject();
 
 const STORAGE_TYPE = {
     MEMORY: 0,
@@ -33,9 +33,8 @@ class KeyValue {
         if(!name) {
             name = undefined;
         }
-        
-        if (plugins.DB && plugins.DB.modulePath && name) {
-            this.pluginDB = require(plugins.DB.modulePath()).init(name, this.config.workDir);
+        if (plugins.db && plugins.db.modulePath && name) {
+            this.pluginDB = require(plugins.db.modulePath).init(name, this.config.workDir);
             this.type = STORAGE_TYPE.PLUGINDB;
         } else {
             if(typeof name !== 'undefined' && name.indexOf('mem://') !== -1) { //Memory with saving storage

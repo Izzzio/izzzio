@@ -31,6 +31,7 @@
     "contractInstanceCacheLifetime": 10000,
     "masterContract": 5
   },
+  "pluginDB": "iz3-db-demo",
   "signFunction": "NEWRSA",
-  "plugins": [ "iz3-basic-crypto" , "iz3-db-demo" ]
+  "plugins": [ "iz3-basic-crypto" ]
 }

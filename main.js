@@ -140,7 +140,7 @@ const config = {
 
     //DB-config
 
-    pluginDB: false,                        //true, если используется база данных из плагина. false - если используются встроенные БД
+    pluginDB: "",                        //если используется база данных из плагина, то название плагина. falsee value - если используются встроенные БД
 
     //Enabled plugins
     plugins: [
