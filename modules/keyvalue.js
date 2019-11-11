@@ -50,7 +50,6 @@ class KeyValue {
                 this.type = STORAGE_TYPE.LEVELDB;
                 this.levelup = levelup(leveldown(this.config.workDir + '/' + name));
             }
-
         }
     }
 
@@ -121,7 +120,7 @@ class KeyValue {
                     return reject(err);
                 }
 
-                if(that.type === STORAGE_TYPE.LEVELDB && result.toString().includes('JSON:')) {
+                if(that.type !== STORAGE_TYPE.MEMORY && result.toString().includes('JSON:')) {
                     result = JSON.parse(result.toString().replace('JSON:', ''));
                 }
 
@@ -161,6 +160,7 @@ class KeyValue {
 
             case STORAGE_TYPE.PLUGINDB:
                 that.pluginDB.put(key, value, callback);
+                break;
         }
 
 
@@ -178,7 +178,7 @@ class KeyValue {
             options = {};
         }
 
-        if(typeof value === 'object' && this.type === STORAGE_TYPE.LEVELDB) {
+        if(typeof value === 'object' && this.type !== STORAGE_TYPE.MEMORY) {
             value = 'JSON:' + JSON.stringify(value);
         }
 
