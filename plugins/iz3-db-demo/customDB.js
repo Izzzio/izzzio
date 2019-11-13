@@ -21,7 +21,7 @@ class CustomDB {
                 return callback(err);
             }
 
-            if(that.type === STORAGE_TYPE.LEVELDB && result.toString().includes('JSON:')) {
+            if(result.toString().includes('JSON:')) {
                 result = JSON.parse(result.toString().replace('JSON:', ''));
             }
 
