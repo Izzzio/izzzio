@@ -120,7 +120,7 @@ class KeyValue {
                     return reject(err);
                 }
 
-                if(that.type !== STORAGE_TYPE.MEMORY && result.toString().includes('JSON:')) {
+                if(that.type === STORAGE_TYPE.LEVELDB && result.toString().includes('JSON:')) {
                     result = JSON.parse(result.toString().replace('JSON:', ''));
                 }
 
@@ -178,7 +178,7 @@ class KeyValue {
             options = {};
         }
 
-        if(typeof value === 'object' && this.type !== STORAGE_TYPE.MEMORY) {
+        if(typeof value === 'object' && this.type === STORAGE_TYPE.LEVELDB) {
             value = 'JSON:' + JSON.stringify(value);
         }
 

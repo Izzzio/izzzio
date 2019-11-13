@@ -15,11 +15,26 @@ class CustomDB {
     get(key, options, callback) {
         console.log('Custom DB get' + JSON.stringify({key, options, callback}));
         //console.trace()
-        that.levelup.get(key, options, callback);    
+       
+        that.levelup.get(key, options, function (err, result) {
+            if(err) {
+                return callback(err);
+            }
+
+            if(that.type === STORAGE_TYPE.LEVELDB && result.toString().includes('JSON:')) {
+                result = JSON.parse(result.toString().replace('JSON:', ''));
+            }
+
+            return callback('',result);
+        });   
+         
     }
 
     put(key, value, options, callback) {
         console.log('Custom DB put' + JSON.stringify({key, value, options, callback}));
+        if(typeof value === 'object') {
+            value = 'JSON:' + JSON.stringify(value);
+        }
         //console.trace()
         that.levelup.put(key, value, callback);   
     }
