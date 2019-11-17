@@ -22,10 +22,10 @@ class Plugins {
             getAllRegisteredFunctionsAsObject: that._getAllRegisteredFunctionsAsObject,
             injectedScripts: that._injectedScripts,
         };
-        this.getAllRegisteredFunctionsAsObject = that._getAllRegisteredFunctionsAsObject, 
+        this.getAllRegisteredFunctionsAsObject = that._getAllRegisteredFunctionsAsObject;
 
         this.db = {
-            registerModule: that._registerModule,
+            registerModule: that._registerDBModule,
             registerFunction: that._registerDBFunction,
         };
 
@@ -41,13 +41,14 @@ class Plugins {
     /**
      * returns path to the DB module
      * @param {string} modulePath path to the file with new DB class
+     * @param {string} modulePath path to the file with new DB class
      */
-    _registerModule(modulePath) {
-        const path = modulePath;
-        that.db.modulePath = path;
-        that._registerDBFunction('modulePath', function () {
+    _registerDBModule(protocolPrefix, modulePath) {
+        that.db[protocolPrefix] = modulePath;
+
+        /*that._registerDBFunction('modulePath', function () {
             return path;
-        });
+        });*/
     }
 
     /**

@@ -34,6 +34,7 @@ class KeyValue {
             name = undefined;
         }
 
+
         if(typeof name !== 'undefined' && name.indexOf('mem://') !== -1) { //Memory with saving storage
             this.type = STORAGE_TYPE.MEMORY;
             this.name = name.split('mem://')[1];
@@ -43,12 +44,27 @@ class KeyValue {
             } catch (e) {
                 //console.log(e);
             }
-        } else if(plugins.db && plugins.db.modulePath && name) {
-            this.pluginDB = require(plugins.db.modulePath).init(name, this.config.workDir);
-            this.type = STORAGE_TYPE.PLUGINDB;
-        } else if(typeof name !== 'undefined') { //LevelDB storage
+
+            return this;
+        }
+
+        if(typeof name !== 'undefined' && name.includes('://')) {
+            let protocol = name.split('://');
+            let dbName = protocol[1];
+            protocol = protocol[0];
+
+            if(typeof plugins.db[protocol] !== 'undefined') {
+                this.type = STORAGE_TYPE.PLUGINDB;
+                this.pluginDB = require(plugins.db[protocol]).init(dbName, this.config.workDir);
+                return this;
+            }
+        }
+
+
+        if(typeof name !== 'undefined') { //LevelDB storage
             this.type = STORAGE_TYPE.LEVELDB;
             this.levelup = levelup(leveldown(this.config.workDir + '/' + name));
+            return this;
         }
     }
 

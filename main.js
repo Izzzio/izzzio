@@ -119,6 +119,7 @@ const config = {
     //Database
     blocksDB: 'blocks',                     // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
     blocksSavingInterval: 300000,            // false = для отключения автосохранения, или количество милилсекунд
+    accountsDB: 'accounts',                 //Account manager database
 
     //Application
     appEntry: false,       //Точка входа в "приложение". False - если не требуется
@@ -147,7 +148,6 @@ const config = {
         "iz3-basic-crypto"
     ],
 
-    
 
 };
 

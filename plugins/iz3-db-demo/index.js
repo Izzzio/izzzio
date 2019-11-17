@@ -19,13 +19,15 @@
 const logger = new (require(global.PATH.mainDir + '/modules/logger'))("TestPlugin");
 const path = require('path');
 
+const PROTOCOL_PREFIX = 'level';
+
 module.exports = function register(blockchain, config, storj) {
     logger.info('Initialize custom DB');
 
     let plugins = storj.get('plugins');
     //console.log(JSON.stringify(plugins));
     //console.log(plugins);
-    plugins.db.registerModule(__dirname + path.sep + 'customDB.js');
+    plugins.db.registerModule(PROTOCOL_PREFIX, __dirname + path.sep + 'customDB.js');
     //console.log(plugins);
     logger.info('OK');
 };

@@ -23,13 +23,14 @@
   "workDir": "./temp",
   "walletFile": "./temp/wallet.json",
   "walletsDB": "mem://wallets.json",
-  "blocksDB": "mem://blocks.json",
+  "blocksDB": "level://blocksByPlugin",
+  "accountsDB": "level://accountByPlugin",
   "appEntry": "./Tests/CustomDB/test/test.js",
   "ecmaContract": {
     "enabled": true,
     "allowDebugMessages": true,
     "contractInstanceCacheLifetime": 10000,
-    "masterContract": 5
+    "masterContract": 1
   },
   "pluginDB": "iz3-db-demo",
   "signFunction": "NEWRSA",
