@@ -76,9 +76,19 @@ function Blockchain(config) {
     storj.put('config', config);
 
     //load DB plugin
-    if (config.pluginDB) {
-        loadPlugin(config.pluginDB, blockchainObject, config, storj);
+    if(config.dbPlugins.length > 0) {
+        logger.info("Loading DB plugins...\n");
+        for (let plugin of config.dbPlugins) {
+            let res = loadPlugin(plugin, blockchainObject, config, storj);
+            if(typeof res === "object") {
+                logger.fatal("Plugin fatal:\n");
+                console.log(e);
+                process.exit(1);
+            }
+        }
+        logger.info("DB plugins loaded");
     }
+
     //Subsystems
     const blockController = new (require('./modules/blockchain'))();
     const NodeMetaInfo = require('./modules/NodeMetaInfo');
@@ -1888,7 +1898,7 @@ function Blockchain(config) {
         logger.info("Loading plugins...\n");
         for (let plugin of config.plugins) {
             let res = loadPlugin(plugin, blockchainObject, config, storj);
-            if (typeof res === "object") {
+            if(typeof res === "object") {
                 logger.fatal("Plugin fatal:\n");
                 console.log(e);
                 process.exit(1);
@@ -1904,7 +1914,7 @@ function Blockchain(config) {
      * @param {object} config config object
      * @param {object} storj global storage object
      */
-    function loadPlugin (plugin, blockchainObject, config, storj) {
+    function loadPlugin(plugin, blockchainObject, config, storj) {
         try {
             try {
                 plugin = require(plugin)(blockchainObject, config, storj);
@@ -1916,7 +1926,7 @@ function Blockchain(config) {
             }
         } catch (e) {
             return e;
-        }    
+        }
         return true;
     }
 

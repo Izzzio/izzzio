@@ -139,12 +139,10 @@ const config = {
     signFunction: '',                       //Функция вычисления цифровой подписи и генерации паролей(пустая-значит, по умолчанию используется), 'GOST' 'GOST256' 'NEWRSA'
     keyLength: 2048,                        //Key length for some algorithms
 
-    //DB-config
-
-    pluginDB: "",                        //если используется база данных из плагина, то название плагина. falsee value - если используются встроенные БД
 
     //Enabled plugins
-    plugins: [
+    dbPlugins: [],                      //Database plugins list
+    plugins: [                          //Crypto and other plugins
         "iz3-basic-crypto"
     ],
 
