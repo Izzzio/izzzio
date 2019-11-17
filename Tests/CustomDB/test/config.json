@@ -22,8 +22,8 @@
   "maxPeers": 25,
   "workDir": "./temp",
   "walletFile": "./temp/wallet.json",
-  "walletsDB": "./temp/wallets.json",
-  "blocksDB": "./temp/blocks.json",
+  "walletsDB": "mem://wallets.json",
+  "blocksDB": "mem://blocks.json",
   "appEntry": "./Tests/CustomDB/test/test.js",
   "ecmaContract": {
     "enabled": true,
