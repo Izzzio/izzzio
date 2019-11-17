@@ -1,1 +1,1 @@
-# iZ³ BigNet - public smart contract network
+# CustomDB plugins test
