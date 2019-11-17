@@ -1,0 +1,26 @@
+{
+  "name": "iz3-db-demo",
+  "version": "1.0.0",
+  "description": "Demo iz3node db plugin",
+  "main": "index.js",
+  "dependencies": {
+    
+  },
+  "homepage": "https://izzz.io",
+  "author": "Andrey Nedobylskiy & Kirill Revenkov",
+  "license": "GPL",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Izzzio/izzzio.git"
+  },
+  "keywords": [
+    "blockchain",
+    "crypto",
+    "izzzio",
+    "izzz",
+    "iz3",
+    "bignet",
+    "plugin", 
+    "db"
+  ]
+}

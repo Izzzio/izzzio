@@ -119,6 +119,7 @@ const config = {
     //Database
     blocksDB: 'blocks',                     // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
     blocksSavingInterval: 300000,            // false = для отключения автосохранения, или количество милилсекунд
+    accountsDB: 'accounts',                 //Account manager database
 
     //Application
     appEntry: false,       //Точка входа в "приложение". False - если не требуется
@@ -138,11 +139,12 @@ const config = {
     signFunction: '',                       //Функция вычисления цифровой подписи и генерации паролей(пустая-значит, по умолчанию используется), 'GOST' 'GOST256' 'NEWRSA'
     keyLength: 2048,                        //Key length for some algorithms
 
+
     //Enabled plugins
-    plugins: [
+    dbPlugins: [],                      //Database plugins list
+    plugins: [                          //Crypto and other plugins
         "iz3-basic-crypto"
     ],
-
 
 
 };

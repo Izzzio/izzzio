@@ -75,6 +75,19 @@ function Blockchain(config) {
     storj.put('app', app);
     storj.put('config', config);
 
+    //load DB plugin
+    if(config.dbPlugins.length > 0) {
+        logger.info("Loading DB plugins...\n");
+        for (let plugin of config.dbPlugins) {
+            let res = loadPlugin(plugin, blockchainObject, config, storj);
+            if(typeof res === "object") {
+                logger.fatal("Plugin fatal:\n");
+                console.log(e);
+                process.exit(1);
+            }
+        }
+        logger.info("DB plugins loaded");
+    }
 
     //Subsystems
     const blockController = new (require('./modules/blockchain'))();
@@ -1884,25 +1897,37 @@ function Blockchain(config) {
     if(config.plugins.length > 0) {
         logger.info("Loading plugins...\n");
         for (let plugin of config.plugins) {
-            try {
-                try {
-                    plugin = require(plugin)(blockchainObject, config, storj);
-                } catch (e) {
-                    if(!path.isAbsolute(plugin)) {
-                        plugin = './plugins/' + plugin;
-                    }
-                    plugin = require(plugin)(blockchainObject, config, storj);
-                }
-
-
-            } catch (e) {
+            let res = loadPlugin(plugin, blockchainObject, config, storj);
+            if(typeof res === "object") {
                 logger.fatal("Plugin fatal:\n");
                 console.log(e);
                 process.exit(1);
             }
         }
-
         logger.info("Plugins loaded");
+    }
+
+    /**
+     * load custom plugin
+     * @param {string} plugin name of the plugin module
+     * @param {object} blockchainObject blockchain object
+     * @param {object} config config object
+     * @param {object} storj global storage object
+     */
+    function loadPlugin(plugin, blockchainObject, config, storj) {
+        try {
+            try {
+                plugin = require(plugin)(blockchainObject, config, storj);
+            } catch (e) {
+                if(!path.isAbsolute(plugin)) {
+                    plugin = './plugins/' + plugin;
+                }
+                plugin = require(plugin)(blockchainObject, config, storj);
+            }
+        } catch (e) {
+            return e;
+        }
+        return true;
     }
 
     //Wallet create

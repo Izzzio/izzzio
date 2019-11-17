@@ -17,33 +17,17 @@
  */
 
 const logger = new (require(global.PATH.mainDir + '/modules/logger'))("TestPlugin");
+const path = require('path');
 
-class TestClass {
-    constructor(message) {
-        this.message = message;
-    }
-
-    writeln(mes = this.message) {
-        console.log(mes);
-    }
-}
-
-function testFunction(cb, ...args) {
-    setTimeout(function(){
-        console.log(args[0]);
-        return cb('', args[1]);  // doesn't matter what first argument is
-    }, 0);
-    /*console.log(args[0]);
-     cb('', args[1]); */
-}
+const PROTOCOL_PREFIX = 'level';
 
 module.exports = function register(blockchain, config, storj) {
-    logger.info('Initialize...');
+    logger.info('Initialize custom DB');
 
     let plugins = storj.get('plugins');
-
-    plugins.ecma.registerFunction('testNamespace',"testFunction", testFunction);
-    plugins.ecma.injectScript(TestClass);
-
+    //console.log(JSON.stringify(plugins));
+    //console.log(plugins);
+    plugins.db.registerModule(PROTOCOL_PREFIX, __dirname + path.sep + 'customDB.js');
+    //console.log(plugins);
     logger.info('OK');
 };

@@ -23,7 +23,7 @@ const storj = require('./instanceStorage');
 
 class AccountManager {
     constructor(config = {}) {
-        this._accounts = new KeyValue('accounts');
+        this._accounts = new KeyValue(config.accountsDB);
         this._config = config;
         this._registerRPCMethods();
 
