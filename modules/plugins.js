@@ -25,8 +25,7 @@ class Plugins {
         this.getAllRegisteredFunctionsAsObject = that._getAllRegisteredFunctionsAsObject;
 
         this.db = {
-            registerModule: that._registerDBModule,
-            registerFunction: that._registerDBFunction,
+            registerModule: that._registerDBModule
         };
 
         this.crypto = {
@@ -39,25 +38,12 @@ class Plugins {
     }
 
     /**
-     * returns path to the DB module
-     * @param {string} modulePath path to the file with new DB class
+     * Register path to the DB module
+     * @param {string} protocolPrefix DB protocol prefix
      * @param {string} modulePath path to the file with new DB class
      */
     _registerDBModule(protocolPrefix, modulePath) {
         that.db[protocolPrefix] = modulePath;
-
-        /*that._registerDBFunction('modulePath', function () {
-            return path;
-        });*/
-    }
-
-    /**
-     * add external DB function from plugin as a private function of the class
-     * @param {string} functionName name of the DB function
-     * @param {function} functionObject object of the function
-     */
-    _registerDBFunction(functionName, functionObject) {
-        that._registerFunction('db', functionName, functionObject);    
     }
 
 
