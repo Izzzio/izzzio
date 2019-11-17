@@ -33,22 +33,22 @@ class KeyValue {
         if(!name) {
             name = undefined;
         }
-        
-        if(typeof name !== 'undefined' && name.indexOf('mem://') !== -1) { //Memory with saving storage
-                this.type = STORAGE_TYPE.MEMORY;
-                this.name = name.split('mem://')[1];
 
-                try {
-                    this.memKeyValue = JSON.parse(fs.readFileSync(this.config.workDir + '/' + this.name));
-                } catch (e) {
-                    //console.log(e);
-                }
-        } else if (plugins.db && plugins.db.modulePath && name) {
+        if(typeof name !== 'undefined' && name.indexOf('mem://') !== -1) { //Memory with saving storage
+            this.type = STORAGE_TYPE.MEMORY;
+            this.name = name.split('mem://')[1];
+
+            try {
+                this.memKeyValue = JSON.parse(fs.readFileSync(this.config.workDir + '/' + this.name));
+            } catch (e) {
+                //console.log(e);
+            }
+        } else if(plugins.db && plugins.db.modulePath && name) {
             this.pluginDB = require(plugins.db.modulePath).init(name, this.config.workDir);
             this.type = STORAGE_TYPE.PLUGINDB;
-        }  else if(typeof name !== 'undefined') { //LevelDB storage
-                this.type = STORAGE_TYPE.LEVELDB;
-                this.levelup = levelup(leveldown(this.config.workDir + '/' + name));
+        } else if(typeof name !== 'undefined') { //LevelDB storage
+            this.type = STORAGE_TYPE.LEVELDB;
+            this.levelup = levelup(leveldown(this.config.workDir + '/' + name));
         }
     }
 
@@ -59,7 +59,7 @@ class KeyValue {
     getLevelup() {
         return this.levelup;
     }
-    
+
     /**
      * Returns plugin DB object if exists
      * @return {null|*}
@@ -158,7 +158,7 @@ class KeyValue {
                 break;
 
             case STORAGE_TYPE.PLUGINDB:
-                that.pluginDB.put(key, value, callback);
+                that.pluginDB.put(key, value, options, callback);
                 break;
         }
 
@@ -176,6 +176,7 @@ class KeyValue {
         if(!options) {
             options = {};
         }
+
 
         if(typeof value === 'object' && this.type === STORAGE_TYPE.LEVELDB) {
             value = 'JSON:' + JSON.stringify(value);
@@ -263,8 +264,8 @@ class KeyValue {
                 that.levelup.close(callback);
                 break;
             case STORAGE_TYPE.PLUGINDB:
-                    that.pluginDB.close(callback);
-                    break;
+                that.pluginDB.close(callback);
+                break;
         }
     }
 

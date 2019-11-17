@@ -1,22 +1,20 @@
 const levelup = require('levelup');
 const leveldown = require('leveldown');
 const fs = require('fs-extra');
-let that;
+
 
 class CustomDB {
-    constructor(name, workdir){
+    constructor(name, workdir) {
         this.workDir = workdir;
         this.name = name;
-        this.levelup = levelup(leveldown(this.workDir + '/' + name));     
-        that = this;   
+        this.levelup = levelup(leveldown(this.workDir + '/' + name));
+
     }
 
 
     get(key, options, callback) {
-        console.log('Custom DB get' + JSON.stringify({key, options, callback}));
-        //console.trace()
-       
-        that.levelup.get(key, options, function (err, result) {
+
+        this.levelup.get(key, options, function (err, result) {
             if(err) {
                 return callback(err);
             }
@@ -25,34 +23,35 @@ class CustomDB {
                 result = JSON.parse(result.toString().replace('JSON:', ''));
             }
 
-            return callback('',result);
-        });   
-         
+            return callback('', result);
+        });
+
     }
 
     put(key, value, options, callback) {
-        console.log('Custom DB put' + JSON.stringify({key, value, options, callback}));
+
         if(typeof value === 'object') {
             value = 'JSON:' + JSON.stringify(value);
         }
-        //console.trace()
-        that.levelup.put(key, value, callback);   
+
+        this.levelup.put(key, value, function (err,) {
+            callback(err);
+
+        });
     }
 
     del(key, options, callback) {
-        console.log('Custom DB del' + JSON.stringify({key, options, callback}));
-        that.levelup.del(key, options, callback);    
+        this.levelup.del(key, options, callback);
     }
 
     close(callback) {
-        console.log('Custom DB close');
-        that.levelup.close(callback);    
+        this.levelup.close(callback);
     }
 
     clear(callback) {
-        console.log('Custom DB clear');
+        let that = this;
         try {
-            that.levelup.close(function () {
+            this.levelup.close(function () {
                 fs.removeSync(that.workDir + '/' + that.name);
                 that.levelup = levelup(leveldown(that.workDir + '/' + that.name));
                 if(typeof callback !== 'undefined') {
@@ -63,18 +62,16 @@ class CustomDB {
             if(typeof callback !== 'undefined') {
                 callback();
             }
-        }    
+        }
     }
 
     save(callback) {
-        console.log('Custom DB save');
         if(typeof callback !== 'undefined') {
             callback();
-        }    
+        }
     }
 }
 
 exports.init = (name, workdir) => {
-    const newDB = new CustomDB (name, workdir);
-    return newDB;
+    return new CustomDB(name, workdir);
 };
