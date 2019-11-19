@@ -87,9 +87,9 @@ class DApp {
          * @type {{generateBlock: (function(*=, *=, *=): boolean), generateAndAddBlock: DApp.generateAndAddBlock, handler: {get: (function(): (*|BlockHandler)), registerHandler: (function(string, Function): boolean)}, accounting: {wallet: {getCurrent: (function(): (DApp.block.accounting.wallet|{getCurrent}|*))}}}}
          */
         this.blocks = {
-            generateBlock: that.generateBlock,
-            generateAndAddBlock: that.generateAndAddBlock,
-            addBlock: that.blockchain.addBlock,
+            generateBlock: function() { return that.generateBlock.apply(that, arguments)  },
+            generateAndAddBlock: function() { return that.generateAndAddBlock.apply(that, arguments)  },
+            addBlock:  function() { return that.blockchain.addBlock.apply(that, arguments)  },
             handler: {
                 get: that.getBlockHandler,
                 registerHandler: that.registerBlockHandler
