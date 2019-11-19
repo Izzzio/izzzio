@@ -1900,7 +1900,7 @@ function Blockchain(config) {
             let res = loadPlugin(plugin, blockchainObject, config, storj);
             if(typeof res === "object") {
                 logger.fatal("Plugin fatal:\n");
-                console.log(e);
+                console.log(res);
                 process.exit(1);
             }
         }
