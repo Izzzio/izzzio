@@ -1915,14 +1915,19 @@ function Blockchain(config) {
      * @param {object} storj global storage object
      */
     function loadPlugin(plugin, blockchainObject, config, storj) {
+        let pluginMod;
         try {
             try {
-                plugin = require(plugin)(blockchainObject, config, storj);
+                pluginMod = require(plugin)(blockchainObject, config, storj);
             } catch (e) {
                 if(/*!path.isAbsolute(plugin)*/ !fs.existsSync(plugin)) {
                     plugin = './plugins/' + plugin;
+                }else {
+                    if(!path.isAbsolute(plugin)){
+                        plugin = config.workDir + '/' + plugin
+                    }
                 }
-                plugin = require(plugin)(blockchainObject, config, storj);
+                pluginMod = require(plugin)(blockchainObject, config, storj);
             }
         } catch (e) {
             return e;
