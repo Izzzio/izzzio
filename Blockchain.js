@@ -1919,7 +1919,7 @@ function Blockchain(config) {
             try {
                 plugin = require(plugin)(blockchainObject, config, storj);
             } catch (e) {
-                if(!path.isAbsolute(plugin)) {
+                if(/*!path.isAbsolute(plugin)*/ !fs.existsSync(plugin)) {
                     plugin = './plugins/' + plugin;
                 }
                 plugin = require(plugin)(blockchainObject, config, storj);
