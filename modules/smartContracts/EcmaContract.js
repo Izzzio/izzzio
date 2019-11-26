@@ -1324,7 +1324,6 @@ class EcmaContract {
         }
 
         that.blockchain.getLatestBlock(function (latestBlock) {
-
             if(!that.config.ecmaContract.masterContract || that._lastKnownBlock < that.config.ecmaContract.masterContract) {
                 logger.info('Delpoying contract without master contract');
                 generateBlock();
@@ -1336,13 +1335,13 @@ class EcmaContract {
                     contractAddress: latestBlock.index + 1
                 }, function (err, result) {
                     if(err) {
-                        throw new Error(err + ' processDeploy method falls ');
+                        //throw new Error(err + ' processDeploy method falls ');
+                        cb({error: err + ' processDeploy method falls '});
+                        return;
                     }
-
                     generateBlock();
                 });
             }
-
         });
     }
 
@@ -1895,9 +1894,18 @@ class EcmaContract {
 
                 let accountName = req.params.accountName ? req.params.accountName : false;
 
-                that.deployContract(src, resourceRent, function (deployedContract) {
-                    res.send({result: deployedContract});
-                }, accountName);
+                that.deployContract(
+                    src,
+                    resourceRent,
+                    function (deployResult) {
+                        if (deployResult.error) {
+                            res.send({error: true, message: deployResult.error});
+                        } else {
+                            res.send({result: deployResult});
+                        }
+                    },
+                    accountName
+                );
             } catch (e) {
                 res.send({error: true, message: e.message, message2: JSON.stringify(e)});
             }
