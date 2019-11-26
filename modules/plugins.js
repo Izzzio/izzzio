@@ -22,6 +22,11 @@ class Plugins {
             getAllRegisteredFunctionsAsObject: that._getAllRegisteredFunctionsAsObject,
             injectedScripts: that._injectedScripts,
         };
+        this.getAllRegisteredFunctionsAsObject = that._getAllRegisteredFunctionsAsObject;
+
+        this.db = {
+            registerModule: that._registerDBModule
+        };
 
         this.crypto = {
             registerHash: cryptography.registerHash,
@@ -30,6 +35,15 @@ class Plugins {
             registerGeneratorHook: cryptography.registerGeneratorHook,
         };
 
+    }
+
+    /**
+     * Register path to the DB module
+     * @param {string} protocolPrefix DB protocol prefix
+     * @param {string} modulePath path to the file with new DB class
+     */
+    _registerDBModule(protocolPrefix, modulePath) {
+        that.db[protocolPrefix] = modulePath;
     }
 
 
