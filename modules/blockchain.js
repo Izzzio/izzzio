@@ -55,11 +55,11 @@ class Blockchain {
     }
 
     getAsync(key) {
-        return this.getAsync(key);
+        return this.db.getAsync(key);
     }
 
     putAsync(key, data) {
-        return this.putAsync(key, data);
+        return this.db.putAsync(key, data);
     }
 
     del(key, callback) {
@@ -68,7 +68,7 @@ class Blockchain {
     }
 
     delAsync(key) {
-        return this.delAsync(key);
+        return this.db.delAsync(key);
     }
 
     close(callback) {
@@ -77,7 +77,7 @@ class Blockchain {
     }
 
     closeAsync() {
-        return this.closeAsync();
+        return this.db.closeAsync();
     }
 
     save(callback) {
@@ -86,7 +86,7 @@ class Blockchain {
     }
 
     saveAsync() {
-        return this.saveAsync();
+        return this.db.saveAsync();
     }
 }
 
