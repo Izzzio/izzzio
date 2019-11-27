@@ -33,7 +33,6 @@
     "moment": "^2.24.0",
     "node-rsa": "^0.4.2",
     "sqlite3": "git+https://github.com/lailune/node-sqlite3.git",
-    "sync": "^0.2.5",
     "uglify-es": "^3.3.10",
     "ws": ">=3.3.1"
   },

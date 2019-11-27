@@ -40,7 +40,7 @@ class Blockchain {
         return this.db.getLevelup();
     }
 
-    getDb(){
+    getDb() {
         return this.db;
     }
 
@@ -54,9 +54,21 @@ class Blockchain {
         that.db.put(key, value, callback);
     }
 
+    getAsync(key) {
+        return this.getAsync(key);
+    }
+
+    putAsync(key, data) {
+        return this.putAsync(key, data);
+    }
+
     del(key, callback) {
         let that = this;
         that.db.del(key, callback);
+    }
+
+    delAsync(key) {
+        return this.delAsync(key);
     }
 
     close(callback) {
@@ -64,9 +76,17 @@ class Blockchain {
         that.db.close(callback);
     }
 
-    save(callback){
+    closeAsync() {
+        return this.closeAsync();
+    }
+
+    save(callback) {
         let that = this;
         that.db.save(callback);
+    }
+
+    saveAsync() {
+        return this.saveAsync();
     }
 }
 
