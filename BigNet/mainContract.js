@@ -320,6 +320,15 @@ class mainToken extends TokenContract {
     }
 
     /**
+     * Returns calculated resources as JSON
+     * @param {string} amount
+     * @return JSON {{callLimit: number, timeLimit: number, ram: number}}
+     */
+    getCalculatedResources(amount) {
+        return JSON.stringify(this.calculateResources(amount));
+    }
+
+    /**
      * Returns calculated contracts limits
      * @param address
      */
