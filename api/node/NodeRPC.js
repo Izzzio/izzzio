@@ -2,37 +2,40 @@ const http = require("http");
 
 class NodeRPC {
 
-    constructor (RPCUrl = 'http://localhost:3001/', pass = '') {
+    constructor(RPCUrl = 'http://localhost:3001/', pass = '') {
+        if (RPCUrl.charAt(RPCUrl.length) !== '/') {
+            RPCUrl += '/';
+        }
         this._baseUrl = RPCUrl;
         this._password = pass;
-        this.METHODS = {    
-            getInfo: 'GET',
-            createWallet: 'POST',
-            changeWallet: 'POST',
-            getBlock: 'GET',
+        this.METHODS = {
+            'getInfo': 'GET',
+            'createWallet': 'POST',
+            'changeWallet': 'POST',
+            'getBlock': 'GET',
         };
     }
 
     /**
      * URL request
-     * @param {string} method 
-     * @param {string} url 
-     * @param {Array} params 
-     * @param {string} password 
+     * @param {string} method
+     * @param {string} url
+     * @param {Array} params
+     * @param {string} password
      * @returns {object}
      */
     static _urlRequest(method = 'GET', url = "", params = [], password = '', login = "1337") {
-        return new Promise((resolve, reject) =>{
-            let fullUrl = url; 
+        return new Promise((resolve, reject) => {
+
             let postBody = "";
 
             if (Array.isArray(params) && params.length > 0) {
 
                 //convert "['param1=value1', 'param2=value2']" to object {param1:value1, param2:value2}
-                postBody = params.reduce((prev, cur)=>{
+                postBody = params.reduce((prev, cur) => {
                     let splitted = cur.split("=");
                     prev[splitted.shift()] = splitted.join("=").replace(/ +/g, ' '); //remove \n and unnecessary spaces
-                    return prev;  
+                    return prev;
                 }, {});
             }
             let options = {
@@ -40,21 +43,27 @@ class NodeRPC {
                 timeout: 0,
             };
 
-            if (postBody){
+            if (postBody) {
                 options.headers = {
                     'Content-Type': 'application/json',
-                   // 'Content-Length': Buffer.byteLength(postBody)
+                    // 'Content-Length': Buffer.byteLength(postBody)
                 };
             }
-            
+
 
             if (password) {
                 options.auth = login + ":" + password;
             }
-            
 
-            const req = http.request(fullUrl, options, (res)=> {
 
+            const req = http.request(url, options, (res) => {
+                if (res.statusCode !== 200) {
+                    return reject('Invalid response code: ' + res.statusCode);
+                }
+
+                res.on('response', (resp) => {
+                    console.log(resp)
+                });
                 res.on('data', (data) => {
                     res.data = data;
                 });
@@ -77,39 +86,31 @@ class NodeRPC {
 
     /**
      * Make RPC request
-     * @param {string} method 
-     * @param {array} params 
-     * @param {string} paramStr 
+     * @param {string} method
+     * @param {array} params
+     * @param {string} paramStr
      * @returns {Promise}
      */
     async _request(method = "", params = [], paramStr = '') {
         //method = method.toLowerCase();
         if (!this.METHODS[method]) {
-            console.error('Invalid metod ' + method);
-            return;
-        }
-        let res;
-        try {
-            res = await NodeRPC._urlRequest(this.METHODS[method], this._baseUrl + method + paramStr, params, this._password);
-        } catch (e) {
-            console.error('Request error: ' + e); 
+            throw new Error('Invalid metod ' + method);
         }
 
-        if (!res.data){
+        let res = await NodeRPC._urlRequest(this.METHODS[method], this._baseUrl + method + paramStr, params, this._password);
+
+        if (!res.data) {
             if (res.statusMessage.toLowerCase === "ok") {
                 return {status: 'ok'};
             } else {
-                console.error('Can\'t call method ' + method);
+                throw new Error('Can\'t call method ' + method);
             }
         }
 
         let response;
-        try{
-            let jsonRes = Buffer.from(res.data).toString();
-            response = JSON.parse(jsonRes);
-        } catch (e) {
-            console.error('RPC Error: ' + e);   
-        }
+        let jsonRes = Buffer.from(res.data).toString();
+        response = JSON.parse(jsonRes);
+
         return response;
     }
 
@@ -118,7 +119,7 @@ class NodeRPC {
      * @returns {Promise}
      */
     getInfo() {
-        return this._request('getInfo');    
+        return this._request('getInfo');
     }
 
     /**
@@ -133,21 +134,21 @@ class NodeRPC {
      * Get current wallet address
      */
     async getWallet() {
-        let info = await this.getInfo();    
+        let info = await this.getInfo();
         return info.wallet.id;
     }
 
     /**
      * Change current wallet for node. The transactions list was recalculated Which can take a long time
-     * @param {string} id 
-     * @param {string} privateKey 
-     * @param {string} publicKey 
+     * @param {string} id
+     * @param {string} privateKey
+     * @param {string} publicKey
      * @returns {Promise}
      */
     async changeWalletByData(id, privateKey, publicKey) {
         let walletId = await this.getWallet();
         if (walletId === id) {
-            return {status:'ok'};
+            return {status: 'ok'};
         }
 
         return this._request('changeWallet', [
@@ -167,4 +168,5 @@ class NodeRPC {
     }
 
 }
+
 module.exports = NodeRPC;

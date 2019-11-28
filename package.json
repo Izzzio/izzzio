@@ -13,7 +13,7 @@
     "build": "build.sh",
     "start": "node main.js",
     "test": "cd BigNet/test && test",
-    "terminal": "node api/node/terminal/terminal --experimental-repl-await"
+    "terminal": "node --experimental-repl-await api/node/terminal/terminal "
   },
   "dependencies": {
     "bignumber.js": "^7.2.1",
@@ -37,7 +37,7 @@
     "ws": ">=3.3.1"
   },
   "engines": {
-    "node": ">=8.2.0"
+    "node": ">=10.0.0"
   },
   "bugs": {
     "url": "https://github.com/Izzzio/iz3node/issues",
