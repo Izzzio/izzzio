@@ -94,7 +94,7 @@ class App extends DApp {
 
         //Burn test
         await mainToken.burn(100);
-        assert.true(await mainToken.balanceOf(this.getCurrentWallet().id) === String(contractInfo.emission - 100 - 100), 'Invalid owner balance after burn');
+        assert.true(await mainToken.balanceOf(this.getCurrentWallet().id) === String(contractInfo.emission - 100 - 1001), 'Invalid owner balance after burn');
         assert.true(String(contractInfo.emission - 100) === await mainToken.totalSupply(), 'Invalid total supply after burn');
     }
 
