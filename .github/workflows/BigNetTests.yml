@@ -1,0 +1,19 @@
+name: BigNet Tests
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: Run npm install
+        run: npm install
+      - name: Run Test
+        run: npm run testl
