@@ -13,7 +13,8 @@
     "build": "build.sh",
     "start": "node main.js",
     "test": "cd BigNet/test && test",
-    "terminal": "node api/node/terminal/terminal --experimental-repl-await"
+    "testl": "cd BigNet/test && ./test.sh",
+    "terminal": "node --experimental-repl-await api/node/terminal/terminal "
   },
   "dependencies": {
     "bignumber.js": "^7.2.1",
