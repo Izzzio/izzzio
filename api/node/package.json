@@ -18,8 +18,8 @@
     "nodejs",
     "js"
   ],
-  "author": "Andrey Nedobylskiy",
-  "license": "GPL-3.0-or-later",
+  "author": "Kirill Revenkov",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/Izzzio/izzzio/issues"
   },
