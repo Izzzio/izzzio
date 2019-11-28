@@ -55,7 +55,6 @@ function Blockchain(config) {
     const levelup = require('level');
 
     //Utils
-    const Sync = require('sync');
     const moment = require('moment');
     const url = require('url');
     const path = require('path');
@@ -76,11 +75,11 @@ function Blockchain(config) {
     storj.put('config', config);
 
     //load DB plugin
-    if(config.dbPlugins.length > 0) {
+    if (config.dbPlugins.length > 0) {
         logger.info("Loading DB plugins...\n");
         for (let plugin of config.dbPlugins) {
             let res = loadPlugin(plugin, blockchainObject, config, storj);
-            if(typeof res === "object") {
+            if (typeof res === "object") {
                 logger.fatal("Plugin fatal:\n");
                 console.log(e);
                 process.exit(1);
@@ -104,7 +103,7 @@ function Blockchain(config) {
     const basic = auth.basic({
             realm: "RPC Auth"
         }, (username, password, callback) => {
-            if(config.rpcPassword.length === 0) {
+            if (config.rpcPassword.length === 0) {
                 callback(true);
                 return;
             }
@@ -115,7 +114,7 @@ function Blockchain(config) {
     const routes = {};
     const secretKeys = {};
 
-    if(config.rpcPassword.length !== 0) {
+    if (config.rpcPassword.length !== 0) {
         app.use(auth.connect(basic));
     }
 
@@ -129,16 +128,16 @@ function Blockchain(config) {
     console.log('');
     console.log('Message bus address: ' + config.recieverAddress);
     console.log('');
-    if(config.networkPassword) {
+    if (config.networkPassword) {
         console.log('Network with password access control');
         console.log('');
     }
 
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
-    if(wallet.id.length !== 0) {
+    if (wallet.id.length !== 0) {
         logger.info('Wallet address ' + wallet.getAddress(false));
-        if(wallet.block !== -1) {
+        if (wallet.block !== -1) {
             logger.info('Tiny address ' + wallet.getAddress(true));
             wallet.block = -1;
         }
@@ -284,7 +283,7 @@ function Blockchain(config) {
         let data = "New epoch begins here! *solemn music on the background* *loud applause*";
         let hash = calculateHash(0, 0, genesisTiemstamp, data);
         let genesisBlock = new Block(0, "0", genesisTiemstamp, data, hash, genesisTiemstamp, '');
-        if(Math.round(new Date().getTime()) <= genesisTiemstamp) {
+        if (Math.round(new Date().getTime()) <= genesisTiemstamp) {
             logger.error('Whoops! Check the clock');
             process.exit();
         }
@@ -299,7 +298,7 @@ function Blockchain(config) {
      * @param cb
      */
     function addBlockToChainIndex(index, block, noHandle, cb) {
-        if(block.index > maxBlock) {
+        if (block.index > maxBlock) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
             storj.put('maxBlock', maxBlock);
@@ -307,15 +306,34 @@ function Blockchain(config) {
         blockHandler.changeMaxBlock(maxBlock);
         transactor.changeMaxBlock(maxBlock);
         blockchain.put(Number(index), JSON.stringify(block), function () {
-            if(!noHandle) {
+            if (!noHandle) {
                 blockHandler.handleBlock(block, cb);
             } else {
-                if(cb) {
+                if (cb) {
                     cb();
                 }
             }
         });
 
+    }
+
+    /**
+     * Async version of addBlockToChainIndex
+     * @param index
+     * @param block
+     * @param noHandle
+     * @returns {Promise<unknown>}
+     */
+    function asyncAddBlockToChainIndex(index, block, noHandle) {
+        return new Promise((resolve, reject) => {
+            addBlockToChainIndex(index, block, noHandle, (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            })
+        })
     }
 
     /**
@@ -325,27 +343,36 @@ function Blockchain(config) {
      * @param {Function} cb
      */
     function addBlockToChain(block, noHandle, cb) {
-        if(block.index > maxBlock) {
+        if (block.index > maxBlock) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
             storj.put('maxBlock', maxBlock);
         }
 
-        if(!noHandle) {
+        if (!noHandle) {
             noHandle = false;
         }
 
         addBlockToChainIndex(maxBlock, block, noHandle, cb);
     }
 
-//Врапперы для модуля Sync, а то он любит портить this объекта
-    function exBlockhainGet(index, callback) {
-        blockchain.get(index, callback);
+    /**
+     * Async verstion of blockchain.get
+     * @param index
+     * @returns {Promise<unknown>}
+     */
+    function asyncBlockchainGet(index) {
+        return new Promise((resolve, reject) => {
+            blockchain.get(index, (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            })
+        })
     }
 
-    function exBlockHandler(result, callback) {
-        blockHandler.handleBlock(JSON.parse(result), callback)
-    }
 
     /**
      * Запуск ноды
@@ -353,9 +380,9 @@ function Blockchain(config) {
     function startNode(cb) {
         //Запуск новой цепочки
         blockchain.get(0, function (err, value) {
-            if(err) {
+            if (err) {
                 let genesisBlock = getGenesisBlock();
-                if(!config.validators[0].isValidHash(genesisBlock.hash)) {
+                if (!config.validators[0].isValidHash(genesisBlock.hash)) {
                     logger.error('Invalid genesis hash: ' + genesisBlock.hash);
                     process.exit();
                 }
@@ -366,7 +393,7 @@ function Blockchain(config) {
             } else {
                 logger.info('Loading saved chain...');
                 blockchain.get('maxBlock', function (err, value) {
-                    if(err) {
+                    if (err) {
                         logger.error('Database failure. Repair or resync database!');
                         return;
                     }
@@ -379,7 +406,7 @@ function Blockchain(config) {
                     blockHandler.enableLogging = false;
                     wallet.enableLogging = false;
 
-                    if(config.program.fastLoad) {
+                    if (config.program.fastLoad) {
                         blockHandler.enableLogging = true;
                         wallet.enableLogging = true;
                         wallet.update();
@@ -409,33 +436,33 @@ function Blockchain(config) {
      * Запуск сервера интерфейса
      */
     function initHttpServer() {
-        app.get('/blocks', (req, res) => {
-            Sync(function () {
-                res.writeHead(200, {
-                    'Content-Type': 'application/json',
-                    'Content-Disposition': 'attachment; filename="blockchain.json"'
-                });
-                res.write('{');
-                for (let i = 0; i < maxBlock + 1; i++) {
-                    let result;
-                    try {
-                        result = exBlockhainGet.sync(null, i);
-                    } catch (e) {
-                        continue;
-                    }
+        app.get('/blocks', async (req, res) => {
 
-                    if(Buffer.isBuffer(result)) {
-                        result = JSON.stringify(String(result));
-                    } else {
-                        result = JSON.stringify(result);
-                    }
-
-                    res.write('"' + i + '":' + result + ',');
-                }
-                res.write('"maxBlock":' + maxBlock + '');
-                res.write('}');
-                res.end();
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'Content-Disposition': 'attachment; filename="blockchain.json"'
             });
+            res.write('{');
+            for (let i = 0; i < maxBlock + 1; i++) {
+                let result;
+                try {
+                    result = await asyncBlockchainGet(i);
+                } catch (e) {
+                    continue;
+                }
+
+                if (Buffer.isBuffer(result)) {
+                    result = JSON.stringify(String(result));
+                } else {
+                    result = JSON.stringify(result);
+                }
+
+                res.write('"' + i + '":' + result + ',');
+            }
+            res.write('"maxBlock":' + maxBlock + '');
+            res.write('}');
+            res.end();
+
         });
 
         app.get('/peers', (req, res) => {
@@ -461,9 +488,9 @@ function Blockchain(config) {
      */
     function initP2PServer() {
 
-        if(!config.program.leechMode) {
+        if (!config.program.leechMode) {
             let wss = null;
-            if(config.sslMode) {
+            if (config.sslMode) {
                 const https = require('https');
                 const server = https.createServer().listen(config.p2pPort);
                 wss = new WebSocket.Server({server});
@@ -473,7 +500,7 @@ function Blockchain(config) {
             }
 
             wss.on('connection', function (ws) {
-                if(config.program.verbose) {
+                if (config.program.verbose) {
                     logger.info('Input connection ' + ws._socket.remoteAddress);
                 }
                 initConnection(ws)
@@ -483,9 +510,9 @@ function Blockchain(config) {
             logger.warning('P2P server disabled by leech mode');
         }
 
-        if(config.upnp.enabled) {
+        if (config.upnp.enabled) {
 
-            if(!config.program.leechMode) {
+            if (!config.program.leechMode) {
                 //Node info broadcast
                 upnpAdvertisment = new dnssd.Advertisement(dnssd.tcp(config.upnp.token), config.p2pPort, {
                     txt: {
@@ -500,16 +527,16 @@ function Blockchain(config) {
             //Detecting other nodes
             upnpBrowser = dnssd.Browser(dnssd.tcp(config.upnp.token))
                 .on('serviceUp', function (service) {
-                    if(service.txt) {
-                        if(service.txt.GT !== String(getGenesisBlock().timestamp)) {
-                            if(config.program.verbose) {
+                    if (service.txt) {
+                        if (service.txt.GT !== String(getGenesisBlock().timestamp)) {
+                            if (config.program.verbose) {
                                 logger.info('UPnP: Detected service has invalid genesis timestamp ' + service.txt.GT);
                             }
                             return;
                         }
 
-                        if(service.txt.RA === config.recieverAddress) {
-                            if(config.program.verbose) {
+                        if (service.txt.RA === config.recieverAddress) {
+                            if (config.program.verbose) {
                                 logger.info('UPnP: Self detection');
                             }
                             return;
@@ -518,12 +545,12 @@ function Blockchain(config) {
 
 
                     for (let a in service.addresses) {
-                        if(service.addresses.hasOwnProperty(a)) {
+                        if (service.addresses.hasOwnProperty(a)) {
                             service.addresses[a] = 'ws://' + service.addresses[a] + ':' + service.port;
                         }
                     }
 
-                    if(config.program.verbose) {
+                    if (config.program.verbose) {
                         logger.info('UPnP: Detected new peers ' + JSON.stringify(service.addresses));
                     }
 
@@ -543,8 +570,8 @@ function Blockchain(config) {
     function initConnection(ws) {
 
 
-        if(peersBlackList.indexOf(ws._socket.remoteAddress) !== -1) {
-            if(config.program.verbose) {
+        if (peersBlackList.indexOf(ws._socket.remoteAddress) !== -1) {
+            if (config.program.verbose) {
                 logger.info('Blacklisted peer ' + ws._socket.remoteAddress);
             }
             ws.close();
@@ -552,23 +579,23 @@ function Blockchain(config) {
         }
 
         for (let i in sockets) {
-            if(sockets.hasOwnProperty(i)) {
-                if(
+            if (sockets.hasOwnProperty(i)) {
+                if (
                     sockets[i]._socket.remoteAddress === ws._socket.remoteAddress &&
                     sockets[i]._socket.remotePort === ws._socket.remotePort &&
                     sockets[i].readyState === 1 &&
                     !sockets[i]._isServer &&
                     !config.program.ignoreDoubleConnections
                 ) {
-                    if(config.program.verbose) {
+                    if (config.program.verbose) {
                         logger.info('Dublicated peer ' + ws._socket.remoteAddress);
                     }
                     ws.close();
                     return;
                 }
 
-                if(sockets[i].readyState !== 1) {
-                    if(config.program.verbose) {
+                if (sockets[i].readyState !== 1) {
+                    if (config.program.verbose) {
                         logger.info('Connection Not ready. Peer ' + ws._socket.remoteAddress);
                     }
                     ws.close();
@@ -580,12 +607,12 @@ function Blockchain(config) {
 
         p2pErrorHandler(ws);
         sockets.push(ws);
-        if(config.checkExternalConnectionData) {
+        if (config.checkExternalConnectionData) {
             blockchainInfo.onConnection(ws, write);
         }
         initMessageHandler(ws);
 
-        if(config.networkPassword) {
+        if (config.networkPassword) {
             write(ws, passwordMsg());     //посылаем запрос на ключевое слово
         }
 
@@ -606,15 +633,15 @@ function Blockchain(config) {
 
 
             //prevent multiple sockets on one busaddress
-            if(!config.allowMultiplySocketsOnBus) {
-                if(starwave.preventMultipleSockets(ws) === 0) {
+            if (!config.allowMultiplySocketsOnBus) {
+                if (starwave.preventMultipleSockets(ws) === 0) {
                     data = null;
                     return;
                 }
             }
 
-            if(data.length > config.maximumInputSize) {
-                if(config.program.verbose) {
+            if (data.length > config.maximumInputSize) {
+                if (config.program.verbose) {
                     logger.error('Input message exceeds maximum input size (' + data.length + ' > ' + config.maximumInputSize + ')');
                 }
                 data = null;
@@ -625,7 +652,7 @@ function Blockchain(config) {
             try {
                 message = JSON.parse(data);
             } catch (e) {
-                if(config.program.verbose) {
+                if (config.program.verbose) {
                     logger.error(e);
                 }
                 data = null;
@@ -633,17 +660,17 @@ function Blockchain(config) {
             }
 
             //не даем обрабатывать сообщения(кроме метаинформации), пока не проверили пароль входа в сеть
-            if(config.networkPassword && !ws.passwordChecked && message.type !== MessageType.PASS && message.type !== MessageType.META) {
+            if (config.networkPassword && !ws.passwordChecked && message.type !== MessageType.PASS && message.type !== MessageType.META) {
                 return;
             }
 
             //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета(пропускаем только парольные)
-            if(!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData && message.type !== MessageType.PASS) {
+            if (!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData && message.type !== MessageType.PASS) {
                 return;
             }
 
             //проверяем сообщения, содержащие информацию о блокчейне
-            if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
+            if (blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
                 return;
             }
 
@@ -660,7 +687,7 @@ function Blockchain(config) {
                     handleBlockchainResponse(message);
                     break;
                 case MessageType.MY_PEERS:
-                    if(!storj.get('peerExchangeMutex')) { //Блокируем получение списка пиров на таймаут обмена
+                    if (!storj.get('peerExchangeMutex')) { //Блокируем получение списка пиров на таймаут обмена
 
                         storj.put('peerExchangeMutex', true);
                         setTimeout(function () {
@@ -673,7 +700,7 @@ function Blockchain(config) {
                 case MessageType.META:    //Сохранение метаинформации о нодах
                     try {
                         let ind = sockets.indexOf(ws);
-                        if(ind > -1) {
+                        if (ind > -1) {
                             sockets[ind].nodeMetaInfo = (new NodeMetaInfo()).parse(message.data);
                         } else {
                             logger.error('Unexpected error occurred when trying to add validators');
@@ -688,20 +715,20 @@ function Blockchain(config) {
                      * Проходимся по обработчикам входящих сообщений
                      */
                     for (let a in messagesHandlers) {
-                        if(messagesHandlers.hasOwnProperty(a)) {
+                        if (messagesHandlers.hasOwnProperty(a)) {
                             message._socket = ws;
-                            if(messagesHandlers[a].handle(message)) {
+                            if (messagesHandlers[a].handle(message)) {
                                 lastMsgIndex = message.index;
                                 break; //Если сообщение обработано, выходим
                             }
                         }
                     }
 
-                    if(message.reciver !== config.recieverAddress && config.enableMessaging && message.TTL <= config.messagingMaxTTL /*&& lastMsgIndex < message.index*/) {
-                        if(isNaN(message.TTL)) {
+                    if (message.reciver !== config.recieverAddress && config.enableMessaging && message.TTL <= config.messagingMaxTTL /*&& lastMsgIndex < message.index*/) {
+                        if (isNaN(message.TTL)) {
                             message.TTL = 1;
                         }
-                        if(typeof message.ttlList === 'undefined') {
+                        if (typeof message.ttlList === 'undefined') {
                             message.ttlList = [];
                         }
                         message.ttlList.push({TTL: message.TTL, host: config.recieverAddress + ':' + 'NODE'});
@@ -710,13 +737,13 @@ function Blockchain(config) {
                         message.data = '';
                     } else {
 
-                        if(message.id === 'VITAMIN_META' && message.reciver !== config.recieverAddress && typeof message.yourIp === 'undefined') {
+                        if (message.id === 'VITAMIN_META' && message.reciver !== config.recieverAddress && typeof message.yourIp === 'undefined') {
                             message.yourIp = ws._socket.remoteAddress;
                             message.modifer = 'iZ3 node ' + config.recieverAddress;
                             message.TTL++;
                             //broadcast(message);
-                        } else if(message.reciver === config.recieverAddress && message.id === 'VITAMIN_META' && typeof message.yourIp !== 'undefined') {
-                            if(peersBlackList.indexOf(message.yourIp) === -1 && config.blacklisting) {
+                        } else if (message.reciver === config.recieverAddress && message.id === 'VITAMIN_META' && typeof message.yourIp !== 'undefined') {
+                            if (peersBlackList.indexOf(message.yourIp) === -1 && config.blacklisting) {
                                 logger.info('Add ip to blacklist ' + message.yourIp);
                                 peersBlackList.push(message.yourIp);
                             }
@@ -746,7 +773,7 @@ function Blockchain(config) {
      */
     function checkKeyWordExistence(keyWord) {
         for (let socket of sockets) {
-            if(socket.keyWord === keyWord) {
+            if (socket.keyWord === keyWord) {
                 return true;
             }
         }
@@ -760,26 +787,26 @@ function Blockchain(config) {
      */
     function passwordCheckingProtocol(ws, message) {
 
-        if(message.myName === config.recieverAddress) {
+        if (message.myName === config.recieverAddress) {
             ws.close();
             return;
         }
 
         //проверяем пароль только если он у нас самих есть в конфиге
-        if(config.networkPassword) {
-            if(message.data === '') {
+        if (config.networkPassword) {
+            if (message.data === '') {
                 //данные пустые, значит, пришел запрос кодовой фразы
                 let ourKeyWord = getid() + getid();
                 write(ws, passwordMsg(ourKeyWord, true, config.recieverAddress));
                 ws.keyWord = ourKeyWord;
-                if(config.program.verbose) {
+                if (config.program.verbose) {
                     logger.info("Connection digest hash generated " + _getPassPhraseForChecking(ourKeyWord));
                 }
             } else {
                 //если нет, значит, либо пришел хэш для проверки, либо пришло сообщение с keyWord в ответ на запрос
-                if(message.keyWordResponse) {
+                if (message.keyWordResponse) {
                     //проверяем, нет ли присланного слова в нашем списке сохраненных. если есть, то запрашиваем новое кодовое слово.
-                    if(checkKeyWordExistence(message.data)) {
+                    if (checkKeyWordExistence(message.data)) {
                         write(ws, passwordMsg(undefined, undefined, config.recieverAddress));
                         return;
                     }
@@ -792,12 +819,12 @@ function Blockchain(config) {
                     write(ws, passMes);
                 } else {
                     //пришел хэш для проверки
-                    if(ws.keyWord) {
+                    if (ws.keyWord) {
                         //если есть кодовое слово, связанное с сокетом, то проверяем
-                        if(message.data === _getPassPhraseForChecking(ws.keyWord)) {
+                        if (message.data === _getPassPhraseForChecking(ws.keyWord)) {
                             ws.passwordChecked = true; //флаг того, что пароль правильный и этот пир может продолжать общаться с нодой
                         } else {
-                            if(config.program.verbose) {
+                            if (config.program.verbose) {
                                 logger.error('Connection digest hash invalid ' + message.data + ' vs ' + _getPassPhraseForChecking(ws.keyWord) + ' from ' + ws._socket.remoteAddress);
                             }
                             //не прошел проверку.
@@ -839,7 +866,7 @@ function Blockchain(config) {
          * @type {number}
          */
         fromBlock = (typeof fromBlock === 'undefined' ? 0 : Number(fromBlock));
-        if(fromBlock <= 5) {
+        if (fromBlock <= 5) {
             limit = 3;
         }
 
@@ -857,24 +884,24 @@ function Blockchain(config) {
     function getAllChain(fromBlock, limit, cb) {
         limit = typeof limit === 'undefined' ? maxBlock : fromBlock + limit;
         let blockchain = [];
-        Sync(function () {
+        (async function () {
             let limiter = 0;
             for (let i = fromBlock; i < limit + 1; i++) {
                 let result;
                 try {
-                    result = exBlockhainGet.sync(null, i);
+                    result = await asyncBlockchainGet(i);
                 } catch (e) {
                     continue;
                 }
                 blockchain.push(JSON.parse(result));
                 limiter++;
-                if(limiter > config.maxBlockSend) {
+                if (limiter > config.maxBlockSend) {
                     break;
                 }
             }
 
             cb(blockchain);
-        });
+        })();
     }
 
     /**
@@ -921,11 +948,11 @@ function Blockchain(config) {
      */
     function addBlock(newBlock, cb) {
         getLatestBlock(function (lastestBlock) {
-            if(isValidNewBlock(newBlock, lastestBlock)) {
+            if (isValidNewBlock(newBlock, lastestBlock)) {
                 addBlockToChain(newBlock, false, cb);
             } else {
                 logger.error("Trying add invalid block");
-                if(cb) {
+                if (cb) {
                     cb();
                 }
             }
@@ -951,8 +978,8 @@ function Blockchain(config) {
 
         try {
             for (let a in validatorReversed) {
-                if(validatorReversed.hasOwnProperty(a)) {
-                    if(validatorReversed[a].isValidNewBlock(newBlock, previousBlock)) {
+                if (validatorReversed.hasOwnProperty(a)) {
+                    if (validatorReversed[a].isValidNewBlock(newBlock, previousBlock)) {
                         validatorReversed.reverse();
                         return true;
                     }
@@ -975,19 +1002,19 @@ function Blockchain(config) {
         let peers = getCurrentPeers();
 
 
-        if(peers.length >= config.maxPeers) {
+        if (peers.length >= config.maxPeers) {
             return;
         }
         newPeers = newPeers.filter((v, i, a) => a.indexOf(v) === i);
 
         newPeers.forEach((peer) => {
 
-            if(peers.indexOf(peer) !== -1 || typeof peer !== 'string') {
+            if (peers.indexOf(peer) !== -1 || typeof peer !== 'string') {
                 return;
             }
 
             try {
-                if(peersBlackList.indexOf(url.parse(peer).hostname) !== -1) {
+                if (peersBlackList.indexOf(url.parse(peer).hostname) !== -1) {
                     return;
                 }
 
@@ -999,7 +1026,7 @@ function Blockchain(config) {
                     ws.close();
                 });
             } catch (e) {
-                if(config.program.verbose) {
+                if (config.program.verbose) {
                     logger.error(e);
                 }
             }
@@ -1014,12 +1041,12 @@ function Blockchain(config) {
     function handleBlockchainResponse(message) {
 
         //We can't handle new blockchain while sync in progress
-        if(blockHandler.syncInProgress) {
+        if (blockHandler.syncInProgress) {
             return;
         }
 
         //Now we process some chain
-        if(storj.get('chainResponseMutex')) {
+        if (storj.get('chainResponseMutex')) {
             return;
         }
 
@@ -1030,7 +1057,7 @@ function Blockchain(config) {
         let receivedBlocks = JSON.parse(message.data);
 
 
-        if(receivedBlocks.length === 0 || receivedBlocks[0] === false) {
+        if (receivedBlocks.length === 0 || receivedBlocks[0] === false) {
             storj.put('chainResponseMutex', false);
             return;
         }
@@ -1042,8 +1069,8 @@ function Blockchain(config) {
         const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
 
         getLatestBlock(function (latestBlockHeld) {
-            if(!latestBlockHeld) {
-                if(config.program.autofix) {
+            if (!latestBlockHeld) {
+                if (config.program.autofix) {
                     maxBlock--;
                     logger.autofix('Reset blockchain height to ' + (maxBlock));
                 } else {
@@ -1054,28 +1081,28 @@ function Blockchain(config) {
             }
 
             try {
-                if(latestBlockReceived.timestamp > moment().utc().valueOf() + 60000) {
-                    if(config.program.verbose) {
+                if (latestBlockReceived.timestamp > moment().utc().valueOf() + 60000) {
+                    if (config.program.verbose) {
                         logger.error('Incorrect received block timestamp or local time ' + latestBlockReceived.timestamp + ' current ' + moment().utc().valueOf());
                     }
                     storj.put('chainResponseMutex', false);
 
                     return;
                 }
-                if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
+                if (latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
                     lastKnownBlock = latestBlockReceived.index;
-                    if(receivedBlocks.length === 1) {
-                        if(lastKnownBlock !== latestBlockReceived.index) {
+                    if (receivedBlocks.length === 1) {
+                        if (lastKnownBlock !== latestBlockReceived.index) {
                             logger.info('Synchronize: Received last chain block ' + latestBlockReceived.index);
                         }
                     } else {
-                        if(config.program.verbose) {
+                        if (config.program.verbose) {
                             logger.info('Synchronize: Received ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
                         }
                     }
-                    if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) { //когда получен один блок от того который у нас есть
+                    if (latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) { //когда получен один блок от того который у нас есть
 
-                        if(isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
+                        if (isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
                             addBlockToChain(latestBlockReceived);
                             responseLatestMsg(function (msg) {
                                 storj.put('chainResponseMutex', false);
@@ -1083,26 +1110,26 @@ function Blockchain(config) {
                             });
                         }
 
-                    } else if(receivedBlocks.length === 1) {
+                    } else if (receivedBlocks.length === 1) {
 
                         let getBlockFrom = latestBlockHeld.index - config.blockQualityCheck;
-                        if(getBlockFrom < 0) {
+                        if (getBlockFrom < 0) {
                             getBlockFrom = maxBlock;
                             lastKnownBlock = maxBlock;
                         }
-                        if(!blockHandler.syncInProgress) {
+                        if (!blockHandler.syncInProgress) {
                             broadcast(queryAllMsg(getBlockFrom));
                         }
 
                         storj.put('chainResponseMutex', false);
 
                     } else {
-                        if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
+                        if (receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
                             //До 5го блока синхронизация только по одному
-                            if(receivedBlocks[0].index <= 5 && receivedBlocks[0].index !== 0) {
+                            if (receivedBlocks[0].index <= 5 && receivedBlocks[0].index !== 0) {
                                 receivedBlocks = [receivedBlocks[0], receivedBlocks[1]];
                             }
-                            if(receivedBlocks[0].index === 0) {
+                            if (receivedBlocks[0].index === 0) {
                                 receivedBlocks = [receivedBlocks[1], receivedBlocks[2]];
                             }
                             replaceChain(receivedBlocks, function () {
@@ -1137,14 +1164,14 @@ function Blockchain(config) {
     function replaceChain(newBlocks, cb) {
 
         let fromBlock = newBlocks[0].index - 1;
-        if(fromBlock < 0) {
+        if (fromBlock < 0) {
             fromBlock = 0;
         }
 
         getBlockById(fromBlock, function (err, lBlock) {
-            if(err) {
+            if (err) {
                 logger.error(new Error('Can\'t get block no ' + newBlocks[0].index + ' ' + err));
-                if(typeof cb !== 'undefined') {
+                if (typeof cb !== 'undefined') {
                     cb();
                 }
                 return;
@@ -1152,19 +1179,19 @@ function Blockchain(config) {
 
 
             let maxIndex = maxBlock - config.limitedConfidenceBlockZone;
-            if(maxIndex < 0) {
+            if (maxIndex < 0) {
                 maxIndex = 0;
             }
 
             const validChain = isValidChain(fromBlock === 0 ? newBlocks : [lBlock].concat(newBlocks));
 
-            if(!(newBlocks[0].index >= maxIndex)) {//ограничение доверия принимаемой цепочки блоков
+            if (!(newBlocks[0].index >= maxIndex)) {//ограничение доверия принимаемой цепочки блоков
 
-                if(config.program.verbose) {
+                if (config.program.verbose) {
                     logger.error('LimitedConfidence: Invalid chain');
                 }
 
-                if(typeof cb !== 'undefined') {
+                if (typeof cb !== 'undefined') {
                     cb();
                 }
 
@@ -1172,16 +1199,16 @@ function Blockchain(config) {
             }
 
 
-            if(
+            if (
                 validChain // &&  newBlocks[0].index >= maxIndex
             /*&& newBlocks.length >= maxBlock*/
             ) {
                 //console.log(newBlocks);
                 //logger.info('Received blockchain is valid.');
                 logger.info('Synchronize: ' + newBlocks[0].index + ' of ' + newBlocks[newBlocks.length - 1].index);
-                Sync(function () {
+                (async function () {
                     for (let i of newBlocks) {
-                        addBlockToChainIndex.sync(null, i.index, i, true);
+                        await asyncAddBlockToChainIndex(i.index, i, true);
                     }
                     responseLatestMsg(function (msg) {
                         broadcast(msg);
@@ -1190,20 +1217,20 @@ function Blockchain(config) {
                     clearTimeout(replaceChainTimer);
                     replaceChainTimer = setTimeout(function () {
                         //If receiving chain, no syncing
-                        if(storj.get('chainResponseMutex')) {
+                        if (storj.get('chainResponseMutex')) {
                             return;
                         }
                         blockHandler.resync();
                     }, config.peerExchangeInterval + 2000);
 
-                    if(typeof cb !== 'undefined') {
+                    if (typeof cb !== 'undefined') {
                         cb();
                     }
 
-                });
+                })();
 
             } else {
-                if(typeof cb !== 'undefined') {
+                if (typeof cb !== 'undefined') {
                     cb();
                 }
                 logger.error('Received blockchain corrupted');
@@ -1225,7 +1252,7 @@ function Blockchain(config) {
         try {
             const tempBlocks = [blockchainToValidate[0]];
             for (let i = 1; i < blockchainToValidate.length; i++) {
-                if(isValidNewBlock(blockchainToValidate[i], tempBlocks[i - 1])) {
+                if (isValidNewBlock(blockchainToValidate[i], tempBlocks[i - 1])) {
                     try {
                         tempBlocks.push(blockchainToValidate[i]);
                     } catch (e) {
@@ -1249,7 +1276,7 @@ function Blockchain(config) {
      */
     function getLatestBlock(callback) {
         blockchain.get(maxBlock, function (err, val) {
-            if(!err) {
+            if (!err) {
                 callback(JSON.parse(val));
             } else {
                 callback(false);
@@ -1341,7 +1368,7 @@ function Blockchain(config) {
         try {
             ws.send(JSON.stringify(message))
         } catch (e) { //ошибка записи, возможно сокет уже не активен
-            if(config.program.verbose) {
+            if (config.program.verbose) {
                 logger.info('Send error ' + e + ' ' + ws._socket.remoteAddress)
             }
         }
@@ -1354,8 +1381,8 @@ function Blockchain(config) {
      */
     const broadcast = function (message, excludeIp) {
         sockets.forEach(function (socket) {
-            if(typeof excludeIp === 'undefined' || socket._socket.recieverAddress !== excludeIp) {
-                if(socketPasswordOk(socket)) {
+            if (typeof excludeIp === 'undefined' || socket._socket.recieverAddress !== excludeIp) {
+                if (socketPasswordOk(socket)) {
                     write(socket, message);
                 }
             } else {
@@ -1377,7 +1404,7 @@ function Blockchain(config) {
      * @return {boolean}
      */
     function socketPasswordOk(socket) {
-        if(config.networkPassword) {
+        if (config.networkPassword) {
             return !!socket.passwordChecked;
         } else {
             return true;
@@ -1392,9 +1419,9 @@ function Blockchain(config) {
     function getSocketByBusAddress(address) {
         const sockets = getCurrentPeers(true);
         for (let i in sockets) {
-            if(sockets.hasOwnProperty(i)) {
-                if(sockets[i] && sockets[i].nodeMetaInfo) {
-                    if(sockets[i].nodeMetaInfo.messageBusAddress === address) {
+            if (sockets.hasOwnProperty(i)) {
+                if (sockets[i] && sockets[i].nodeMetaInfo) {
+                    if (sockets[i].nodeMetaInfo.messageBusAddress === address) {
                         return sockets[i];
                     }
                 }
@@ -1412,12 +1439,12 @@ function Blockchain(config) {
         initHttpServer();
         initP2PServer();
         createWalletIfNotExsists();
-        if(config.program.keyringEmission) {
+        if (config.program.keyringEmission) {
             keyringEmission();
         }
 
 
-        if(config.appEntry) {
+        if (config.appEntry) {
             logger.info("Loading DApp...\n");
             try {
                 /**
@@ -1441,8 +1468,8 @@ function Blockchain(config) {
      */
     function getCurrentPeers(fullSockets) {
         return sockets.map(function (s) {
-            if(s && s.readyState === 1 && socketPasswordOk(s)) {
-                if(fullSockets) {
+            if (s && s.readyState === 1 && socketPasswordOk(s)) {
+                if (fullSockets) {
                     return s;
                 } else {
                     return 'ws://' + s._socket.remoteAddress + ':' + /*s._socket.remotePort*/ config.p2pPort
@@ -1468,7 +1495,7 @@ function Blockchain(config) {
     function peerExchange() {
         broadcastConnectedPeers();
         let peersToConnect = getCurrentPeers();
-        if(peersToConnect.length < 2) {
+        if (peersToConnect.length < 2) {
             peersToConnect = peers;
         }
         connectToPeers(peersToConnect);
@@ -1519,7 +1546,7 @@ function Blockchain(config) {
      * Создаёт кошелёк в блокчейне, если он не создан.
      */
     function createWalletIfNotExsists() {
-        if(wallet.accepted || config.disableWalletDeploy) {
+        if (wallet.accepted || config.disableWalletDeploy) {
             return;
         }
         wallet.create();
@@ -1550,7 +1577,7 @@ function Blockchain(config) {
      * @param cancelCondition
      */
     function generateNextBlockAuto(blockData, cb, cancelCondition) {
-        if(config.program.enableAddressRotation) {
+        if (config.program.enableAddressRotation) {
             rotateAddress();
         }
         let validators = config.validators;
@@ -1571,8 +1598,8 @@ function Blockchain(config) {
 
 
         for (let a = validators.length - 1; a > -1; a--) {
-            if(validators.hasOwnProperty(a)) {
-                if(validators[a].isReady()) {
+            if (validators.hasOwnProperty(a)) {
+                if (validators[a].isReady()) {
                     validators[a].generateNextBlock(blockData, cb, cancelCondition);
                     return;
                 }
@@ -1589,21 +1616,21 @@ function Blockchain(config) {
      */
     function isReadyForTransaction() {
 
-        if(blockHandler.syncInProgress) {
+        if (blockHandler.syncInProgress) {
             return false;
         }
 
-        if(storj.get('chainResponseMutex')) {
+        if (storj.get('chainResponseMutex')) {
             return false;
         }
 
-        if(!config.newNetwork) {
-            if(getCurrentPeers().length === 0) {
+        if (!config.newNetwork) {
+            if (getCurrentPeers().length === 0) {
                 return false;
             }
 
             //Technically we ready for transaction but this state is bad for normal mode
-            if(maxBlock <= 5 || maxBlock === -1) {
+            if (maxBlock <= 5 || maxBlock === -1) {
                 return false;
             }
         }
@@ -1620,7 +1647,7 @@ function Blockchain(config) {
      */
 
     function keyringEmission() {
-        if(
+        if (
             maxBlock <= 5 &&
             maxBlock !== -1 &&
             miningNow === 0 &&
@@ -1651,10 +1678,10 @@ function Blockchain(config) {
      * где precision это максимальная точность при операциях с не дробными монетами
      */
     function coinEmission() {
-        if(config.disableInternalToken) {
+        if (config.disableInternalToken) {
             return;
         }
-        if(!blockHandler.isKeyFromKeyring(wallet.keysPair.public)) {
+        if (!blockHandler.isKeyFromKeyring(wallet.keysPair.public)) {
             logger.error("The selected key does not belong to the keychain! Emission corrupted.");
             return;
         }
@@ -1687,13 +1714,13 @@ function Blockchain(config) {
      */
     function start() {
 
-        if(config.validators.length === 0) {
+        if (config.validators.length === 0) {
             throw ('Error: No consensus validators loaded!');
         }
 
         //Loading validators
         for (let a in config.validators) {
-            if(config.validators.hasOwnProperty(a)) {
+            if (config.validators.hasOwnProperty(a)) {
                 try { //Trying to load validator from path
                     config.validators[a] = (require('./modules/validators/' + config.validators[a]));
                 } catch (e) { //If error trying to load validator from modules
@@ -1713,9 +1740,9 @@ function Blockchain(config) {
         startNode(function initilized() {
             setInterval(peerExchange, config.peerExchangeInterval);
             setInterval(broadcastLastBlock, config.hearbeatInterval);
-            if(config.blocksSavingInterval) {
+            if (config.blocksSavingInterval) {
                 setInterval(function () {
-                    if(!storj.get('terminating')) {
+                    if (!storj.get('terminating')) {
                         blockchain.save();
                     }
                 }, config.blocksSavingInterval);
@@ -1726,13 +1753,13 @@ function Blockchain(config) {
             process.on('SIGINT', () => {
 
 
-                if(storj.get('terminateAttempts') === 1) {
+                if (storj.get('terminateAttempts') === 1) {
                     logger.info('Terminating immediately.');
                     process.exit(1);
                     return;
                 }
 
-                if(storj.get('terminateAttempts') === 0) {
+                if (storj.get('terminateAttempts') === 0) {
                     storj.put('terminateAttempts', 1);
                     logger.warning('Press the Ctrl+C again to exit without saving data.');
                     return;
@@ -1741,7 +1768,7 @@ function Blockchain(config) {
                 storj.put('terminating', true);
                 storj.put('terminateAttempts', 0);
 
-                if(config.upnp.enabled) {
+                if (config.upnp.enabled) {
                     try {
                         upnpAdvertisment.stop();
                         upnpBrowser.stop();
@@ -1757,7 +1784,7 @@ function Blockchain(config) {
                 setTimeout(function () {
 
                     function terminate() {
-                        if(config.ecmaContract.enabled) {
+                        if (config.ecmaContract.enabled) {
                             blockchainObject.ecmaContract.terminate(terminateBlockchain);
                         } else {
                             terminateBlockchain();
@@ -1773,7 +1800,7 @@ function Blockchain(config) {
                         });
                     }
 
-                    if(storj.get("dapp") !== null) {
+                    if (storj.get("dapp") !== null) {
                         storj.get("dapp").terminate(terminate);
                     } else {
                         terminate();
@@ -1795,7 +1822,7 @@ function Blockchain(config) {
      */
     function getBlockById(id, cb) {
         blockchain.get(id, function (err, val) {
-            if(err) {
+            if (err) {
                 cb(err);
             } else {
                 cb(err, JSON.parse(val));
@@ -1894,11 +1921,11 @@ function Blockchain(config) {
     starwave.blockchain = blockchainObject;
 
     //Plugins
-    if(config.plugins.length > 0) {
+    if (config.plugins.length > 0) {
         logger.info("Loading plugins...\n");
         for (let plugin of config.plugins) {
             let res = loadPlugin(plugin, blockchainObject, config, storj);
-            if(typeof res === "object") {
+            if (typeof res === "object") {
                 logger.fatal("Plugin fatal:\n");
                 console.log(res);
                 process.exit(1);
@@ -1920,10 +1947,10 @@ function Blockchain(config) {
             try {
                 pluginMod = require(plugin)(blockchainObject, config, storj);
             } catch (e) {
-                if(/*!path.isAbsolute(plugin)*/ !fs.existsSync(plugin)) {
+                if (/*!path.isAbsolute(plugin)*/ !fs.existsSync(plugin)) {
                     plugin = './plugins/' + plugin;
-                }else {
-                    if(!path.isAbsolute(plugin)){
+                } else {
+                    if (!path.isAbsolute(plugin)) {
                         plugin = config.workDir + '/' + plugin
                     }
                 }
@@ -1936,7 +1963,7 @@ function Blockchain(config) {
     }
 
     //Wallet create
-    if(wallet.id.length === 0) {
+    if (wallet.id.length === 0) {
         wallet.generate();
     }
 
@@ -1946,7 +1973,7 @@ function Blockchain(config) {
     storj.put('accountManager', accountManager);
 
     //EcmaContract Smartcontracts
-    if(typeof config.ecmaContract !== 'undefined' && config.ecmaContract.enabled) {
+    if (typeof config.ecmaContract !== 'undefined' && config.ecmaContract.enabled) {
         blockchainObject.ecmaContract = new EcmaContract();
         storj.put('ecmaContract', blockchainObject.ecmaContract);
     }
