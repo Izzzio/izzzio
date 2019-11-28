@@ -21,8 +21,7 @@ class testContract extends Contract {
         let testClass = new TestClass();
         testClass.writeln('Test Class OK');
         console.log(plugins.ecma.testFunction('hello','bye'));
-        console.log('Hash' + plugins.crypto.hash('test'));
-        //console.log('Hash ' + crypto.hash('test'));
+        console.log('Hash: ' + plugins.crypto.hash('test'));
     }
 
 
