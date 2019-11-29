@@ -1,7 +1,7 @@
 echo "Preparing fixtures"
-rm -R ./temp/*
-echo "" > temp/dumb
-cp -R fixture/* temp/
+rm -R ./test/*
+echo "" > test/dumb
+cp -R fixture/* test/
 
 echo "Running tests"
 node ../../main.js --no-splash --fall-on-errors
