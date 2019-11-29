@@ -438,7 +438,7 @@ class EcmaContract {
                 let sync = vmSync();
 
                 let block = state.block || null;
-                if(!block){
+                if(!block) {
                     return sync.fails(false);
                 }
                 if(state.block.index <= id) {
@@ -449,7 +449,7 @@ class EcmaContract {
                     if(err) {
                         sync.fails(false);
                     } else {
-                        if(id !== block.index){
+                        if(id !== block.index) {
                             sync.fails(false);
                         } else {
                             sync.return(block);
@@ -585,7 +585,7 @@ class EcmaContract {
              * @private
              */
             _callMethodDeploy: function (contract, method, args, state) {
-                contract = Number(contract);
+
                 let sync = vmSync();
 
                 if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
@@ -593,13 +593,14 @@ class EcmaContract {
                     throw 'Calling blacklisted method of contract is not allowed';
                 }
 
-
-                let block = state.block || null;
-                if(!block){
-                    throw 'Can\'t detect block in state';
-                }
-                if(state.block.index <= Number(contract)) {
-                    throw 'Block not found';
+                if(!state.rollback) {
+                    let block = state.block || null;
+                    if(!block) {
+                        throw 'MethodDeploy: Can\'t detect block in state';
+                    }
+                    if(state.block.index <= Number(contract)) {
+                        throw 'Block not found';
+                    }
                 }
 
                 state.calledFrom = state.contractAddress;
@@ -629,7 +630,7 @@ class EcmaContract {
              * @private
              */
             _callMethodRollback: function (contract, method, args, state) {
-                contract = Number(contract);
+
                 let sync = vmSync();
 
                 if(METHODS_BLACKLIST.indexOf(method) !== -1 || METHODS_BLACKLIST.indexOf('contract.' + method) !== -1) {
@@ -638,13 +639,13 @@ class EcmaContract {
                 }
 
 
-                let block = state.block || null;
-                if(!block){
-                    throw 'Can\'t detect block in state';
-                }
-                if(state.block.index <= Number(contract)) {
-                    throw 'Block not found';
-                }
+                /* let block = state.block || null;
+                 if(!block){
+                     throw 'MethodRollback: Can\'t detect block in state';
+                 }
+                 if(state.block.index <= Number(contract)) {
+                     throw 'Block not found';
+                 }*/
 
                 state.calledFrom = state.contractAddress;
                 state.contractAddress = contract;
@@ -662,15 +663,16 @@ class EcmaContract {
                 }, ...args);
             },
             _getContractProperty: function (contract, property, state) {
-                contract = Number(contract);
-                let sync = vmSync();
 
-                let block = state.block || null;
-                if(!block){
-                    throw 'Can\'t detect block in state';
-                }
-                if(state.block.index <= Number(contract)) {
-                    throw 'Block not found';
+                let sync = vmSync();
+                if(!state.rollback) {
+                    let block = state.block || null;
+                    if(!block) {
+                        throw 'GetProperty: Can\'t detect block in state';
+                    }
+                    if(state.block.index <= Number(contract)) {
+                        throw 'Block not found';
+                    }
                 }
 
                 state.calledFrom = state.contractAddress;
@@ -696,14 +698,15 @@ class EcmaContract {
              * @private
              */
             _addDelayedCall: function (contract, method, args, state) {
-                contract = Number(contract);
 
-                let block = state.block || null;
-                if(!block){
-                    throw 'Can\'t detect block in state';
-                }
-                if(state.block.index <= Number(contract)) {
-                    throw 'Block not found';
+                if(!state.rollback) {
+                    let block = state.block || null;
+                    if(!block) {
+                        throw 'DelayedCall: Can\'t detect block in state';
+                    }
+                    if(state.block.index <= Number(contract)) {
+                        throw 'Block not found';
+                    }
                 }
 
                 state.calledFrom = state.contractAddress;
@@ -1030,6 +1033,8 @@ class EcmaContract {
     callContractMethodRollback(address, method, state, cb, ...args) {
         let that = this;
 
+        state.rollback = true;
+
         if(method.indexOf('._') !== -1 || method[0] === '_') {
             throw new Error('Calling private contract method in deploy method not allowed');
         }
@@ -1103,6 +1108,8 @@ class EcmaContract {
             throw 'Calling private contract method in deploy method not allowed';
         }
 
+        state.rollback = false;
+
         this.getContractInstanceByAddress(address, function (err, instance) {
             if(err) {
                 cb(new Error('Error getting contract instance for contract: ' + address + ' method ' + method));
@@ -1147,6 +1154,8 @@ class EcmaContract {
      */
     callContractMethodDeployWait(address, method, state, cb, ...args) {
         let that = this;
+
+        state.rollback = false;
 
         if(method.indexOf('._') !== -1 || method[0] === '_') {
             throw new Error('Calling private contract method in deploy method not allowed');
@@ -1426,7 +1435,7 @@ class EcmaContract {
 
                 callBlock = new EcmaContractCallBlock(address, method, args, state);
                 callBlock = wallet.signBlock(callBlock);
-            }else{
+            } else {
                 callBlock = args;
                 state.from = callBlock.state.from;
                 state.contractAddress = callBlock.state.contractAddress;
@@ -1917,7 +1926,7 @@ class EcmaContract {
             let contract = new ContractConnector(that, req.params.address);
 
             try {
-                res.send({result:await contract.deployContractMethod(req.params.method, source)});
+                res.send({result: await contract.deployContractMethod(req.params.method, source)});
             } catch (e) {
                 res.send({error: true, message: e.message, message2: JSON.stringify(e)});
             }
@@ -1934,9 +1943,9 @@ class EcmaContract {
                 }
 
                 //If we got an object - is a signed block. String - contract source
-                try{
+                try {
                     src = JSON.parse(src);
-                }catch (e) {
+                } catch (e) {
                 }
 
                 let accountName = req.params.accountName ? req.params.accountName : false;
@@ -1945,7 +1954,7 @@ class EcmaContract {
                     src,
                     resourceRent,
                     function (deployResult) {
-                        if (deployResult.error) {
+                        if(deployResult.error) {
                             res.send({error: true, message: deployResult.error});
                         } else {
                             res.send({result: deployResult});
