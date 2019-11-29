@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: 12
       - run: npm install
-      - run: npm run testl
+      - run: npm run test
 
   publish-npm:
     needs: build
