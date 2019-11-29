@@ -1,6 +1,6 @@
 ![iZ3 logo](https://github.com/Izzzio/izzzio/raw/master/logo.png)
 
-![ES6](https://img.shields.io/badge/es-6-brightgreen.svg)
+![ES6](https://img.shields.io/badge/es-8-brightgreen.svg)
 ![GitHub contributors](https://img.shields.io/github/contributors/izzzio/izzzio.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/izzzio/izzzio.svg)
 ![Github search hit counter](https://img.shields.io/github/search/izzzio/izzzio/goto.svg)
