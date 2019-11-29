@@ -1,4 +1,4 @@
-name: BigNet Tests
+name: Tests
 
 on: [push]
 
@@ -16,4 +16,4 @@ jobs:
       - name: Run npm install
         run: npm install
       - name: Run Test
-        run: npm run testl
+        run: npm run test
