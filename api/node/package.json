@@ -1,11 +1,19 @@
 {
   "name": "iz3-nodejs-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Node.js API for IZZZIO blockchain",
   "main": "EcmaSmartRPC.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/Izzzio/izzzio.git"
+  },
+  "scripts": {
+    "depency": "npm install",
+    "start": "npm run terminal ",
+    "terminal": "node --experimental-repl-await terminal/terminal "
+  },
+  "dependencies": {
+    "commander": "^2.19.0"
   },
   "keywords": [
     "blockchain",
@@ -23,5 +31,8 @@
   "bugs": {
     "url": "https://github.com/Izzzio/izzzio/issues"
   },
-  "homepage": "https://izzz.io"
+  "homepage": "https://izzz.io",
+  "bin": {
+    "iz3connect": "./runTerminal"
+  }
 }

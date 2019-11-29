@@ -1,0 +1,1 @@
+npm run terminal %1 %2 %3
