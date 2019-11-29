@@ -74,6 +74,7 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async tokenTest() {
+        logger.info('Token test');
         const testRecipient = 'SOME_ADDR';
         let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
 
@@ -103,6 +104,7 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async c2cTest() {
+        logger.info('C2C test');
         const buyerCode = 'new ' + function () {
             const SELLER_ADDRESS = '8';
 
@@ -206,6 +208,7 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async voteContractTest() {
+        logger.info('Vote contract test');
         let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
         const voteContractCode = fs.readFileSync('../voteContract.js').toString();
         const newBlock = await that.contracts.ecmaPromise.deployContract(voteContractCode, 10);
@@ -239,7 +242,7 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async voteContractChangeResources() {
-
+        logger.info('Vote contract change resources test');
 
         let result;
         let oldResources;

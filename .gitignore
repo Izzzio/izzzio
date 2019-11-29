@@ -59,6 +59,7 @@ typings/
 # dotenv environment variables file
 .env
 
+package-lock.json
 
 Будет удалено .gitignore
 Будет удалено .idea/
