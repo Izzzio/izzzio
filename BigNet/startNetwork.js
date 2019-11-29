@@ -1,7 +1,7 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ class App extends DApp {
         //Preparing environment
         logger.info('Deploying contract...');
         that.contracts.ecmaContract.deployContract(masterContract, 0, async function (deployedContract) {
+            assert.assert(deployedContract !== null && Object.keys(deployedContract).length !== 0, "Invalid deployed contract");
             assert.true(deployedContract.address === that.getMasterContractAddress(), 'Invalid master contract address ' + that.getMasterContractAddress());
             logger.info("Master contract deployed");
         });

@@ -38,6 +38,11 @@ function Blockchain(config) {
     //Crypto
     //const CryptoJS = require("crypto-js");
 
+    //Plugins
+    const Plugins = require('./modules/plugins');
+    const plugins = new Plugins();
+    storj.put('plugins', plugins);
+
     //Networking
     const express = require("express");
     const auth = require('http-auth');
@@ -50,7 +55,6 @@ function Blockchain(config) {
     const levelup = require('level');
 
     //Utils
-    const Sync = require('sync');
     const moment = require('moment');
     const url = require('url');
     const path = require('path');
@@ -70,6 +74,19 @@ function Blockchain(config) {
     storj.put('app', app);
     storj.put('config', config);
 
+    //load DB plugin
+    if(config.dbPlugins.length > 0) {
+        logger.info("Loading DB plugins...\n");
+        for (let plugin of config.dbPlugins) {
+            let res = loadPlugin(plugin, blockchainObject, config, storj);
+            if(typeof res === "object") {
+                logger.fatal("Plugin fatal:\n");
+                console.log(e);
+                process.exit(1);
+            }
+        }
+        logger.info("DB plugins loaded");
+    }
 
     //Subsystems
     const blockController = new (require('./modules/blockchain'))();
@@ -111,6 +128,10 @@ function Blockchain(config) {
     console.log('');
     console.log('Message bus address: ' + config.recieverAddress);
     console.log('');
+    if(config.networkPassword) {
+        console.log('Network with password access control');
+        console.log('');
+    }
 
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
@@ -144,7 +165,8 @@ function Blockchain(config) {
         MY_PEERS: 3,
         BROADCAST: 4,
         META: 5,
-        SW_BROADCAST: 6
+        SW_BROADCAST: 6,
+        PASS: 7,
     };
 
     let maxBlock = -1;
@@ -194,7 +216,7 @@ function Blockchain(config) {
          */
         function getLastBlock(cb) {
             getLatestBlock(function (lastestBlock) {
-                cb(lastestBlock, lastKnownBlock);
+                cb(lastestBlock, lastestBlock.index);
             });
         },
 
@@ -296,6 +318,25 @@ function Blockchain(config) {
     }
 
     /**
+     * Async version of addBlockToChainIndex
+     * @param index
+     * @param block
+     * @param noHandle
+     * @returns {Promise<unknown>}
+     */
+    function asyncAddBlockToChainIndex(index, block, noHandle) {
+        return new Promise((resolve, reject) => {
+            addBlockToChainIndex(index, block, noHandle, (err, result) => {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            })
+        })
+    }
+
+    /**
      * Добавляет блок в конец цепочки
      * @param block
      * @param {Boolean} noHandle
@@ -315,14 +356,23 @@ function Blockchain(config) {
         addBlockToChainIndex(maxBlock, block, noHandle, cb);
     }
 
-//Врапперы для модуля Sync, а то он любит портить this объекта
-    function exBlockhainGet(index, callback) {
-        blockchain.get(index, callback);
+    /**
+     * Async verstion of blockchain.get
+     * @param index
+     * @returns {Promise<unknown>}
+     */
+    function asyncBlockchainGet(index) {
+        return new Promise((resolve, reject) => {
+            blockchain.get(index, (err, result) => {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            })
+        })
     }
 
-    function exBlockHandler(result, callback) {
-        blockHandler.handleBlock(JSON.parse(result), callback)
-    }
 
     /**
      * Запуск ноды
@@ -386,33 +436,33 @@ function Blockchain(config) {
      * Запуск сервера интерфейса
      */
     function initHttpServer() {
-        app.get('/blocks', (req, res) => {
-            Sync(function () {
-                res.writeHead(200, {
-                    'Content-Type': 'application/json',
-                    'Content-Disposition': 'attachment; filename="blockchain.json"'
-                });
-                res.write('{');
-                for (let i = 0; i < maxBlock + 1; i++) {
-                    let result;
-                    try {
-                        result = exBlockhainGet.sync(null, i);
-                    } catch (e) {
-                        continue;
-                    }
+        app.get('/blocks', async (req, res) => {
 
-                    if(Buffer.isBuffer(result)) {
-                        result = JSON.stringify(String(result));
-                    } else {
-                        result = JSON.stringify(result);
-                    }
-
-                    res.write('"' + i + '":' + result + ',');
-                }
-                res.write('"maxBlock":' + maxBlock + '');
-                res.write('}');
-                res.end();
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'Content-Disposition': 'attachment; filename="blockchain.json"'
             });
+            res.write('{');
+            for (let i = 0; i < maxBlock + 1; i++) {
+                let result;
+                try {
+                    result = await asyncBlockchainGet(i);
+                } catch (e) {
+                    continue;
+                }
+
+                if(Buffer.isBuffer(result)) {
+                    result = JSON.stringify(String(result));
+                } else {
+                    result = JSON.stringify(result);
+                }
+
+                res.write('"' + i + '":' + result + ',');
+            }
+            res.write('"maxBlock":' + maxBlock + '');
+            res.write('}');
+            res.end();
+
         });
 
         app.get('/peers', (req, res) => {
@@ -438,35 +488,41 @@ function Blockchain(config) {
      */
     function initP2PServer() {
 
-        let wss = null;
-        if(config.sslMode) {
-            const https = require('https');
-            const server = https.createServer().listen(config.p2pPort);
-            wss = new WebSocket.Server({server});
-            console.log("\n!!!Warning: Node running in SSL mode. This mode can be used only by public nodes with correct certeficate.\n")
-        } else {
-            wss = new WebSocket.Server({port: config.p2pPort, perMessageDeflate: false});
-        }
-
-        wss.on('connection', function (ws) {
-            if(config.program.verbose) {
-                logger.info('Input connection ' + ws._socket.remoteAddress);
+        if(!config.program.leechMode) {
+            let wss = null;
+            if(config.sslMode) {
+                const https = require('https');
+                const server = https.createServer().listen(config.p2pPort);
+                wss = new WebSocket.Server({server});
+                console.log("\n!!!Warning: Node running in SSL mode. This mode can be used only by public nodes with correct certificate.\n")
+            } else {
+                wss = new WebSocket.Server({port: config.p2pPort, perMessageDeflate: false});
             }
-            initConnection(ws)
-        });
-        logger.init('Listening p2p port on: ' + config.p2pPort);
+
+            wss.on('connection', function (ws) {
+                if(config.program.verbose) {
+                    logger.info('Input connection ' + ws._socket.remoteAddress);
+                }
+                initConnection(ws)
+            });
+            logger.init('Listening p2p port on: ' + config.p2pPort);
+        } else {
+            logger.warning('P2P server disabled by leech mode');
+        }
 
         if(config.upnp.enabled) {
 
-            //Node info broadcast
-            upnpAdvertisment = new dnssd.Advertisement(dnssd.tcp(config.upnp.token), config.p2pPort, {
-                txt: {
-                    GT: String(getGenesisBlock().timestamp),
-                    RA: config.recieverAddress,
-                    type: 'Generic iZ3 Node'
-                }
-            });
-            upnpAdvertisment.start();
+            if(!config.program.leechMode) {
+                //Node info broadcast
+                upnpAdvertisment = new dnssd.Advertisement(dnssd.tcp(config.upnp.token), config.p2pPort, {
+                    txt: {
+                        GT: String(getGenesisBlock().timestamp),
+                        RA: config.recieverAddress,
+                        type: 'Generic iZ3 Node'
+                    }
+                });
+                upnpAdvertisment.start();
+            }
 
             //Detecting other nodes
             upnpBrowser = dnssd.Browser(dnssd.tcp(config.upnp.token))
@@ -490,7 +546,7 @@ function Blockchain(config) {
 
                     for (let a in service.addresses) {
                         if(service.addresses.hasOwnProperty(a)) {
-                            service.addresses[a] = 'ws://' + service.addresses + ':' + service.port;
+                            service.addresses[a] = 'ws://' + service.addresses[a] + ':' + service.port;
                         }
                     }
 
@@ -555,7 +611,13 @@ function Blockchain(config) {
             blockchainInfo.onConnection(ws, write);
         }
         initMessageHandler(ws);
+
+        if(config.networkPassword) {
+            write(ws, passwordMsg());     //посылаем запрос на ключевое слово
+        }
+
         write(ws, metaMsg());         //посылаем метаинформацию
+
         write(ws, queryChainLengthMsg());
         write(ws, queryChainLengthMsg());
         sendAllBlockchain(ws, maxBlock - 1);
@@ -590,17 +652,25 @@ function Blockchain(config) {
             try {
                 message = JSON.parse(data);
             } catch (e) {
-                logger.error('' + e)
-            }
-
-            //проверяем сообщения, содержащие информацию о блокчейне
-
-            if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
+                if(config.program.verbose) {
+                    logger.error(e);
+                }
+                data = null;
                 return;
             }
 
-            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета
-            if(!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData) {
+            //не даем обрабатывать сообщения(кроме метаинформации), пока не проверили пароль входа в сеть
+            if(config.networkPassword && !ws.passwordChecked && message.type !== MessageType.PASS && message.type !== MessageType.META) {
+                return;
+            }
+
+            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета(пропускаем только парольные)
+            if(!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData && message.type !== MessageType.PASS) {
+                return;
+            }
+
+            //проверяем сообщения, содержащие информацию о блокчейне
+            if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
                 return;
             }
 
@@ -688,8 +758,89 @@ function Blockchain(config) {
                 case MessageType.SW_BROADCAST:
                     lastMsgIndex = starwave.handleMessage(message, messagesHandlers, ws);
                     break;
+                case MessageType.PASS:
+                    passwordCheckingProtocol(ws, message);
+                    break;
+
             }
         });
+    }
+
+    /**
+     * есть ли пришедшее кодовое слово в списке отосланных нами
+     * @param keyWord
+     * @returns {boolean}
+     */
+    function checkKeyWordExistence(keyWord) {
+        for (let socket of sockets) {
+            if(socket.keyWord === keyWord) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * процедура обмена паролями сокетов друг с другом
+     * @param ws
+     * @param message
+     */
+    function passwordCheckingProtocol(ws, message) {
+
+        if(message.myName === config.recieverAddress) {
+            ws.close();
+            return;
+        }
+
+        //проверяем пароль только если он у нас самих есть в конфиге
+        if(config.networkPassword) {
+            if(message.data === '') {
+                //данные пустые, значит, пришел запрос кодовой фразы
+                let ourKeyWord = getid() + getid();
+                write(ws, passwordMsg(ourKeyWord, true, config.recieverAddress));
+                ws.keyWord = ourKeyWord;
+                if(config.program.verbose) {
+                    logger.info("Connection digest hash generated " + _getPassPhraseForChecking(ourKeyWord));
+                }
+            } else {
+                //если нет, значит, либо пришел хэш для проверки, либо пришло сообщение с keyWord в ответ на запрос
+                if(message.keyWordResponse) {
+                    //проверяем, нет ли присланного слова в нашем списке сохраненных. если есть, то запрашиваем новое кодовое слово.
+                    if(checkKeyWordExistence(message.data)) {
+                        write(ws, passwordMsg(undefined, undefined, config.recieverAddress));
+                        return;
+                    }
+
+                    //ответ на запрос кодового слова(посылаем хэш keyword + pass) с запрошенным кодовым словом в поле data
+                    let externalKeyWord = message.data;
+                    //складываем внешнее кодовое слово с нашим паролем и отправляем
+                    let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord), undefined, config.recieverAddress);
+
+                    write(ws, passMes);
+                } else {
+                    //пришел хэш для проверки
+                    if(ws.keyWord) {
+                        //если есть кодовое слово, связанное с сокетом, то проверяем
+                        if(message.data === _getPassPhraseForChecking(ws.keyWord)) {
+                            ws.passwordChecked = true; //флаг того, что пароль правильный и этот пир может продолжать общаться с нодой
+                        } else {
+                            if(config.program.verbose) {
+                                logger.error('Connection digest hash invalid ' + message.data + ' vs ' + _getPassPhraseForChecking(ws.keyWord) + ' from ' + ws._socket.remoteAddress);
+                            }
+                            //не прошел проверку.
+                            //снимаем кодовое слово с этого сокета
+                            ws.keyWord = undefined;
+                            //разрываем соединение
+                            ws.passwordChecked = undefined;
+                            ws.close();
+                        }
+                    } else {
+                        //непонятное сообщение. игнорируем его
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -733,12 +884,12 @@ function Blockchain(config) {
     function getAllChain(fromBlock, limit, cb) {
         limit = typeof limit === 'undefined' ? maxBlock : fromBlock + limit;
         let blockchain = [];
-        Sync(function () {
+        (async function () {
             let limiter = 0;
             for (let i = fromBlock; i < limit + 1; i++) {
                 let result;
                 try {
-                    result = exBlockhainGet.sync(null, i);
+                    result = await asyncBlockchainGet(i);
                 } catch (e) {
                     continue;
                 }
@@ -750,7 +901,7 @@ function Blockchain(config) {
             }
 
             cb(blockchain);
-        });
+        })();
     }
 
     /**
@@ -858,7 +1009,7 @@ function Blockchain(config) {
 
         newPeers.forEach((peer) => {
 
-            if(peers.indexOf(peer) !== -1) {
+            if(peers.indexOf(peer) !== -1 || typeof peer !== 'string') {
                 return;
             }
 
@@ -875,7 +1026,9 @@ function Blockchain(config) {
                     ws.close();
                 });
             } catch (e) {
-                console.log(e);
+                if(config.program.verbose) {
+                    logger.error(e);
+                }
             }
         });
     }
@@ -1010,16 +1163,20 @@ function Blockchain(config) {
      */
     function replaceChain(newBlocks, cb) {
 
+        //Если мы пытаемся проверить цепочку больше, чем всего есть блоков, проверяем с genesis
         let fromBlock = newBlocks[0].index - 1;
         if(fromBlock < 0) {
             fromBlock = 0;
         }
 
+        //Получаем блок, с которого выполняется проверка
         getBlockById(fromBlock, function (err, lBlock) {
             if(err) {
-                logger.error(new Error('Can\'t get block no ' + newBlocks[0].index + ' ' + err));
+                let error = new Error('Can\'t get block no ' + newBlocks[0].index + ' ' + err);
+
+                logger.error(error);
                 if(typeof cb !== 'undefined') {
-                    cb();
+                    cb(error);
                 }
                 return;
             }
@@ -1030,16 +1187,19 @@ function Blockchain(config) {
                 maxIndex = 0;
             }
 
+            //TODO: Зачем мы проверяем что блок проверки = 0? Нам ведь надо проверить всю цепочку
             const validChain = isValidChain(fromBlock === 0 ? newBlocks : [lBlock].concat(newBlocks));
 
-            if(!(newBlocks[0].index >= maxIndex)) {//ограничение доверия принимаемой цепочки блоков
+            //Проверяем, что индекс первого блока в процеряемой цепочке не выходит за пределы Limited Confidence
+            if(!(newBlocks[0].index >= maxIndex)) {
 
+                let error = new Error('LimitedConfidence: Invalid chain');
                 if(config.program.verbose) {
-                    logger.error('LimitedConfidence: Invalid chain');
+                    logger.error(error);
                 }
 
                 if(typeof cb !== 'undefined') {
-                    cb();
+                    cb(error);
                 }
 
                 return;
@@ -1048,14 +1208,14 @@ function Blockchain(config) {
 
             if(
                 validChain // &&  newBlocks[0].index >= maxIndex
-            /*&& newBlocks.length >= maxBlock*/
+                /*&& newBlocks.length >= maxBlock*/
             ) {
                 //console.log(newBlocks);
                 //logger.info('Received blockchain is valid.');
                 logger.info('Synchronize: ' + newBlocks[0].index + ' of ' + newBlocks[newBlocks.length - 1].index);
-                Sync(function () {
+                (async function () {
                     for (let i of newBlocks) {
-                        addBlockToChainIndex.sync(null, i.index, i, true);
+                        await asyncAddBlockToChainIndex(i.index, i, true);
                     }
                     responseLatestMsg(function (msg) {
                         broadcast(msg);
@@ -1068,19 +1228,21 @@ function Blockchain(config) {
                             return;
                         }
                         blockHandler.resync();
-                    }, config.peerExchangeInterval + 2000);
+                    }, config.peerExchangeInterval + 2000); //2000 в качестве доп времени
 
+                    //All is ok
                     if(typeof cb !== 'undefined') {
                         cb();
                     }
 
-                });
+                })();
 
             } else {
+                let error = new Error('Received blockchain corrupted');
                 if(typeof cb !== 'undefined') {
-                    cb();
+                    cb(error);
                 }
-                logger.error('Received blockchain corrupted');
+                logger.error(error);
 
             }
 
@@ -1194,6 +1356,19 @@ function Blockchain(config) {
     }
 
     /**
+     * message for initiating password procedure
+     * @param data
+     * @param keyWordResponse //ставится true ТОЛЬКО если в data посылается keyWord при ответе на запрос этого ключевого слова
+     * @param myName идентефикатор ноды для обнаружения себя
+     * @returns {{type: number, data: *, response }}
+     */
+    function passwordMsg(data = '', keyWordResponse, myName) {
+        return {
+            'type': MessageType.PASS, 'data': data, 'keyWordResponse': keyWordResponse, 'myName': myName,
+        }
+    }
+
+    /**
      * Write to socket
      * @param ws
      * @param message
@@ -1216,7 +1391,9 @@ function Blockchain(config) {
     const broadcast = function (message, excludeIp) {
         sockets.forEach(function (socket) {
             if(typeof excludeIp === 'undefined' || socket._socket.recieverAddress !== excludeIp) {
-                write(socket, message);
+                if(socketPasswordOk(socket)) {
+                    write(socket, message);
+                }
             } else {
 
             }
@@ -1228,6 +1405,19 @@ function Blockchain(config) {
      */
     function broadcastConnectedPeers() {
         broadcast(peersBroadcast(getCurrentPeers()));
+    }
+
+    /**
+     * Прошёл-ли сокет проверку пароля
+     * @param socket
+     * @return {boolean}
+     */
+    function socketPasswordOk(socket) {
+        if(config.networkPassword) {
+            return !!socket.passwordChecked;
+        } else {
+            return true;
+        }
     }
 
     /**
@@ -1287,7 +1477,7 @@ function Blockchain(config) {
      */
     function getCurrentPeers(fullSockets) {
         return sockets.map(function (s) {
-            if(s && s.readyState === 1) {
+            if(s && s.readyState === 1 && socketPasswordOk(s)) {
                 if(fullSockets) {
                     return s;
                 } else {
@@ -1377,6 +1567,15 @@ function Blockchain(config) {
      */
     function rotateAddress() {
         config.recieverAddress = getid() + getid() + getid();
+    }
+
+    /**
+     * возвращает строку пароля для сравнения
+     * @returns {string}
+     * @private
+     */
+    function _getPassPhraseForChecking(keyWord) {
+        return cryptography.hash(config.networkPassword + keyWord).toString();
     }
 
 
@@ -1528,9 +1727,21 @@ function Blockchain(config) {
             throw ('Error: No consensus validators loaded!');
         }
 
+        //Loading validators
         for (let a in config.validators) {
             if(config.validators.hasOwnProperty(a)) {
-                config.validators[a] = new (require('./modules/validators/' + config.validators[a]))(blockchainObject);
+                try { //Trying to load validator from path
+                    config.validators[a] = (require('./modules/validators/' + config.validators[a]));
+                } catch (e) { //If error trying to load validator from modules
+                    try {
+                        config.validators[a] = (require(config.validators[a]));
+                    } catch (e) {
+                        logger.fatal('Validator ' + config.validators[a] + ' not found');
+                        process.exit(1);
+                    }
+                }
+
+                config.validators[a] = new config.validators[a](blockchainObject);
             }
         }
 
@@ -1722,25 +1933,42 @@ function Blockchain(config) {
     if(config.plugins.length > 0) {
         logger.info("Loading plugins...\n");
         for (let plugin of config.plugins) {
-            try {
-                try {
-                    plugin = require(plugin)(blockchainObject, config, storj);
-                } catch (e) {
-                    if(!path.isAbsolute(plugin)) {
-                        plugin = './plugins/' + plugin;
-                    }
-                    plugin = require(plugin)(blockchainObject, config, storj);
-                }
-
-
-            } catch (e) {
+            let res = loadPlugin(plugin, blockchainObject, config, storj);
+            if(typeof res === "object") {
                 logger.fatal("Plugin fatal:\n");
-                console.log(e);
+                console.log(res);
                 process.exit(1);
             }
         }
-
         logger.info("Plugins loaded");
+    }
+
+    /**
+     * load custom plugin
+     * @param {string} plugin name of the plugin module
+     * @param {object} blockchainObject blockchain object
+     * @param {object} config config object
+     * @param {object} storj global storage object
+     */
+    function loadPlugin(plugin, blockchainObject, config, storj) {
+        let pluginMod;
+        try {
+            try {
+                pluginMod = require(plugin)(blockchainObject, config, storj);
+            } catch (e) {
+                if(/*!path.isAbsolute(plugin)*/ !fs.existsSync(plugin)) {
+                    plugin = './plugins/' + plugin;
+                } else {
+                    if(!path.isAbsolute(plugin)) {
+                        plugin = config.workDir + '/' + plugin
+                    }
+                }
+                pluginMod = require(plugin)(blockchainObject, config, storj);
+            }
+        } catch (e) {
+            return e;
+        }
+        return true;
     }
 
     //Wallet create

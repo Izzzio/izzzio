@@ -99,4 +99,30 @@ class EcmaSmartRPC extends NodeRPC
         return $this->request('contracts/ecma/deployContract', ['source' => $source, 'resourceRent' => $resourceRent]);
     }
 
+    /**
+     * Deploy new contract with signed block
+     * @param array $block
+     * @param string $resourceRent
+     * @return array|mixed
+     * @throws InvalidMethodException
+     * @throws ReturnException
+     * @throws RpcCallException
+     */
+    public  function  ecmaDeployContractSignedBlock($block, $resourceRent = '0'){
+        return $this->request('contracts/ecma/deployContract', ['source' => json_encode($block), 'resourceRent' => $resourceRent]);
+    }
+
+    /**
+     * Deploy contract method with signed block
+     * @param string $contractAddress
+     * @param array $block
+     * @return array|mixed
+     * @throws InvalidMethodException
+     * @throws ReturnException
+     * @throws RpcCallException
+     */
+    public function ecmaDeployMethodSignedBLock($contractAddress, $block)
+    {
+        return $this->request('contracts/ecma/deploySignedMethod', ['source' => json_encode($block)], '/' . $contractAddress );
+    }
 }
