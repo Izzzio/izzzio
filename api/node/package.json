@@ -23,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/Izzzio/izzzio/issues"
   },
-  "homepage": "https://izzz.io"
+  "homepage": "https://izzz.io",
+  "bin": {
+    "iz3connect": "node --experimental-repl-await terminal/terminal"
+  }
 }

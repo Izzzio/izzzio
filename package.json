@@ -58,6 +58,7 @@
   ],
   "bin": {
     "iz3node": "./main.js",
-    "izzzio": "./main.js"
+    "izzzio": "./main.js",
+    "iz3connect": "node --experimental-repl-await api/node/terminal/terminal"
   }
 }
