@@ -13,7 +13,7 @@
     "terminal": "node --experimental-repl-await terminal/terminal "
   },
   "dependencies": {
-    "commander": "^2.19.0",
+    "commander": "^2.19.0"
   },
   "keywords": [
     "blockchain",
