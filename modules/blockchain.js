@@ -1,7 +1,7 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ class Blockchain {
         return this.db.getLevelup();
     }
 
-    getDb(){
+    getDb() {
         return this.db;
     }
 
@@ -54,9 +54,21 @@ class Blockchain {
         that.db.put(key, value, callback);
     }
 
+    getAsync(key) {
+        return this.db.getAsync(key);
+    }
+
+    putAsync(key, data) {
+        return this.db.putAsync(key, data);
+    }
+
     del(key, callback) {
         let that = this;
         that.db.del(key, callback);
+    }
+
+    delAsync(key) {
+        return this.db.delAsync(key);
     }
 
     close(callback) {
@@ -64,9 +76,17 @@ class Blockchain {
         that.db.close(callback);
     }
 
-    save(callback){
+    closeAsync() {
+        return this.db.closeAsync();
+    }
+
+    save(callback) {
         let that = this;
         that.db.save(callback);
+    }
+
+    saveAsync() {
+        return this.db.saveAsync();
     }
 }
 

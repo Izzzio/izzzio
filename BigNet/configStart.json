@@ -11,7 +11,7 @@
     "enabled": true,
     "token": "BigNet"
   },
-  "genesisTiemstamp": 1534080014000,
+  "genesisTiemstamp": 1558631869000,
   "generateEmptyBlockDelay": 86400000,
   "enableMessaging": false,
   "rpcPassword": "",

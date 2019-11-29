@@ -23,6 +23,7 @@
   "walletsDB": "wallets",
   "blocksDB": "blocks",
   "appEntry": false,
+  "startMessage": "BigNet Node. TestNet connection. More info https://bignet.izzz.io\n",
   "checkExternalConnectionData": false,
   "ecmaContract": {
     "enabled": true,

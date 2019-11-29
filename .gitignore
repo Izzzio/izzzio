@@ -59,6 +59,7 @@ typings/
 # dotenv environment variables file
 .env
 
+package-lock.json
 
 Будет удалено .gitignore
 Будет удалено .idea/
@@ -72,6 +73,7 @@ typings/
 Будет удалено wallets/
 
 /build
+/tracker
 /shell/build
 /installers/wix/BitCoenWallet-x64.msi
 /installers/wix/BitCoenWallet-x64.wixpdb
@@ -90,3 +92,6 @@ plugins/GOSTModules
 .idea/modules.xml
 .idea/vcs.xml
 .idea/workspace.xml
+docs
+
+Tests/PluginsTest/test/temp

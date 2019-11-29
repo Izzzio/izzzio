@@ -4,7 +4,7 @@
  iZ³ | Izzzio blockchain - https://izzz.io
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ program
     .option('--verbose', 'More logging info', false)
     .option('--enable-address-rotation', 'Activates the rotation of the addresses', false)
     .option('--no-splash', 'Disable splash screen', false)
+    .option('--leech-mode', 'Disable p2p server', false)
     .parse(process.argv);
 
 const getid = require('./modules/getid');
@@ -65,6 +66,7 @@ const config = {
         enabled: true,                  //Включить автоматическое обнаружение нод в сети
         token: 'iz3node'                //Токен по которому нода будет искать другие ноды (должен быть уникальным для каждой цепочки)
     },
+    networkPassword: '',                //"пароль" доступа к сети
 
     //Blockchain
     blockAcceptCount: 20,               //Количеств блоков подтверждения транзакции
@@ -115,16 +117,13 @@ const config = {
     disableWalletDeploy: true,
 
     //Database
-    walletsDB: 'wallets',                   // false - для хранения в ОЗУ, mem://wallets.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
     blocksDB: 'blocks',                     // false - для хранения в ОЗУ, mem://blocks.json для хранения в ОЗУ и записи на ПЗУ при выгрузке
     blocksSavingInterval: 300000,            // false = для отключения автосохранения, или количество милилсекунд
-    transactionIndexDB: 'transactions.db',  // база данных для индекса транзакций, false - для работы с ОЗУ (каждый раз индекс будет перестроен)
-    transactionIndexPerf: true,             // режим высокой производительности индекса (требует много ОЗУ)
-    transactionIndexEnable: false,          // активировать построение индекса
-
+    accountsDB: 'accounts',                 //Account manager database
 
     //Application
     appEntry: false,       //Точка входа в "приложение". False - если не требуется
+    startMessage: false,   //Сообщение, которое выводится при запуске ноды
 
     //SmartContracts
     ecmaContract: {
@@ -141,10 +140,13 @@ const config = {
     signFunction: '',                       //Функция вычисления цифровой подписи и генерации паролей(пустая-значит, по умолчанию используется), 'GOST' 'GOST256' 'NEWRSA'
     keyLength: 2048,                        //Key length for some algorithms
 
+
     //Enabled plugins
-    plugins: [
+    dbPlugins: [],                      //Database plugins list
+    plugins: [                          //Crypto and other plugins
         "iz3-basic-crypto"
     ],
+
 
 };
 
@@ -265,6 +267,10 @@ if(global.PATH.configDir) {
 if(!fs.existsSync(config.appEntry) && config.appEntry) {
     logger.fatal('App entry not found ' + config.appEntry);
     process.exit(1);
+}
+
+if(config.startMessage) {
+    console.log(config.startMessage);
 }
 
 const blockchain = new Blockchain(config);

@@ -1,7 +1,7 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -80,7 +80,6 @@ class voteContract extends Contract {
         this._voteVariants = new BlockchainArray('_voteVariants');
         this._VoteEvent = new Event('Vote', 'string', 'number');
         this._ChangeVoteState = new Event('ChangeVoteState', 'string');
-
         if (contracts.isDeploy()) { //Calls on deploying
             if (!BlockchainArray.isArray(variants)) {
                 variants = VOTE_VARIANTS;

@@ -1,7 +1,7 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -51,12 +51,12 @@ class App extends DApp {
 
         process.on('SIGINT', () => {
             console.log('Terminating tests...');
-            process.exit();
+            process.exit(1);
         });
 
         process.on('unhandledRejection', error => {
             logger.fatal(error);
-            process.exit();
+            process.exit(1);
         });
 
         //Preparing environment
@@ -74,6 +74,7 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async tokenTest() {
+        logger.info('Token test');
         const testRecipient = 'SOME_ADDR';
         let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
 
@@ -103,6 +104,7 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async c2cTest() {
+        logger.info('C2C test');
         const buyerCode = 'new ' + function () {
             const SELLER_ADDRESS = '8';
 
@@ -206,6 +208,7 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async voteContractTest() {
+        logger.info('Vote contract test');
         let mainToken = new TokenContractConnector(that.ecmaContract, that.getMasterContractAddress());
         const voteContractCode = fs.readFileSync('../voteContract.js').toString();
         const newBlock = await that.contracts.ecmaPromise.deployContract(voteContractCode, 10);
@@ -239,7 +242,7 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async voteContractChangeResources() {
-
+        logger.info('Vote contract change resources test');
 
         let result;
         let oldResources;
@@ -321,11 +324,13 @@ class App extends DApp {
     }
 
 
+
     /**
      * Run tests
      * @return {Promise<void>}
      */
     async run() {
+
 
         await this.tokenTest();
         await this.c2cTest();

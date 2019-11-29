@@ -39,6 +39,9 @@ const CONTRACT_OWNER = '-----BEGIN RSA PUBLIC KEY-----\n' +
     'eIC3eapWvK4HFtAtX1uIyod3LruSVssrNtLEqWOgD5MwOlv1KWAR0ZDZ3cYNL8Of8QIDAQAB\n' +
     '-----END RSA PUBLIC KEY-----\n';
 
+//Real net config
+//const CONTRACT_OWNER = 'izM1Tr1nhKaeDMqUaZjHqaWzjZmCndnUhML';
+
 /**
  * Minimal zero-cost resources
  * @type {{timeLimit: number, callLimit: number, ram: number}}
@@ -159,7 +162,6 @@ class mainToken extends TokenContract {
 
     /**
      * Checks address type actuality
-     * TODO: Check block aviable
      * @param {string} address contract address
      */
     checkContractAddress(address) {
@@ -315,6 +317,15 @@ class mainToken extends TokenContract {
         callLimit = (callLimit < MINIMAL_RESOURCES.callLimit) ? MINIMAL_RESOURCES.callLimit : callLimit;
 
         return {ram: Math.round(ram), timeLimit: Math.round(timeLimit), callLimit: Math.round(callLimit)};
+    }
+
+    /**
+     * Returns calculated resources as JSON
+     * @param {string} amount
+     * @return JSON {{callLimit: number, timeLimit: number, ram: number}}
+     */
+    getCalculatedResources(amount) {
+        return JSON.stringify(this.calculateResources(amount));
     }
 
     /**

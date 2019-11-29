@@ -7,6 +7,7 @@ const express = require("express");
 const Wallet = require("./wallet");
 const storj = require('./instanceStorage');
 const utils = require('./utils');
+const logger = new (require('./logger'))();
 
 /**
  * Wallet and RPC interface
@@ -32,33 +33,20 @@ class Frontend {
         app.get('/getInfo', function (req, res) {
             that.getInfo(req, res)
         });
-        app.get('/getTransactions', function (req, res) {
-            that.getTransactions(req, res)
-        });
 
-        app.get('/getWalletInfo/:id', function (req, res) {
-            that.getWalletInfo(req, res)
+        app.get('/getBlock/:id', function (req, res) {
+            that.getBlock(req, res)
         });
 
         app.get('/isReadyForTransaction', function (req, res) {
             that.isReadyForTransaction(req, res)
         });
 
-        app.post('/createTransaction', function (req, res) {
-            that.createTransaction(req, res)
-        });
-
-        app.post('/instantTransaction', function (req, res) {
-            that.instantTransaction(req, res)
-        });
 
         app.post('/createWallet', function (req, res) {
             that.createWallet(req, res)
         });
 
-        app.post('/instantCreateWallet', function (req, res) {
-            that.instantCreateWallet(req, res)
-        });
 
         app.post('/resyncBlockchain', function (req, res) {
             that.resyncBlockchain(req, res)
@@ -81,28 +69,8 @@ class Frontend {
         });
 
 
-        that.registerMessages();
-
         storj.put('httpServer', app);
 
-    }
-
-    registerMessages() {
-        let that = this;
-        utils.waitForSync(function () {
-            const dispatcher = storj.get('messagesDispatcher');
-            dispatcher.registerMessageHandler('getWalletInfo', function (message) {
-                that.blockHandler.getWallet(message.data.id, function (wallet) {
-                    dispatcher.broadcastMessage({
-                        walletInfo: JSON.parse(wallet),
-                        wallet: message.data.id,
-                        mutex: message.mutex
-                    }, 'getWalletInfo' + dispatcher.RESPONSE_SUFFIX, message.recepient);
-
-                });
-            });
-
-        });
     }
 
     index(req, res) {
@@ -137,69 +105,32 @@ class Frontend {
 
     }
 
+    getBlock(req, res) {
+        let that = this;
+        that.blockchainObject.getBlockById(parseInt(req.params.id), function (err, block) {
+            if (err) {
+                logger.info(new Error('Can\'t get block by id: ' + req.params.id + ' ' + err));
+                res.send({error: true, message: err.message});
+            } else {
+                res.send(block);
+            }
+        });
+    }
+
     isReadyForTransaction(req, res) {
         let that = this;
         res.send(JSON.stringify(that.blockchainObject.isReadyForTransaction()));
     }
 
-    getTransactions(req, res) {
-        let that = this;
 
-        utils.waitForSync(function () {
-            res.send(that.blockHandler.ourWalletBlocks);
-        });
-
-    }
-
-    getWalletInfo(req, res) {
-        let that = this;
-
-        utils.waitForSync(function () {
-
-            that.blockHandler.getWallet(req.params.id, function (wallet) {
-                res.send(JSON.parse(wallet));
-            });
-        });
-
-
-    }
-
+    /**
+     * Create new wallet
+     * @param req
+     * @param res
+     */
     createWallet(req, res) {
-        let that = this;
-        that.blockchainObject.createNewWallet(function (wallet) {
-            wallet.status = 'ok';
-            res.send(wallet);
-        });
-
-    }
-
-    instantCreateWallet(req, res) {
-        let that = this;
-
-        utils.waitForSync(function () {
-            that.blockchainObject.createNewWallet(function (wallet) {
-                wallet.status = 'ok';
-                res.send(wallet);
-            }, true);
-        });
-
-    }
-
-    createTransaction(req, res) {
-        let that = this;
-        if (that.blockchainObject.config.disableInternalToken){
-            res.send('false');
-            return;
-        }
-
-        utils.waitForSync(function () {
-            if(!that.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp), function (block) {
-                res.send(block);
-            })) {
-                res.send('false');
-            }
-        });
-
+        let wallet = new Wallet(false, this.blockchain.config);
+        res.send({id: wallet.id, public: wallet.keysPair.public, private: wallet.keysPair.private});
 
     }
 
@@ -210,6 +141,11 @@ class Frontend {
         res.send({status: 'ok'});
     }
 
+    /**
+     * Download wallet file
+     * @param req
+     * @param res
+     */
     downloadWallet(req, res) {
         res.writeHead(200, {
             'Content-Type': 'application/json',
@@ -246,50 +182,6 @@ class Frontend {
             } else {
                 res.send({status: 'error', message: 'Incorrect wallet or keypair'});
             }
-        });
-
-
-    }
-
-    instantTransaction(req, res) {
-        let that = this;
-        //выключаем транзакцию, если выпуск старых денег запрещен
-        if (that.blockchainObject.config.disableInternalToken){
-            res.send('false');
-            return;
-        }
-        utils.waitForSync(function () {
-            /**
-             *
-             * @type {Wallet}
-             */
-            let wallet = new Wallet();
-
-            wallet.enableLogging = false;
-            wallet.block = 0;
-            wallet.balance = 1000000000000000;
-            wallet.id = req.body.from;
-
-            wallet.keysPair.public = req.body.public;
-            wallet.keysPair.private = req.body.private;
-
-            wallet.transanctions = [];
-
-            if(!wallet.transact(req.body.id, Number(req.body.amount), Number(req.body.fromTimestamp))) {
-                //return false;
-            }
-
-            let blockData = wallet.transanctions.pop();
-
-            that.blockchainObject.transactor.transact(blockData, function (blockData, cb) {
-                that.blockchainObject.generateNextBlockAuto(blockData, function (generatedBlock) {
-                    that.blockchainObject.addBlock(generatedBlock);
-                    that.blockchainObject.broadcastLastBlock();
-                    cb(generatedBlock);
-                });
-            }, function (generatedBlock) {
-                res.send(generatedBlock);
-            });
         });
 
 
