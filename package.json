@@ -10,16 +10,15 @@
   },
   "scripts": {
     "depency": "npm install",
-    "build": "build.sh",
     "start": "node main.js",
-    "test": "cd BigNet/test && test",
-    "testl": "cd BigNet/test && ./test.sh",
+    "test": "cd Tests && node testRunner.js",
     "terminal": "node --experimental-repl-await api/node/terminal/terminal "
   },
   "dependencies": {
     "bignumber.js": "^7.2.1",
     "blob-util": "^1.3.0",
     "body-parser": "^1.18.3",
+    "cli-color": "^2.0.0",
     "commander": "^2.19.0",
     "crypto-js": "^3.1.6",
     "dnssd": "^0.4.1",
@@ -38,7 +37,7 @@
     "ws": ">=3.3.1"
   },
   "engines": {
-    "node": ">=8.2.0"
+    "node": ">=10.0.0"
   },
   "bugs": {
     "url": "https://github.com/Izzzio/iz3node/issues",

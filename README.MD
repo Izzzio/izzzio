@@ -1,6 +1,6 @@
 ![iZ3 logo](https://github.com/Izzzio/izzzio/raw/master/logo.png)
 
-![ES6](https://img.shields.io/badge/es-6-brightgreen.svg)
+![ES8](https://img.shields.io/badge/es-8-brightgreen.svg)
 ![GitHub contributors](https://img.shields.io/github/contributors/izzzio/izzzio.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/izzzio/izzzio.svg)
 ![Github search hit counter](https://img.shields.io/github/search/izzzio/izzzio/goto.svg)
@@ -48,7 +48,7 @@ Now you can use it as ``iz3node --config config.json``
 
 #### Dependencies
 
-**iZ³ platform** depends on Node.js version >= 8.2.0
+**iZ³ platform** depends on Node.js version >= 10.0.0
 
 NPM version >= 5.3.0
 

@@ -51,7 +51,7 @@ class App extends DApp {
 
         process.on('SIGINT', () => {
             console.log('Terminating tests...');
-            process.exit();
+            process.exit(1);
         });
 
         process.on('unhandledRejection', error => {
