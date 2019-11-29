@@ -30,6 +30,6 @@
   },
   "homepage": "https://izzz.io",
   "bin": {
-    "iz3connect": "node --experimental-repl-await terminal/terminal"
+    "iz3connect": "./runTerminal"
   }
 }
