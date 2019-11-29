@@ -5,6 +5,7 @@
 
 /**
  * Object-like data structure with data safe setters and getters. In fact Map structure
+ * @deprecated Real object bug
  */
 class BlockchainObject {
 
@@ -33,6 +34,7 @@ class BlockchainObject {
                 if(typeof target[item] !== 'undefined') {
                     return value;
                 }
+
                 target.db.put(item, value);
                 return true;
             }

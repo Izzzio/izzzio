@@ -73,6 +73,7 @@ package-lock.json
 Будет удалено wallets/
 
 /build
+/tracker
 /shell/build
 /installers/wix/BitCoenWallet-x64.msi
 /installers/wix/BitCoenWallet-x64.wixpdb
@@ -85,3 +86,12 @@ package-lock.json
 /installers/BitcoenWalletComponents.plist
 /installers/BitcoenWallet-Darwin-x64.dmg
 /installers/BitcoenWalletUnsigned-Darwin-x64.dmg
+plugins/GOSTModules
+.idea/iz3node.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/workspace.xml
+docs
+
+Tests/PluginsTest/test/temp

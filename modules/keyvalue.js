@@ -9,10 +9,12 @@ const levelup = require('levelup');
 const memdown = require('memdown');
 const leveldown = require('leveldown');
 const fs = require('fs-extra');
+const plugins = storj.get('plugins');//.ecma.getAllRegisteredFunctionsAsObject();
 
 const STORAGE_TYPE = {
     MEMORY: 0,
     LEVELDB: 1,
+    PLUGINDB: 2,
 };
 
 /**
@@ -26,10 +28,12 @@ class KeyValue {
         this.config = storj.get('config');
         this.levelup = null;
         this.name = name;
+        this.pluginDB = null;
 
         if(!name) {
             name = undefined;
         }
+
 
         if(typeof name !== 'undefined' && name.indexOf('mem://') !== -1) { //Memory with saving storage
             this.type = STORAGE_TYPE.MEMORY;
@@ -41,11 +45,29 @@ class KeyValue {
                 //console.log(e);
             }
 
+            return this;
+        }
 
-        } else if(typeof name !== 'undefined') { //LevelDB storage
+        if(typeof name !== 'undefined' && name.includes('://')) {
+            let protocol = name.split('://');
+            let dbName = protocol[1];
+            protocol = protocol[0];
+
+            if(typeof plugins.db[protocol] !== 'undefined') {
+                this.type = STORAGE_TYPE.PLUGINDB;
+                this.pluginDB = require(plugins.db[protocol]).init(dbName, this.config.workDir);
+                return this;
+            } else {
+                logger.fatal('Database plugin for protocol ' + protocol + ' noy found!');
+                process.exit(1);
+            }
+        }
+
+
+        if(typeof name !== 'undefined') { //LevelDB storage
             this.type = STORAGE_TYPE.LEVELDB;
             this.levelup = levelup(leveldown(this.config.workDir + '/' + name));
-            //this.levelup = levelup(memdown());//levelup(this.config.workDir + '/blocks');
+            return this;
         }
     }
 
@@ -55,6 +77,14 @@ class KeyValue {
      */
     getLevelup() {
         return this.levelup;
+    }
+
+    /**
+     * Returns plugin DB object if exists
+     * @return {null|*}
+     */
+    getPluginDB() {
+        return this.pluginDB;
     }
 
     /**
@@ -83,9 +113,38 @@ class KeyValue {
             case STORAGE_TYPE.LEVELDB:
                 that.levelup.get(key, options, callback);
                 break;
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.get(key, options, callback);
+                break;
         }
 
 
+    }
+
+    /**
+     * Promised get
+     * @param {string} key
+     * @param {object} options
+     * @return {Promise<any>}
+     */
+    getAsync(key, options) {
+        if(!options) {
+            options = {};
+        }
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.get(key, options, function (err, result) {
+                if(err) {
+                    return reject(err);
+                }
+
+                if(that.type === STORAGE_TYPE.LEVELDB && result.toString().includes('JSON:')) {
+                    result = JSON.parse(result.toString().replace('JSON:', ''));
+                }
+
+                resolve(result);
+            })
+        })
     }
 
     /**
@@ -116,9 +175,42 @@ class KeyValue {
                 }*/
                 that.levelup.put(key, value, callback);
                 break;
+
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.put(key, value, options, callback);
+                break;
         }
 
 
+    }
+
+    /**
+     * Promised put
+     * @param {string} key
+     * @param {string} value
+     * @param {object} options
+     * @return {Promise<any>}
+     */
+    putAsync(key, value, options) {
+        if(!options) {
+            options = {};
+        }
+
+
+        if(typeof value === 'object' && this.type === STORAGE_TYPE.LEVELDB) {
+            value = 'JSON:' + JSON.stringify(value);
+        }
+
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.put(key, value, options, function (err, result) {
+                if(err) {
+                    return reject(err);
+                }
+
+                resolve(result);
+            })
+        })
     }
 
     /**
@@ -140,9 +232,34 @@ class KeyValue {
             case STORAGE_TYPE.LEVELDB:
                 that.levelup.del(key, options, callback);
                 break;
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.del(key, options, callback);
+                break;
         }
 
 
+    }
+
+    /**
+     * Promised delete
+     * @param {string} key
+     * @param {object} options
+     * @return {Promise<any>}
+     */
+    delAsync(key, options) {
+        if(!options) {
+            options = {};
+        }
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.del(key, options, function (err, result) {
+                if(err) {
+                    return reject(err);
+                }
+
+                resolve(result);
+            })
+        })
     }
 
 
@@ -165,7 +282,23 @@ class KeyValue {
             case STORAGE_TYPE.LEVELDB:
                 that.levelup.close(callback);
                 break;
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.close(callback);
+                break;
         }
+    }
+
+    /**
+     * Close async
+     * @return {Promise<any>}
+     */
+    closeAsync() {
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.close(function () {
+                resolve(result);
+            })
+        })
     }
 
     /**
@@ -196,7 +329,22 @@ class KeyValue {
                     }
                 }
                 break;
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.close(callback);
         }
+    }
+
+    /**
+     * Async clear
+     * @return {Promise<any>}
+     */
+    clearAsync() {
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.clear(function () {
+                resolve(result);
+            })
+        })
     }
 
     save(callback) {
@@ -215,7 +363,22 @@ class KeyValue {
                     callback();
                 }
                 break;
+            case STORAGE_TYPE.PLUGINDB:
+                that.pluginDB.save(callback);
         }
+    }
+
+    /**
+     * Async save
+     * @return {Promise<any>}
+     */
+    saveAsync() {
+        const that = this;
+        return new Promise((resolve, reject) => {
+            that.save(function () {
+                resolve(result);
+            })
+        })
     }
 }
 

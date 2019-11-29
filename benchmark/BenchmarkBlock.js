@@ -1,7 +1,7 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
  */
 
 
-const Signable = require('../modules/blocks/signable');
+const Signable = require('../modules/blocksModels/signable');
 //const CryptoJS = require("crypto-js");
 const storj = require('../modules/instanceStorage');
 const cryptography = storj.get('cryptography');

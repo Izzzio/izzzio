@@ -1,7 +1,7 @@
 /**
  iZ³ | Izzzio blockchain - https://izzz.io
 
- Copyright 2018 Izio Ltd (OOO "Изио")
+ Copyright 2018 Izio LLC (OOO "Изио")
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -20,15 +20,6 @@
  * Class realises universal functions for cryptography in project
  */
 
-const inputOutputFormat = 'hex';
-const SIGN_TYPE = 'sha256';
-
-'use strict';
-const CryptoJS = require('crypto-js');
-
-
-const crypto = require('crypto');
-const keypair = require('keypair');
 const logger = new (require('./logger'))();
 
 const CodingFunctions = require('./codingFunctions');
@@ -46,23 +37,31 @@ function repairKey(key) {
     return key.replace(new RegExp("\n\n", 'g'), "\n");
 }
 
+/**
+ * Cryptography modules
+ */
 class Cryptography {
     constructor(config = {}) {
         this.utils = require('./utils');
+
+        this._hashFunctions = {};
+        this._signFunctions = {};
+        this._generatorFunctions = {};
 
         this.config = config;
         this.config.hashFunction = this.config.hashFunction ? this.config.hashFunction.toUpperCase() : this.config.hashFunction;
         this.config.signFunction = this.config.signFunction ? this.config.signFunction.toUpperCase() : this.config.signFunction;
 
+        this.repairKey = repairKey;
 
         let GostSign, GostDigest;
         //If GOST cryptography enabled, require libraries
         if(this.config.hashFunction === 'STRIBOG' || this.config.hashFunction === 'STRIBOG512' || this.config.signFunction === 'GOST' || this.config.signFunction === 'GOST512') {
             try {
-                GostSign = require('./GOSTModules/gostSign');
-                GostDigest = require('./GOSTModules/gostDigest');
-            }catch (e) {
-                logger.fatal('GOST crypto functions disabled in open source version');
+                GostSign = require('../plugins/GOSTModules/gostSign');
+                GostDigest = require('../plugins/GOSTModules/gostDigest');
+            } catch (e) {
+                logger.fatal('GOST plugin not found');
                 process.exit();
             }
         }
@@ -99,6 +98,34 @@ class Cryptography {
             this.gostSign = new GostSign(signOptions);
         }
 
+    }
+
+    /**
+     * Register external hash function
+     * @param {string} name
+     * @param {function} func
+     */
+    registerHash(name, func) {
+        this._hashFunctions[name.toUpperCase()] = func;
+    }
+
+    /**
+     * Register external sign function
+     * @param {string} name
+     * @param {function} validate
+     * @param {function} sign
+     */
+    registerSign(name, validate, sign) {
+        this._signFunctions[name.toUpperCase()] = {validate: validate, sign: sign};
+    }
+
+    /**
+     * Register generator
+     * @param {string} name
+     * @param {function} func
+     */
+    registerGenerator(name, func) {
+        this._generatorFunctions[name.toUpperCase()] = func;
     }
 
     /**
@@ -197,19 +224,24 @@ class Cryptography {
 
 
     /**
-     * generates pair of keys
+     * Generates pair of keys
      * @returns {{private: *, public: *}}
      */
     generateKeyPair() {
+
+        //External generator function
+        if(this._generatorFunctions[this.config.generatorFunction]) {
+            return this._generatorFunctions[this.config.generatorFunction]();
+        }
+
         let keyPair;
         if(this.gostSign) {
             keyPair = this.gostSign.generateKey();
             keyPair.public = this.coding.Hex.encode(keyPair.publicKey).replace(new RegExp(/\r\n/, 'g'), "");
             keyPair.private = this.coding.Hex.encode(keyPair.privateKey);
         } else {
-            keyPair = keypair({bits: 2048});
-            keyPair.private = repairKey(keyPair.private);
-            keyPair.public = repairKey(keyPair.public);
+            logger.fatal('No generation functions found');
+            return {private: '', public: ''};
         }
         if(this.config.signFunction === 'NEWRSA') {
             //get old rsa key in PEM format and convert to utf-16
@@ -226,20 +258,25 @@ class Cryptography {
      */
     sign(data, key) {
         let signedData;
-        if(this.gostSign) {
-            let bData, bKey;
-            //prepare data for processing
-            bData = this.data2Buffer(data);
-            bKey = this.coding.Hex.decode(key);
 
-            signedData = this.gostSign.sign(bKey, bData);
-            signedData = this.coding.Hex.encode(signedData);
+        //External sign function
+        if(this._signFunctions[this.config.signFunction]) {
+            signedData = this._signFunctions[this.config.signFunction].sign(data, key);
         } else {
-            const _sign = crypto.createSign(SIGN_TYPE);
-            _sign.update(data);
-            signedData = _sign.sign(key).toString(inputOutputFormat);
+            if(this.gostSign) {
+                let bData, bKey;
+                //prepare data for processing
+                bData = this.data2Buffer(data);
+                bKey = this.coding.Hex.decode(key);
+
+                signedData = this.gostSign.sign(bKey, bData);
+                signedData = this.coding.Hex.encode(signedData);
+            } else {
+                logger.fatal('No sign functions found');
+                return {data: data, sign: ''};
+            }
+            signedData = signedData.replace('\r\n', ''); //delete wrong symbols
         }
-        signedData = signedData.replace('\r\n', ''); //delete wrong symbols
         return {data: data, sign: signedData};
     }
 
@@ -255,6 +292,12 @@ class Cryptography {
             sign = data.sign;
             data = data.data;
         }
+
+        //External sign function
+        if(this._signFunctions[this.config.signFunction]) {
+            return this._signFunctions[this.config.signFunction].validate(data, sign, key);
+        }
+
         let result;
         if(this.gostSign) {
             let bData, bKey, bSign;
@@ -263,12 +306,8 @@ class Cryptography {
             bSign = this.coding.Hex.decode(sign);
             result = this.gostSign.verify(bKey, bSign, bData);
         } else {
-            let k = key;
-            //convert key if it's not in PEM
-            k = k.indexOf('RSA PUBLIC KEY') < 0 ? this.hexToPem(k, 'PUBLIC') : k;
-            const verify = crypto.createVerify(SIGN_TYPE);
-            verify.update(data);
-            result = verify.verify(k, sign, inputOutputFormat);
+            logger.fatal('No verify functions found');
+            return false;
         }
         return result;
     }
@@ -279,13 +318,19 @@ class Cryptography {
      * @returns {Buffer}
      */
     hash(data = '') {
+
+        //External hash function
+        if(this._hashFunctions[this.config.hashFunction]) {
+            return this._hashFunctions[this.config.hashFunction](data);
+        }
+
         let bData = this.data2Buffer(data);
         let hashBuffer;
         if(this.gostDigest) {
             hashBuffer = this.gostDigest.digest(bData);
         } else {
-            hashBuffer = CryptoJS.SHA256(data).toString();
-            hashBuffer = this.coding.Hex.decode(hashBuffer); //make output independent to hash function type
+            logger.fatal('No hash functions found');
+            return '';
         }
         return this.coding.Hex.encode(hashBuffer).replace('\r\n', '');
     }

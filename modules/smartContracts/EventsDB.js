@@ -17,7 +17,7 @@ class EventsDB {
     constructor(path) {
         this.config = storj.get('config');
 
-        if(path === '' || path === ':memory:') {
+        if (path === '' || path === ':memory:') {
             this.path = path;
         } else {
             this.path = this.config.workDir + path; // '/contractsRuntime/EventsDB.db';
@@ -43,18 +43,22 @@ class EventsDB {
              */
             (function () {
                 let sum = new BigNumber(0);
-                that.db.registerAggregateFunction('bsum', function (value) {
-                    if(!value) {
-                        let returnVal = sum.toFixed();
-                        sum = new BigNumber(0);
-                        return returnVal;
-                    }
+                try {
+                    that.db.registerAggregateFunction('bsum', function (value) {
+                        if (!value) {
+                            let returnVal = sum.toFixed();
+                            sum = new BigNumber(0);
+                            return returnVal;
+                        }
 
-                    value = new BigNumber(value);
-                    if(!value.isNaN()) {
-                        sum = sum.plus(value);
-                    }
-                });
+                        value = new BigNumber(value);
+                        if (!value.isNaN()) {
+                            sum = sum.plus(value);
+                        }
+                    });
+                } catch (e) {
+                    logger.warning('Aggregate functions unsupported for current SQLite3 module')
+                }
             })();
 
             function contiune() {
@@ -84,7 +88,7 @@ class EventsDB {
             that.db.exec(`ATTACH DATABASE "${that.path}" AS flush_db; DROP TABLE IF EXISTS main.\`events\`; CREATE TABLE main.\`events\` AS SELECT * FROM flush_db.\`events\`; DETACH DATABASE flush_db;`, function (err) {
 
                 //If database loaded with error, DEATACH IT
-                if(err) {
+                if (err) {
                     that.db.exec("DETACH DATABASE flush_db;", function (err) {
                         contiune();
                     });
@@ -101,14 +105,14 @@ class EventsDB {
      * @param {Function} cb
      */
     flush(cb) {
-        if(this.path === '' || this.path === ':memory:') {
+        if (this.path === '' || this.path === ':memory:') {
             cb(null);
             return;
         }
         let that = this;
         this.db.exec(`ATTACH DATABASE "${this.path}" AS flush_db; DROP TABLE IF EXISTS flush_db.\`events\`; CREATE TABLE flush_db.\`events\` AS SELECT * FROM main.\`events\`; DETACH DATABASE flush_db;`, function (err) {
             //If database loaded with error, DEATACH IT
-            if(err) {
+            if (err) {
                 that.db.exec("DETACH DATABASE flush_db;", function (err2) {
                     cb(err);
                 });
@@ -188,11 +192,11 @@ class EventsDB {
         }
 
         this.db.all('SELECT * FROM `events` WHERE block = ' + block + ' AND contract = "' + contract + '"', async function (err, values) {
-            if(err) {
+            if (err) {
                 cb(err);
             } else {
                 for (let a in values) {
-                    if(values.hasOwnProperty(a)) {
+                    if (values.hasOwnProperty(a)) {
                         await (new Promise(function (resolve) {
                             that._handleEvent(contract, values[a].event, dbRowToParamsArray(values[a]), function () {
                                 resolve();
@@ -228,7 +232,7 @@ class EventsDB {
 
         let statement = this.db.prepare("INSERT INTO `events` (`v1`,`v2`,`v3`,`v4`,`v5`,`v6`,`v7`,`v8`,`v9`,`v10`,`event`,`contract`, `timestamp`, `block`, `hash`) " +
             "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", params, function (err) {
-            if(err) {
+            if (err) {
                 cb(err);
                 return;
             }
@@ -240,6 +244,7 @@ class EventsDB {
 
     }
 
+
     /**
      * Get contract events
      * @param contract
@@ -250,8 +255,9 @@ class EventsDB {
     getContractEvents(contract, event, options = {}, cb) {
         options.fromBlock = !options.fromBlock ? 0 : options.fromBlock;
         options.toBlock = !options.toBlock ? 0xFFFFFFFFFF : options.toBlock;
+        options.additionalStatement = !options.additionalStatement ? '' : options.additionalStatement;
 
-        let statement = this.db.prepare("SELECT * FROM `events` WHERE block <= ? AND block >= ? AND event = ? AND contract = ?", [options.toBlock, options.fromBlock, event, contract], function () {
+        let statement = this.db.prepare("SELECT * FROM `events` WHERE block <= ? AND block >= ? AND event = ? AND contract = ? " + options.additionalStatement, [options.toBlock, options.fromBlock, event, contract], function () {
             statement.all([], function (err, values) {
                 cb(err, values);
             })
@@ -269,12 +275,34 @@ class EventsDB {
     getContractEventSum(contract, event, fieldNo, options = {}, cb) {
         options.fromBlock = !options.fromBlock ? 0 : options.fromBlock;
         options.toBlock = !options.toBlock ? 0xFFFFFFFFFF : options.toBlock;
+        options.additionalStatement = !options.additionalStatement ? '' : options.additionalStatement;
 
-        let statement = this.db.prepare(`SELECT bsum(v${fieldNo}) as sum FROM \`events\` WHERE block <= ? AND block >= ? AND event = ? AND contract = ?`, [options.toBlock, options.fromBlock, event, contract], function () {
+
+        let statement = this.db.prepare(`SELECT bsum(v${fieldNo}) as sum FROM \`events\` WHERE block <= ? AND block >= ? AND event = ? AND contract = ? ` + options.additionalStatement, [options.toBlock, options.fromBlock, event, contract], function () {
             statement.all([], function (err, values) {
                 cb(err, values);
             })
         });
+    }
+
+    /**
+     * Executes RAW SQL query
+     * @param {string} query
+     * @param {array} bindParams
+     * @param {function} cb
+     */
+    rawQuery(query, bindParams, cb) {
+        let statement;
+
+        if (bindParams) {
+            statement = this.db.prepare(query, bindParams);
+        } else {
+            statement = this.db.prepare(query, []);
+        }
+
+        statement.all([], function (err, values) {
+            cb(err, values);
+        })
     }
 
     /**
@@ -288,13 +316,13 @@ class EventsDB {
     _handleEvent(contract, event, args, cb) {
         let that = this;
         let handle = contract + '_' + event;
-        if(typeof this._eventHandler[handle] === 'undefined') {
+        if (typeof this._eventHandler[handle] === 'undefined') {
             cb();
         }
 
         (async function () {
             for (let a in that._eventHandler[handle]) {
-                if(that._eventHandler[handle].hasOwnProperty(a)) {
+                if (that._eventHandler[handle].hasOwnProperty(a)) {
                     await (function () {
                         return new Promise(function (resolve) {
                             try {
@@ -326,7 +354,7 @@ class EventsDB {
      */
     registerEventHandler(contract, event, handler) {
         let handle = contract + '_' + event;
-        if(typeof this._eventHandler[handle] === 'undefined') {
+        if (typeof this._eventHandler[handle] === 'undefined') {
             this._eventHandler[handle] = [];
         }
         this._eventHandler[handle].push({handle: handle, handler: handler});
