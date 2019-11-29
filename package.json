@@ -59,6 +59,6 @@
   "bin": {
     "iz3node": "./main.js",
     "izzzio": "./main.js",
-    "iz3connect": "./api/node/terminal/runTerminal"
+    "iz3connect": "./api/node/runTerminal"
   }
 }
