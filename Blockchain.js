@@ -1163,16 +1163,20 @@ function Blockchain(config) {
      */
     function replaceChain(newBlocks, cb) {
 
+        //Если мы пытаемся проверить цепочку больше, чем всего есть блоков, проверяем с genesis
         let fromBlock = newBlocks[0].index - 1;
         if (fromBlock < 0) {
             fromBlock = 0;
         }
 
+        //Получаем блок, с которого выполняется проверка
         getBlockById(fromBlock, function (err, lBlock) {
             if (err) {
-                logger.error(new Error('Can\'t get block no ' + newBlocks[0].index + ' ' + err));
+                let error = new Error('Can\'t get block no ' + newBlocks[0].index + ' ' + err);
+
+                logger.error(error);
                 if (typeof cb !== 'undefined') {
-                    cb();
+                    cb(error);
                 }
                 return;
             }
@@ -1183,16 +1187,19 @@ function Blockchain(config) {
                 maxIndex = 0;
             }
 
+            //TODO: Зачем мы проверяем что блок проверки = 0? Нам ведь надо проверить всю цепочку
             const validChain = isValidChain(fromBlock === 0 ? newBlocks : [lBlock].concat(newBlocks));
 
-            if (!(newBlocks[0].index >= maxIndex)) {//ограничение доверия принимаемой цепочки блоков
+            //Проверяем, что индекс первого блока в процеряемой цепочке не выходит за пределы Limited Confidence
+            if (!(newBlocks[0].index >= maxIndex)) {
 
+                let error = new Error('LimitedConfidence: Invalid chain');
                 if (config.program.verbose) {
-                    logger.error('LimitedConfidence: Invalid chain');
+                    logger.error(error);
                 }
 
                 if (typeof cb !== 'undefined') {
-                    cb();
+                    cb(error);
                 }
 
                 return;
@@ -1201,7 +1208,7 @@ function Blockchain(config) {
 
             if (
                 validChain // &&  newBlocks[0].index >= maxIndex
-            /*&& newBlocks.length >= maxBlock*/
+                /*&& newBlocks.length >= maxBlock*/
             ) {
                 //console.log(newBlocks);
                 //logger.info('Received blockchain is valid.');
@@ -1221,8 +1228,9 @@ function Blockchain(config) {
                             return;
                         }
                         blockHandler.resync();
-                    }, config.peerExchangeInterval + 2000);
+                    }, config.peerExchangeInterval + 2000); //2000 в качестве доп времени
 
+                    //All is ok
                     if (typeof cb !== 'undefined') {
                         cb();
                     }
@@ -1230,10 +1238,11 @@ function Blockchain(config) {
                 })();
 
             } else {
+                let error = new Error('Received blockchain corrupted');
                 if (typeof cb !== 'undefined') {
-                    cb();
+                    cb(error);
                 }
-                logger.error('Received blockchain corrupted');
+                logger.error(error);
 
             }
 

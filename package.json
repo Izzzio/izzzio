@@ -10,7 +10,6 @@
   },
   "scripts": {
     "depency": "npm install",
-    "build": "build.sh",
     "start": "node main.js",
     "test": "cd BigNet/test && test",
     "testl": "cd BigNet/test && ./test.sh",
