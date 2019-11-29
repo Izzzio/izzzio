@@ -7,6 +7,11 @@
     "type": "git",
     "url": "https://github.com/Izzzio/izzzio.git"
   },
+  "scripts": {
+    "depency": "npm install",
+    "start": "npm run terminal ",
+    "terminal": "node --experimental-repl-await terminal/terminal "
+  },
   "keywords": [
     "blockchain",
     "izzzio",
