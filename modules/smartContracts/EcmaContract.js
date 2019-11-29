@@ -1354,7 +1354,7 @@ class EcmaContract {
 
             code = uglifyJs.minify(code).code;
 
-            if(!checkContractLength(code.length)){
+            if(!checkDeployingContractLength(code.length)) {
                 cb(null);
                 return;
             }
@@ -1388,13 +1388,13 @@ class EcmaContract {
         }
 
         /**
-         * Check - if contract length is allowed
+         * Check deploying contract length
+         * @param codeLength
+         * @returns {boolean}
          */
-        function checkContractLength(codeLength) {
-            if(codeLength > that.config.ecmaContract.lengthMax) {
-                //if(that.config.program.verbose) {
-                logger.error('Size contract is too large(' + codeLength + '). Max allow size - ' + that.config.ecmaContract.lengthMax);
-                //}
+        function checkDeployingContractLength(codeLength) {
+            if(codeLength > that.config.ecmaContract.maxContractLength) {
+                logger.error('Size contract is too large(' + codeLength + '). Max allow size - ' + that.config.ecmaContract.maxContractLength);
                 return false;
             }
             return true;
