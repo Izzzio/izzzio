@@ -48,7 +48,7 @@ Now you can use it as ``iz3node --config config.json``
 
 #### Dependencies
 
-**iZ³ platform** depends on Node.js version >= 8.2.0
+**iZ³ platform** depends on Node.js version >= 10.0.0
 
 NPM version >= 5.3.0
 
