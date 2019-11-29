@@ -27,3 +27,6 @@ jobs:
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+      - run: cd api/node && npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
