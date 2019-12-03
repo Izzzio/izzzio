@@ -17,6 +17,7 @@ class App extends DApp {
 
         /**
          * Makes simple transaction string
+         * Ethereum ETH transfer trasnaction
          * @return {string}
          */
         function makeBinaryTransaction() {
@@ -92,7 +93,7 @@ class App extends DApp {
                 console.log();
                 console.log('Benchmark: Perfomance: Generated blocks:  ' + blockCounter + ' Transactions: ' + (blockCounter * TRANSACTIONS_PER_BLOCK));
                 console.log('Benchmark: Perfomance: Blocks per second: ' + (blocksSec) + ' TX per second: ' + (blocksSec * TRANSACTIONS_PER_BLOCK));
-                console.log('Benchmark: Perfomance: Blocks record:     ' + (recordBlocks) + ' TX record: ' + (recordBlocks * TRANSACTIONS_PER_BLOCK));
+                console.log('Benchmark: Perfomance: Blocks max:     ' + (recordBlocks) + ' TX max: ' + (recordBlocks * TRANSACTIONS_PER_BLOCK));
                 console.log();
 
                 if(blocksSec > recordBlocks) {

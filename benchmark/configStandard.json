@@ -12,5 +12,6 @@
   "initialPeers": [],
   "blocksDB": "blocks",
   "walletsDB": false,
-  "appEntry": "./superSpeed/benchmark.js"
+  "appEntry": "./benchmark/benchmark.js",
+  "signFunction": "NEWRSA"
 }
