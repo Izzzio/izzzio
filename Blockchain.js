@@ -391,6 +391,12 @@ function Blockchain(config) {
                 setTimeout(startBlockchainServers, 1000);
                 cb();
             } else {
+                logger.info('Checking saved chain...');
+                let genesisBlock = getGenesisBlock();
+                if (value.hash !== genesisBlock.hash || !config.validators[0].isValidHash(genesisBlock.hash)) {
+                    logger.error('Invalid genesis hash: ' + genesisBlock.hash);
+                    process.exit();
+                }
                 logger.info('Loading saved chain...');
                 blockchain.get('maxBlock', function (err, value) {
                     if(err) {
