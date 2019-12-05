@@ -392,11 +392,21 @@ function Blockchain(config) {
                 cb();
             } else {
                 logger.info('Checking saved chain...');
-                let genesisBlock = getGenesisBlock();
-                if (value.hash !== genesisBlock.hash || !config.validators[0].isValidHash(genesisBlock.hash)) {
-                    logger.error('Invalid genesis hash: ' + genesisBlock.hash);
+                let zeroBlock = {};
+                try{
+                    zeroBlock = JSON.parse(value);
+                } catch (e) {
+                    logger.error('Error on getting genesis block from DB: ' + e);
                     process.exit();
                 }
+                
+                let genesisBlock = getGenesisBlock();
+                if (zeroBlock.hash !== genesisBlock.hash || !config.validators[0].isValidHash(zeroBlock.hash)) {
+                    logger.error('Invalid genesis hash: ' + zeroBlock.hash + ' ' + genesisBlock.hash) ;
+                    process.exit();
+                }
+                logger.info('Saved chain confirmed!');
+
                 logger.info('Loading saved chain...');
                 blockchain.get('maxBlock', function (err, value) {
                     if(err) {
