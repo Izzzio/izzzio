@@ -396,14 +396,14 @@ function Blockchain(config) {
                 try{
                     zeroBlock = JSON.parse(value);
                 } catch (e) {
-                    logger.error('Error on getting genesis block from DB: ' + e);
-                    process.exit();
+                    logger.fatal('Error on parsing 0 genesis block: ' + e);
+                    process.exit(1);
                 }
                 
                 let genesisBlock = getGenesisBlock();
                 if (zeroBlock.hash !== genesisBlock.hash || !config.validators[0].isValidHash(zeroBlock.hash)) {
-                    logger.error('Invalid genesis hash: ' + zeroBlock.hash + ' ' + genesisBlock.hash) ;
-                    process.exit();
+                    logger.fatal('Invalid genesis hash: ' + zeroBlock.hash + ' ' + genesisBlock.hash) ;
+                    process.exit(1);
                 }
                 logger.info('Saved chain confirmed!');
 
