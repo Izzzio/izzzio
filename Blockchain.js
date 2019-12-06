@@ -383,8 +383,8 @@ function Blockchain(config) {
             if(err) {
                 let genesisBlock = getGenesisBlock();
                 if(!config.validators[0].isValidHash(genesisBlock.hash)) {
-                    logger.error('Invalid genesis hash: ' + genesisBlock.hash);
-                    process.exit();
+                    logger.fatal('Invalid genesis hash: ' + genesisBlock.hash);
+                    process.exit(1);
                 }
                 addBlockToChain(getGenesisBlock());
                 logger.info('New blockchain fork started');
