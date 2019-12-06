@@ -383,14 +383,28 @@ function Blockchain(config) {
             if(err) {
                 let genesisBlock = getGenesisBlock();
                 if(!config.validators[0].isValidHash(genesisBlock.hash)) {
-                    logger.error('Invalid genesis hash: ' + genesisBlock.hash);
-                    process.exit();
+                    logger.fatal('Invalid genesis hash: ' + genesisBlock.hash);
+                    process.exit(1);
                 }
                 addBlockToChain(getGenesisBlock());
                 logger.info('New blockchain fork started');
                 setTimeout(startBlockchainServers, 1000);
                 cb();
             } else {
+                logger.info('Checking saved chain...');
+                let zeroBlock = {};
+                try{
+                    zeroBlock = JSON.parse(value);
+                } catch (e) {
+                    logger.fatal('Error on parsing 0 genesis block: ' + e);
+                    process.exit(1);
+                }
+                
+                let genesisBlock = getGenesisBlock();
+                if (zeroBlock.hash !== genesisBlock.hash || !config.validators[0].isValidHash(zeroBlock.hash)) {
+                    logger.fatal('Invalid genesis hash: ' + zeroBlock.hash + ' ' + genesisBlock.hash) ;
+                    process.exit(1);
+                }
                 logger.info('Loading saved chain...');
                 blockchain.get('maxBlock', function (err, value) {
                     if(err) {
