@@ -405,8 +405,6 @@ function Blockchain(config) {
                     logger.fatal('Invalid genesis hash: ' + zeroBlock.hash + ' ' + genesisBlock.hash) ;
                     process.exit(1);
                 }
-                logger.info('Saved chain confirmed!');
-
                 logger.info('Loading saved chain...');
                 blockchain.get('maxBlock', function (err, value) {
                     if(err) {
