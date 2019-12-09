@@ -1,10 +1,10 @@
 {
   "p2pPort": 6017,
   "httpServer": "localhost",
-  "httpPort": 3015,
+  "httpPort": 3016,
   "initialPeers": [
   ],
-  "recieverAddress": "nodeOne",
+  "recieverAddress": "nodeTwo",
   "blockHashFilter": {
     "blockEndls": [
       "f3c3",
@@ -20,8 +20,8 @@
   "rpcPassword": "",
   "blockAcceptCount": 0,
   "maxPeers": 25,
-  "workDir": "./temp/node1",
-  "walletFile": "./temp/node1/wallet.json",
+  "workDir": "./temp/node2",
+  "walletFile": "./temp/node2/wallet.json",
   "walletsDB": "mem://wallets.json",
   "blocksDB": "blocksByPlugin",
   "accountsDB": "accountByPlugin",

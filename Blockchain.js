@@ -1193,7 +1193,12 @@ function Blockchain(config) {
             }
 
             //TODO: Зачем мы проверяем что блок проверки = 0? Нам ведь надо проверить всю цепочку
-            const validChain = isValidChain(fromBlock === 0 ? newBlocks : [lBlock].concat(newBlocks));
+           // const validChain = isValidChain(fromBlock === 0 ? newBlocks : [lBlock].concat(newBlocks));
+            const validChain = isValidChain([lBlock].concat(newBlocks));
+
+            if(!validChain){
+                console.log(fromBlock, newBlocks, newBlocks.length);
+            }
 
             //Проверяем, что индекс первого блока в процеряемой цепочке не выходит за пределы Limited Confidence
             if(!(newBlocks[0].index >= maxIndex)) {
