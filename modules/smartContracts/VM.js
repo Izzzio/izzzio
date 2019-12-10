@@ -480,12 +480,13 @@ class VM {
             return;
         }
 
-        let interval = setInterval(function () {
+
+        let interval = setImmediate(function () {
             if(!that.busy && !that.waitingForResponse) {
-                clearInterval(interval);
+                clearImmediate(interval);
                 cb();
             }
-        }, 1);
+        });
     }
 
     /**
