@@ -81,7 +81,7 @@ class App extends DApp {
      */
     async testLeech() {
         logger.info('Test leech');
-        await wait(30000); //Wait for test end
+        await wait(60000); //Wait for test end
         let tokenContract = new TokenContractConnector(this.ecmaContract, '1');
         assert.true(await tokenContract.balanceOf('TEST_ADDR') === '300', 'Invalid balance after sync');
         logger.info('Tests passed');
