@@ -68,22 +68,47 @@ class App extends DApp {
             that.contracts.ecmaContract.deployContract(mainTokenContract, 0, function (deployedContract) {
                 that.run(deployedContract);
             });
+        } else {
+            that.testLeech();
         }
 
 
     }
 
     /**
-     * Test contract test
+     * Leech test
+     * @returns {Promise<void>}
+     */
+    async testLeech() {
+        logger.info('Test leech');
+        await wait(30000); //Wait for test end
+        let tokenContract = new TokenContractConnector(this.ecmaContract, '1');
+        assert.true(await tokenContract.balanceOf('TEST_ADDR') === '300', 'Invalid balance after sync');
+        logger.info('Tests passed');
+        process.exit();
+    }
+
+    /**
+     * Server side test
      * @return {Promise<void>}
      */
     async testNetwork(deployedContract) {
+        logger.info('Test network');
         if(this.config.recieverAddress === "nodeOne") {
             let tokenContract = new TokenContractConnector(this.ecmaContract, deployedContract.address);
-            for(let i = 0; i<100; i++) {
+            logger.info('One by one transaction');
+            for (let i = 0; i < 20; i++) {
                 await tokenContract.transfer('TEST_ADDR', '10');
                 await wait(1000);
             }
+
+            logger.info('Waterfall transaction');
+            for (let i = 0; i < 100; i++) {
+                await tokenContract.transfer('TEST_ADDR', '1');
+                //await wait(1000);
+            }
+
+
         }
     }
 
@@ -100,7 +125,8 @@ class App extends DApp {
         console.log('');
         console.log('');
         logger.info('Tests passed');
-        // process.exit();
+        await wait(25000);
+        process.exit();
     }
 
 }
