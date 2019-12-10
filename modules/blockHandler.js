@@ -198,8 +198,8 @@ class BlockHandler {
                                 break;
                             } else {
                                 logger.disable = false;
-                                console.log(JSON.parse(prevBlock));
-                                console.log(JSON.parse(result));
+                                console.log('PREV', JSON.parse(prevBlock));
+                                console.log('CURR', JSON.parse(result));
                                 logger.fatal('Saved chain corrupted in block ' + i + '. Remove wallets and blocks dirs for resync. Also you can use --autofix');
                                 process.exit(1);
                             }
