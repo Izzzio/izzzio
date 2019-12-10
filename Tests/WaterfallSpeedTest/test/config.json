@@ -1,7 +1,7 @@
 {
-  "p2pPort": 6017,
+  "p2pPort": 6018,
   "httpServer": "localhost",
-  "httpPort": 3015,
+  "httpPort": 3017,
   "initialPeers": [
   ],
   "recieverAddress": "nodeOne",
