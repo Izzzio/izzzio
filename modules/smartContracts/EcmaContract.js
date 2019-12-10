@@ -1042,8 +1042,8 @@ class EcmaContract {
         this.getContractInstanceByAddress(address, function (err, instance) {
 
             if(err) {
-                logger.error('Error getting contract instance for contract: ' + address + ' method ' + method);
-                cb(new Error('Error getting contract instance for contract: ' + address + ' method ' + method));
+                logger.error('Error getting contract instance 1 for contract: ' + address + ' method ' + method);
+                cb(new Error('Error getting contract instance 1 for contract: ' + address + ' method ' + method));
             } else {
                 try {
                     instance.vm.waitForReady(function () {
@@ -1112,7 +1112,7 @@ class EcmaContract {
 
         this.getContractInstanceByAddress(address, function (err, instance) {
             if(err) {
-                cb(new Error('Error getting contract instance for contract: ' + address + ' method ' + method));
+                cb(new Error('Error getting contract instance 3 for contract: ' + address + ' method ' + method));
             } else {
                 try {
                     instance.vm.waitForReady(function () {
@@ -1163,7 +1163,7 @@ class EcmaContract {
 
         this.getContractInstanceByAddress(address, function (err, instance) {
             if(err) {
-                cb(new Error('Error getting contract instance for contract 1: ' + address + ' method ' + method));
+                cb(new Error('Error getting contract instance 2 for contract 1: ' + address + ' method ' + method));
             } else {
                 try {
                     that._instanceCallstack.push(instance);
@@ -1325,7 +1325,7 @@ class EcmaContract {
         } else {
             this.contracts.get(address, function (err, contract) {
                 if(err) {
-                    cb(true);
+                    cb(err);
                 } else {
                     contract = JSON.parse(contract);
                     that.getOrCreateContractInstance(address, contract.code, contract.state, function (instance) {

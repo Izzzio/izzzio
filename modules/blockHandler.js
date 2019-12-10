@@ -62,11 +62,11 @@ class BlockHandler {
      */
     registerBlockHandler(type, handler) {
 
-        if (typeof handler !== 'function') {
+        if(typeof handler !== 'function') {
             return false;
         }
 
-        if (typeof this._blocksHandlers[type] === 'undefined') {
+        if(typeof this._blocksHandlers[type] === 'undefined') {
             this._blocksHandlers[type] = [];
         }
 
@@ -83,7 +83,7 @@ class BlockHandler {
     }
 
     log(string) {
-        if (this.enableLogging) {
+        if(this.enableLogging) {
             console.log((new Date()).toUTCString() + ': ' + string);
         }
     }
@@ -105,7 +105,7 @@ class BlockHandler {
      */
     resync(cb) {
         let that = this;
-        if (that.syncInProgress) {
+        if(that.syncInProgress) {
             return;
         }
         that.syncInProgress = true;
@@ -115,7 +115,9 @@ class BlockHandler {
         that.clearDb(function () {
             that.playBlockchain(0, function () {
                 logger.info('Blockchain resynchronization finished');
-                cb();
+                if(cb) {
+                    cb();
+                }
             });
         });
 
@@ -131,7 +133,7 @@ class BlockHandler {
         let that = this;
         return new Promise((resolve, reject) => {
             that.handleBlock(JSON.parse(result), (err, result) => {
-                if (err) {
+                if(err) {
                     reject(err);
                 } else {
                     resolve(result);
@@ -158,7 +160,7 @@ class BlockHandler {
         let that = this;
         that.syncInProgress = true;
         storj.put('syncInProgress', true);
-        if (!that.config.program.verbose) {
+        if(!that.config.program.verbose) {
             that.enableLogging = false;
             logger.disable = true;
             that.wallet.enableLogging = false;
@@ -169,9 +171,9 @@ class BlockHandler {
                 let result;
                 try {
                     result = await that.blockchain.getAsync(i);
-                    if (prevBlock !== null) {
-                        if (JSON.parse(prevBlock).hash !== JSON.parse(result).previousHash) {
-                            if (that.config.program.autofix) {
+                    if(prevBlock !== null) {
+                        if(JSON.parse(prevBlock).hash !== JSON.parse(result).previousHash) {
+                            if(that.config.program.autofix) {
                                 logger.info('Autofix: Delete chain data after ' + i + ' block');
 
                                 for (let a = i; a < that.maxBlock + 1; a++) {
@@ -187,7 +189,7 @@ class BlockHandler {
                                 that.wallet.enableLogging = true;
 
 
-                                if (typeof cb !== 'undefined') {
+                                if(typeof cb !== 'undefined') {
                                     cb();
                                 }
 
@@ -205,7 +207,7 @@ class BlockHandler {
                     }
                     prevBlock = result;
                 } catch (e) {
-                    if (that.config.program.autofix) {
+                    if(that.config.program.autofix) {
                         console.log('Info: Autofix: Set new blockchain height ' + (i - 1));
                         await that.blockchain.putAsync('maxBlock', i - 1);
                     } else {
@@ -224,7 +226,7 @@ class BlockHandler {
             logger.disable = false;
             that.wallet.enableLogging = true;
 
-            if (typeof cb !== 'undefined') {
+            if(typeof cb !== 'undefined') {
                 cb();
             }
 
@@ -239,7 +241,7 @@ class BlockHandler {
      */
     handleBlock(block, callback) {
         let that = this;
-        if (typeof callback === 'undefined') {
+        if(typeof callback === 'undefined') {
             callback = function () {
                 //Dumb
             }
@@ -255,12 +257,12 @@ class BlockHandler {
             }
 
 
-            if (block.index === keyEmissionMaxBlock) {
-                if (that.keyring.length === 0) {
+            if(block.index === keyEmissionMaxBlock) {
+                if(that.keyring.length === 0) {
                     logger.warning('Network without keyring');
                 }
 
-                if (that.isKeyFromKeyring(that.wallet.keysPair.public)) {
+                if(that.isKeyFromKeyring(that.wallet.keysPair.public)) {
                     logger.warning('TRUSTED NODE. BE CAREFUL.');
                 }
             }
@@ -268,7 +270,7 @@ class BlockHandler {
 
             switch (blockData.type) {
                 case Keyring.prototype.constructor.name:
-                    if (block.index >= keyEmissionMaxBlock || that.keyring.length !== 0) {
+                    if(block.index >= keyEmissionMaxBlock || that.keyring.length !== 0) {
                         logger.warning('Fake keyring in block ' + block.index);
                         return callback();
                     }
@@ -285,9 +287,9 @@ class BlockHandler {
                     /**
                      * Запускаем на каждый тип блока свой обработчик
                      */
-                    if (typeof that._blocksHandlers[blockData.type] !== 'undefined') {
+                    if(typeof that._blocksHandlers[blockData.type] !== 'undefined') {
                         for (let i in that._blocksHandlers[blockData.type]) {
-                            if (that._blocksHandlers[blockData.type].hasOwnProperty(i)) {
+                            if(that._blocksHandlers[blockData.type].hasOwnProperty(i)) {
                                 try {
                                     that._blocksHandlers[blockData.type][i](blockData, block, callback);
                                 } catch (e) {
@@ -297,7 +299,7 @@ class BlockHandler {
                             }
                         }
                     } else {
-                        if (that.config.program.verbose) {
+                        if(that.config.program.verbose) {
                             logger.info('Unexpected block type ' + block.index);
                         }
                         return callback();
