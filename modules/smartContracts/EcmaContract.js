@@ -1176,6 +1176,7 @@ class EcmaContract {
 
                         instance.vm.setState(state);
                         instance.vm.runContextMethod("updateExternalState");
+
                         instance.vm.runContextMethodAsync('contract.' + method, async function (err, result) {
                             if(err) {
                                 logger.error('Contract `' + address + '` in method `' + method + '` falls with error: ' + err);
@@ -1433,7 +1434,9 @@ class EcmaContract {
     deployContractMethod(address, method, args = [], state = {}, cb, accountName = false) {
         let that = this;
 
+
         that.getContractLimits(address, async function (limits) {
+
 
             if(!that.checkOrAddCallingLimitsControl(address, moment().utc().valueOf(), limits.callLimit, true)) {
                 logger.error('Contract ' + address + ' calling limits exceed');
@@ -1724,6 +1727,7 @@ class EcmaContract {
      */
     _handleContractCall(address, method, args, state, block, testOnly, callback) {
 
+
         let that = this;
         if((method === 'contract.deploy') || (method === 'deploy')) {
             logger.error('Calling deploy method of contract is not allowed');
@@ -1743,6 +1747,7 @@ class EcmaContract {
                 logger.error('Contract ' + address + ' calling limits exceed');
                 return callback(new Error('Contract ' + address + ' calling limits exceed'));
             }
+
 
 
             state.block = block;
@@ -1823,6 +1828,7 @@ class EcmaContract {
                 break;
 
             case EcmaContractCallBlock.blockType:
+
                 verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state);
                 if(verifyBlock.data !== blockData.data) {
                     logger.error('Contract invalid data in block ' + block.index);
@@ -1839,6 +1845,7 @@ class EcmaContract {
                 }
 
                 this._handleContractCall(blockData.address, blockData.method, blockData.args, blockData.state, block, testOnly, callback);
+
 
                 break;
             default:
