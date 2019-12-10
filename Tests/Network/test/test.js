@@ -103,11 +103,18 @@ class App extends DApp {
             }
 
             logger.info('Waterfall transaction');
+            console.time('Waterfall');
             for (let i = 0; i < 100; i++) {
                 await tokenContract.transfer('TEST_ADDR', '1');
                 //await wait(1000);
             }
+            console.timeEnd('Waterfall');
 
+            console.time('HardTestWaterfall');
+            for (let i = 0; i < 1000; i++) {
+                await tokenContract.transfer('TEST_ADDR2', '0.1');
+            }
+            console.timeEnd('HardTestWaterfall');
 
         }
     }
