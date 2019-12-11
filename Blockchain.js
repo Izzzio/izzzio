@@ -393,16 +393,16 @@ function Blockchain(config) {
             } else {
                 logger.info('Checking saved chain...');
                 let zeroBlock = {};
-                try{
+                try {
                     zeroBlock = JSON.parse(value);
                 } catch (e) {
                     logger.fatal('Error on parsing 0 genesis block: ' + e);
                     process.exit(1);
                 }
-                
+
                 let genesisBlock = getGenesisBlock();
-                if (zeroBlock.hash !== genesisBlock.hash || !config.validators[0].isValidHash(zeroBlock.hash)) {
-                    logger.fatal('Invalid genesis hash: ' + zeroBlock.hash + ' ' + genesisBlock.hash) ;
+                if(zeroBlock.hash !== genesisBlock.hash || !config.validators[0].isValidHash(zeroBlock.hash)) {
+                    logger.fatal('Invalid genesis hash: ' + zeroBlock.hash + ' ' + genesisBlock.hash);
                     process.exit(1);
                 }
                 logger.info('Loading saved chain...');
@@ -881,7 +881,7 @@ function Blockchain(config) {
          */
         fromBlock = (typeof fromBlock === 'undefined' ? 0 : Number(fromBlock));
         if(fromBlock <= 5) {
-            limit = 3;
+            //  limit = 3;
         }
 
         getAllChain(fromBlock, limit, function (blockchain) {
@@ -1103,6 +1103,8 @@ function Blockchain(config) {
 
                     return;
                 }
+
+
                 if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
                     lastKnownBlock = latestBlockReceived.index;
                     if(receivedBlocks.length === 1) {
@@ -1127,8 +1129,9 @@ function Blockchain(config) {
                     } else if(receivedBlocks.length === 1) {
 
                         let getBlockFrom = latestBlockHeld.index - config.blockQualityCheck;
+
                         if(getBlockFrom < 0) {
-                            getBlockFrom = maxBlock;
+                            getBlockFrom = 1;//maxBlock;
                             lastKnownBlock = maxBlock;
                         }
                         if(!blockHandler.syncInProgress) {
@@ -1140,15 +1143,17 @@ function Blockchain(config) {
                     } else {
 
                         if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
-                            //До 5го блока синхронизация только по одному
-                            if(receivedBlocks[0].index <= 5 && receivedBlocks[0].index !== 0) {
+                            //До 5го блока и при пустой ключнице и если у нас нет блока больше 5го синхронизация только по одному
+                            if(receivedBlocks[0].index <= 5 && receivedBlocks[0].index !== 0 && blockHandler.keyring.length === 0 && maxBlock <= 5) {
                                 receivedBlocks = [receivedBlocks[0], receivedBlocks[1]];
                             }
-                            if(receivedBlocks[0].index === 0) {
-                                if(typeof receivedBlocks[2] !== 'undefined') {
-                                    receivedBlocks = [receivedBlocks[1], receivedBlocks[2]];
-                                }else{
-                                    receivedBlocks = [receivedBlocks[1]];
+                            if(maxBlock <= 5) {
+                                if(receivedBlocks[0].index === 0) {
+                                    if(typeof receivedBlocks[2] !== 'undefined') {
+                                        receivedBlocks = [receivedBlocks[1], receivedBlocks[2]];
+                                    } else {
+                                        receivedBlocks = [receivedBlocks[1]];
+                                    }
                                 }
                             }
                             replaceChain(receivedBlocks, function () {
