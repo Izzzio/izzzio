@@ -103,7 +103,7 @@ class BlockHandler {
      * Запуск пересинхронизации блокчейна
      * Проводит проверку всех блоков и подсчитывает деньги на кошельках
      */
-    resync(cb) {
+    resync(cb, fromBlock = 0) {
         let that = this;
         if(that.syncInProgress) {
             return;
@@ -111,9 +111,9 @@ class BlockHandler {
         that.syncInProgress = true;
         storj.put('syncInProgress', true);
 
-        logger.info('Blockchain resynchronization started');
+        logger.info('Blockchain resynchronization started from block ' + fromBlock);
         that.clearDb(function () {
-            that.playBlockchain(0, function () {
+            that.playBlockchain(fromBlock, function () {
                 logger.info('Blockchain resynchronization finished');
                 if(cb) {
                     cb();
@@ -232,6 +232,35 @@ class BlockHandler {
 
         })();
     }
+
+    /**
+     * проверяем цепочку от начала ждо указанного индекса блока
+     * @param {number} untilBlock 
+     */
+    async checkChainUntilBlock(untilBlock) {
+        let prevBlock = null;
+        let correctChain = true;
+        for (let i = 0; i <= +untilBlock; i++) {
+            let result;
+            try {
+                result = await that.blockchain.getAsync(i);
+                if(prevBlock !== null) {
+                    if(JSON.parse(prevBlock).hash !== JSON.parse(result).previousHash) {
+                        correctChain = false;
+                        break;
+                    }
+                }
+            }
+            catch (e) {
+                logger.error();
+                correctChain = false;
+                break;
+            }
+            prevBlock = result;
+        }
+        return correctChain;
+    }
+    
 
     /**
      * Обработка входящего блока

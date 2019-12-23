@@ -1235,7 +1235,7 @@ function Blockchain(config) {
             ) {
                 //console.log(newBlocks);
                 //logger.info('Received blockchain is valid.');
-                logger.info('Synchronize: ' + newBlocks[0].index + ' of ' + newBlocks[newBlocks.length - 1].index);
+                //logger.info('Synchronize: ' + newBlocks[0].index + ' of ' + newBlocks[newBlocks.length - 1].index);
                 (async function () {
                     for (let i of newBlocks) {
                         await asyncAddBlockToChainIndex(i.index, i, true);
@@ -1250,7 +1250,9 @@ function Blockchain(config) {
                         if(storj.get('chainResponseMutex')) {
                             return;
                         }
-                        blockHandler.resync();
+                        let checkBlockchain = await blockHandler.checkChainUntilBlock(lBlock.index);
+                        let startIndex = checkBlockchain ? lBlock.index : 0;
+                        blockHandler.resync(undefined, startIndex);
                     }, config.peerExchangeInterval + 2000); //2000 в качестве доп времени
 
                     //All is ok
