@@ -1245,11 +1245,12 @@ function Blockchain(config) {
                     });
 
                     clearTimeout(replaceChainTimer);
-                    replaceChainTimer = setTimeout(function () {
+                    replaceChainTimer = setTimeout(async function () {
                         //If receiving chain, no syncing
                         if(storj.get('chainResponseMutex')) {
                             return;
                         }
+
                         let checkBlockchain = await blockHandler.checkChainUntilBlock(lBlock.index);
                         let startIndex = checkBlockchain ? lBlock.index : 0;
                         blockHandler.resync(undefined, startIndex);
