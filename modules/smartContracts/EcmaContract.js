@@ -1404,7 +1404,6 @@ class EcmaContract {
                 } catch (e) {
 
                 }
-                
             }
 
             if(codeLength > maxContractLength) {
