@@ -1355,7 +1355,9 @@ class EcmaContract {
 
             code = uglifyJs.minify(code).code;
 
-            if(!checkDeployingContractLength(code.length)) {
+            const contractLengthCheck = await checkDeployingContractLength(code.length);
+
+            if(!contractLengthCheck) {
                 cb(null);
                 return;
             }
@@ -1393,9 +1395,15 @@ class EcmaContract {
          * @param codeLength
          * @returns {boolean}
          */
-        function checkDeployingContractLength(codeLength) {
-            if(codeLength > that.config.ecmaContract.maxContractLength) {
-                logger.error('Size contract is too large(' + codeLength + '). Max allow size - ' + that.config.ecmaContract.maxContractLength);
+        async function checkDeployingContractLength(codeLength) {
+
+            let maxContractLength = that.config.ecmaContract.maxContractLength;
+            if(that.config.ecmaContract.masterContract) {
+                maxContractLength = await that.callContractMethodDeployWaitPromise(that.config.ecmaContract.masterContract, 'getCurrentMaxContractLength', {});    
+            }
+
+            if(codeLength > maxContractLength) {
+                logger.error('Size contract is too large(' + codeLength + '). Max allow size - ' + maxContractLength);
                 return false;
             }
             return true;
