@@ -121,7 +121,7 @@ class mainToken extends TokenContract {
         this._ResourcesCostChange = new Event('ResourcesCostChange', 'string', 'string');
 
         this._maxContractLength = new KeyValue('maxContractLength');
-        this._MaxContractLengthChange = new Event('MaxContractLengthChange', 'string', 'string');
+        this._MaxContractLengthChange = new Event('MaxContractLengthChange', 'string', 'number');
         
         if (contracts.isDeploy()) {
             this._resourcePrice['ram'] = RESOURCES_PRICE.ram;
@@ -130,7 +130,7 @@ class mainToken extends TokenContract {
             this._ResourcesCostChange.emit('initial',this.getCurrentResources());
 
             this._maxContractLength.put('maxContractLength', MAX_CONTRACT_LENGTH);
-            this._MaxContractLengthChange.emit('initial', this.getCurrentMaxContractLength);
+            this._MaxContractLengthChange.emit('initial', this.getCurrentMaxContractLength());
         }
     }
 
