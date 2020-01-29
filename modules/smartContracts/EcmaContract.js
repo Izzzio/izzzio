@@ -1399,7 +1399,12 @@ class EcmaContract {
 
             let maxContractLength = that.config.ecmaContract.maxContractLength;
             if(that.config.ecmaContract.masterContract) {
-                maxContractLength = await that.callContractMethodDeployWaitPromise(that.config.ecmaContract.masterContract, 'getCurrentMaxContractLength', {});    
+                try {
+                    maxContractLength = await that.callContractMethodDeployWaitPromise(that.config.ecmaContract.masterContract, 'getCurrentMaxContractLength', {});    
+                } catch (e) {
+
+                }
+                
             }
 
             if(codeLength > maxContractLength) {
