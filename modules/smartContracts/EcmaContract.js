@@ -1022,6 +1022,28 @@ class EcmaContract {
 
     }
 
+
+    /**
+     * Call contract method without deploying promise version. (Useful for testing and get contract information)
+     * @param {string} address
+     * @param {string} method
+     * @param {Object} state
+     * @param args
+     */
+    callContractMethodRollbackPromise(address, method, state, ...args) {
+        let that = this;
+        return new Promise((resolve, reject) => {
+            that.callContractMethodRollback(address, method, state, function (err, result) {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            }, ...args);
+        });
+    }
+
+
     /**
      * Call contract method without deploying. (Useful for testing and get contract information)
      * @param {string} address
@@ -1400,7 +1422,7 @@ class EcmaContract {
             let maxContractLength = that.config.ecmaContract.maxContractLength;
             if(that.config.ecmaContract.masterContract) {
                 try {
-                    maxContractLength = await that.callContractMethodDeployWaitPromise(that.config.ecmaContract.masterContract, 'getCurrentMaxContractLength', {});    
+                    maxContractLength = await that.callContractMethodRollbackPromise(that.config.ecmaContract.masterContract, 'getCurrentMaxContractLength', {});    
                 } catch (e) {
 
                 }
