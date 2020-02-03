@@ -1977,16 +1977,25 @@ function Blockchain(config) {
         let pluginMod;
         try {
             try {
+                console.log('Tring load plugin', plugin, process.cwd())
                 pluginMod = require(plugin)(blockchainObject, config, storj);
             } catch (e) {
                 if(/*!path.isAbsolute(plugin)*/ !fs.existsSync(plugin)) {
                     plugin = './plugins/' + plugin;
+                    pluginMod = require(plugin)(blockchainObject, config, storj);
                 } else {
-                    if(!path.isAbsolute(plugin)) {
-                        plugin = config.workDir + '/' + plugin
+                    try {
+                        pluginMod = require(process.cwd() + '/' + plugin)(blockchainObject, config, storj);
+                    } catch (e) {
+                        if(!path.isAbsolute(plugin)) {
+                            plugin = config.workDir + '/' + plugin
+                            pluginMod = require(plugin)(blockchainObject, config, storj);
+                        }
+
                     }
+
                 }
-                pluginMod = require(plugin)(blockchainObject, config, storj);
+
             }
         } catch (e) {
             return e;
