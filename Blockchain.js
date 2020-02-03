@@ -1977,7 +1977,6 @@ function Blockchain(config) {
         let pluginMod;
         try {
             try {
-                console.log('Tring load plugin', plugin, process.cwd())
                 pluginMod = require(plugin)(blockchainObject, config, storj);
             } catch (e) {
                 if(/*!path.isAbsolute(plugin)*/ !fs.existsSync(plugin)) {
