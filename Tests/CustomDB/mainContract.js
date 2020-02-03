@@ -409,7 +409,7 @@ class mainToken extends TokenContract {
                         return 3;
                     }
                 } else {
-                    const curMaxLen = +this.getCurrentMaxContractLength();
+                    const curMaxLen = this.getCurrentMaxContractLength();
                     if ( +winner.index === curMaxLen) {
                         this._MaxContractLengthChange.emit('not change by voting', curMaxLen);
                         return 4;    
@@ -460,7 +460,7 @@ class mainToken extends TokenContract {
      * get current max contract size
      */
     getCurrentMaxContractLength() {
-        return +this._maxContractLength.get('maxContractLength');
+        return Number(this._maxContractLength.get('maxContractLength'));
     }
 
     /**
