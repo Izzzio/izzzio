@@ -321,6 +321,45 @@ class App extends DApp {
         assert.false(oldResources !== newResources, 'Resources should not been changed');
         //logger.info('old: ' + oldResources);
         //logger.info('new: ' + newResources);
+
+
+        //change max contract length limits
+        //deploy voting
+        newBlock = await that.contracts.ecmaPromise.deployContract(voteContractCode, 10);
+
+        //check initial results of voting(native method)
+        result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
+        assert.true(result.results.first === 0 && result.results.second === 0 && result.results.third === 0, 'Invalid empty vote results');
+        assert.true(result.state === 'waiting', 'Invalid empty vote state');
+
+        //check initial results of voting(master contract method)
+        result = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
+        assert.true(result === 0, 'Invalid empty vote state');
+
+        //star voting for change max contract length
+        await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "startVotingForChangeMaxContractLength", [newBlock.address, 2000000], {});
+
+        //check state of voting(should be started)
+        result = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
+        assert.true(result === 1, 'Invalid started vote state');
+
+        //make vote(pay 1 coin for it)
+        await mainToken.pay(newBlock.address, "processPayment", '1', ['0']);
+
+        //check if the voting stopped
+        result = JSON.parse(await that.contracts.ecmaPromise.callMethodRollback(newBlock.address, 'getResultsOfVoting', [], {}));
+        assert.true(result.state === 'ended', 'Invalid started vote state');
+
+        //get old max contract length
+        oldResources = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentMaxContractLength", [newBlock.address], {});
+
+        //save new max contract length
+        await that.contracts.ecmaPromise.deployMethod(that.getMasterContractAddress(), "processResults", [newBlock.address], {});
+
+        //check saved max contract length
+        newResources = await that.contracts.ecmaPromise.callMethodRollback(that.getMasterContractAddress(), "getCurrentMaxContractLength", [newBlock.address], {});
+        assert.false(oldResources === newResources, 'Resources should been changed');
+
     }
 
 

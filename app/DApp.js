@@ -133,6 +133,14 @@ class DApp {
                 deployContract: function (source, resourceRent, accountName = false) {
                     return new Promise((resolve, reject) => {
                         that.ecmaContract.deployContract(source, resourceRent, function (block) {
+                            if(block === null) {
+                                return reject(new Error('Contract deploy general error'));
+                            }
+
+                            if(block.error) {
+                                return reject(new Error(block.error));
+                            }
+
                             resolve(block);
                         }, accountName);
                     })

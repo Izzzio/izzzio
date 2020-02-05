@@ -81,6 +81,12 @@ const C2C_FEE = 0.001;
 const FEE_ADDRESS = CONTRACT_OWNER;
 
 /**
+ * Max size of adding contract
+ * @type {number}
+ */
+const MAX_CONTRACT_LENGTH = 10 * 1024 * 1024;
+
+/**
  * Main IZZZIO token contract
  */
 class mainToken extends TokenContract {
@@ -113,11 +119,18 @@ class mainToken extends TokenContract {
         this._c2cOrders = new BlockchainMap('c2cOrders');
         this._resourcePrice = new BlockchainMap('resourcePrice');
         this._ResourcesCostChange = new Event('ResourcesCostChange', 'string', 'string');
+
+        this._maxContractLength = new KeyValue('maxContractLength');
+        this._MaxContractLengthChange = new Event('MaxContractLengthChange', 'string', 'number');
+        
         if (contracts.isDeploy()) {
             this._resourcePrice['ram'] = RESOURCES_PRICE.ram;
             this._resourcePrice['callLimit'] = RESOURCES_PRICE.callLimit;
             this._resourcePrice['timeLimit'] = RESOURCES_PRICE.timeLimit;
             this._ResourcesCostChange.emit('initial',this.getCurrentResources());
+
+            this._maxContractLength.put('maxContractLength', MAX_CONTRACT_LENGTH);
+            this._MaxContractLengthChange.emit('initial', this.getCurrentMaxContractLength());
         }
     }
 
@@ -351,6 +364,14 @@ class mainToken extends TokenContract {
     }
 
     /**
+     * accepting new contract size after voting
+     * @param newValue
+     */
+    _acceptNewMaxContractLength(newValue) {
+        this._maxContractLength.put('maxContractLength', +newValue);
+    }
+
+    /**
      * get results og voting contract by its address
      * @param voteContractAddress
      * @returns {any}
@@ -363,7 +384,7 @@ class mainToken extends TokenContract {
     /**
      * Process results of change contract cost voting
      * @param voteContractAddress
-     * @returns {number} result of processing: 0 - voting isn't started, 1 - coting hasn't been ended yet, 2 - old variant wins, 4 - new variant wins and accepted
+     * @returns {number} result of processing: 0 - voting isn't started, 1 - voting hasn't been ended yet, 2 - old variant of cost wins, 3 - new variant of cost wins and accepted, 4 - old var of max contract size wins, 5 new var of max contract size wins and accepted
      */
     processResults(voteContractAddress) {
         const voteResults = this._getResultsOfVoting(voteContractAddress);
@@ -376,14 +397,27 @@ class mainToken extends TokenContract {
                 break;
             case 'ended':
                 let winner = this._findMaxVariantIndex(voteResults.results);
-                // if wins the same variant as we have now then do nothing
-                if (winner.index === this.getCurrentResources()) {
-                    this._ResourcesCostChange.emit('not change by voting',this.getCurrentResources());
-                    return 2;
+                if (typeof JSON.parse(winner.index) === 'object'){
+                    // if wins the same variant as we have now then do nothing
+                    const curResourses = this.getCurrentResources();
+                    if (winner.index === curResourses) {
+                        this._ResourcesCostChange.emit('not change by voting',curResourses);
+                        return 2;
+                    } else {
+                        this._acceptNewResources(JSON.parse(winner.index));
+                        this._ResourcesCostChange.emit('change by voting', curResourses);
+                        return 3;
+                    }
                 } else {
-                    this._acceptNewResources(JSON.parse(winner.index));
-                    this._ResourcesCostChange.emit('change by voting',this.getCurrentResources());
-                    return 3;
+                    const curMaxLen = this.getCurrentMaxContractLength();
+                    if ( +winner.index === curMaxLen) {
+                        this._MaxContractLengthChange.emit('not change by voting', curMaxLen);
+                        return 4;    
+                    } else {
+                        this._acceptNewMaxContractLength(JSON.parse(winner.index));
+                        this._MaxContractLengthChange.emit('change by voting', curMaxLen);
+                        return 5;
+                    }
                 }
         }
     }
@@ -423,6 +457,13 @@ class mainToken extends TokenContract {
     }
 
     /**
+     * get current max contract size
+     */
+    getCurrentMaxContractLength() {
+        return Number(this._maxContractLength.get('maxContractLength'));
+    }
+
+    /**
      * returns resources as string
      * @param obj
      * @returns {string}
@@ -432,7 +473,7 @@ class mainToken extends TokenContract {
     }
 
     /**
-     * starts voting contract by addres to decide if we need new resouces price or not
+     * starts voting contract by address to decide if we need new resouces price or not
      * @param voteContractAddress address of voting contract
      * @param newVariant multiplier for new resources cost (new = old * multiplier)
      */
@@ -441,6 +482,18 @@ class mainToken extends TokenContract {
         let oldCost = this.getCurrentResources();
         contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newCost, oldCost]);
         return JSON.stringify([newCost, oldCost]);
+    }
+
+    /**
+     * starts voting contract by address to decide if we need newMaxContractLength or not
+     * @param voteContractAddress address of voting contract
+     * @param newVariant multiplier for new resources cost (new = old * multiplier)
+     */
+    startVotingForChangeMaxContractLength(voteContractAddress, newVariant) {
+        let newVal = newVariant;
+        let oldVal = this.getCurrentMaxContractLength();
+        contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newVal, oldVal]);
+        return JSON.stringify([newVal, oldVal]);
     }
 
 

@@ -609,7 +609,7 @@ class EcmaContract {
                     if(err) {
                         that.rollbackAndClearContractsChain(state, function () {
                             sync.fails();
-                            throw  new Error('Contracts calling chain fails with error: ' + err);
+                            throw new Error('Contracts calling chain fails with error: ' + err);
                         });
                     } else {
                         if(!result) {
@@ -1022,6 +1022,28 @@ class EcmaContract {
 
     }
 
+
+    /**
+     * Call contract method without deploying promise version. (Useful for testing and get contract information)
+     * @param {string} address
+     * @param {string} method
+     * @param {Object} state
+     * @param args
+     */
+    callContractMethodRollbackPromise(address, method, state, ...args) {
+        let that = this;
+        return new Promise((resolve, reject) => {
+            that.callContractMethodRollback(address, method, state, function (err, result) {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            }, ...args);
+        });
+    }
+
+
     /**
      * Call contract method without deploying. (Useful for testing and get contract information)
      * @param {string} address
@@ -1355,11 +1377,6 @@ class EcmaContract {
 
             code = uglifyJs.minify(code).code;
 
-            if(!checkDeployingContractLength(code.length)) {
-                cb(null);
-                return;
-            }
-
             deployBlock = new EcmaContractDeployBlock(code, {
                 randomSeed: random.int(0, 10000),
                 from: wallet.id,
@@ -1380,7 +1397,14 @@ class EcmaContract {
         }
 
         function generateBlock() {
-            that.blockchain.generateNextBlockAuto(deployBlock, function (generatedBlock) {
+            that.blockchain.generateNextBlockAuto(deployBlock, async function (generatedBlock) {
+
+                if(!await checkDeployingContractLength(generatedBlock.index, code.length)) {
+                    logger.error('Deploying contract too big');
+                    cb(null);
+                    return;
+                }
+
                 that.blockchain.addBlock(generatedBlock, function () {
                     that.blockchain.broadcastLastBlock();
                     cb({block: generatedBlock, address: generatedBlock.index});
@@ -1393,9 +1417,19 @@ class EcmaContract {
          * @param codeLength
          * @returns {boolean}
          */
-        function checkDeployingContractLength(codeLength) {
-            if(codeLength > that.config.ecmaContract.maxContractLength) {
-                logger.error('Size contract is too large(' + codeLength + '). Max allow size - ' + that.config.ecmaContract.maxContractLength);
+        async function checkDeployingContractLength(address, codeLength) {
+
+            let maxContractLength = that.config.ecmaContract.maxContractLength;
+            if((that.config.ecmaContract.masterContract) && (Number(address) > that.config.ecmaContract.masterContract)) {
+                try {
+                    maxContractLength = await that.callContractMethodRollbackPromise(that.config.ecmaContract.masterContract, 'getCurrentMaxContractLength', {});
+                } catch (e) {
+
+                }
+            }
+
+            if(codeLength > maxContractLength) {
+                logger.error('Size contract is too large(' + codeLength + '). Max allow size - ' + maxContractLength);
                 return false;
             }
             return true;
@@ -1414,7 +1448,7 @@ class EcmaContract {
                     contractAddress: latestBlock.index + 1
                 }, function (err, result) {
                     if(err) {
-                        throw  err;
+                        throw err;
                     }
                     generateBlock();
                 });
@@ -1747,7 +1781,6 @@ class EcmaContract {
                 logger.error('Contract ' + address + ' calling limits exceed');
                 return callback(new Error('Contract ' + address + ' calling limits exceed'));
             }
-
 
 
             state.block = block;
