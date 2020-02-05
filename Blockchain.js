@@ -1759,8 +1759,23 @@ function Blockchain(config) {
                     try {
                         config.validators[a] = (require(config.validators[a]));
                     } catch (e) {
-                        logger.fatal('Validator ' + config.validators[a] + ' not found');
-                        process.exit(1);
+                        try {
+                            config.validators[a] = (require('./plugins/' + config.validators[a]));
+                        } catch (e) {
+                            try {
+                                config.validators[a] = (require(process.cwd() + '/' + config.validators[a]));
+                            } catch (e) {
+                                try {
+                                    config.validators[a] = (require(process.cwd() + '/node_modules/' + +config.validators[a]));
+                                } catch (e) {
+                                    logger.fatal('Validator ' + config.validators[a] + ' not found');
+                                    process.exit(1);
+                                }
+
+                            }
+
+                        }
+
                     }
                 }
 
