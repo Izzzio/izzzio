@@ -1976,23 +1976,30 @@ function Blockchain(config) {
     function loadPlugin(plugin, blockchainObject, config, storj) {
         let pluginMod;
         try {
+            //Direct module loading attempt
             try {
                 pluginMod = require(plugin)(blockchainObject, config, storj);
             } catch (e) {
-                if(/*!path.isAbsolute(plugin)*/ !fs.existsSync(plugin)) {
-                    plugin = './plugins/' + plugin;
-                    pluginMod = require(plugin)(blockchainObject, config, storj);
-                } else {
+
+                //Plugins path
+                try {
+                    pluginMod = require('./plugins/' + plugin)(blockchainObject, config, storj);
+                } catch (e) {
+
+                    //Starting dir search
                     try {
                         pluginMod = require(process.cwd() + '/' + plugin)(blockchainObject, config, storj);
                     } catch (e) {
-                        if(!path.isAbsolute(plugin)) {
-                            plugin = config.workDir + '/' + plugin
-                            pluginMod = require(plugin)(blockchainObject, config, storj);
+
+                        //Working dir search
+                        try {
+                            pluginMod = require(config.workDir + '/' + plugin)(blockchainObject, config, storj);
+                        } catch (e) {
+
+                            //Node modules in starting dir search
+                            pluginMod = require(process.cwd() + '/node_modules/' + plugin)(blockchainObject, config, storj);
                         }
-
                     }
-
                 }
 
             }
