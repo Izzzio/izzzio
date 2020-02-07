@@ -9,6 +9,7 @@ class EcmaSmartRPC extends NodeRPC
 {
     const METHODS = parent::METHODS + [
         'contracts/ecma/getInfo'             => ['httpMethod' => 'get'],
+        'contracts/ecma/isContractExists'    => ['httpMethod' => 'get'],
         'contracts/ecma/getContractInfo'     => ['httpMethod' => 'get'],
         'contracts/ecma/getContractProperty' => ['httpMethod' => 'get'],
         'contracts/ecma/callMethod'          => ['httpMethod' => 'post'],
@@ -26,6 +27,19 @@ class EcmaSmartRPC extends NodeRPC
     public function ecmaGetInfo()
     {
         return $this->request('contracts/ecma/getInfo');
+    }
+
+    /**
+     * Check is contract exists
+     * @param string $contractAddress
+     * @return boolean
+     * @throws InvalidMethodException
+     * @throws ReturnException
+     * @throws RpcCallException
+     */
+    public function ecmaIsContractExists($contractAddress)
+    {
+        return $this->request('contracts/ecma/isContractExists', [], '/' . $contractAddress);
     }
 
     /**
@@ -108,8 +122,11 @@ class EcmaSmartRPC extends NodeRPC
      * @throws ReturnException
      * @throws RpcCallException
      */
-    public  function  ecmaDeployContractSignedBlock($block, $resourceRent = '0'){
-        return $this->request('contracts/ecma/deployContract', ['source' => json_encode($block), 'resourceRent' => $resourceRent]);
+    public function ecmaDeployContractSignedBlock($block, $resourceRent = '0')
+    {
+        return $this->request('contracts/ecma/deployContract', ['source'       => json_encode($block),
+                                                                'resourceRent' => $resourceRent,
+        ]);
     }
 
     /**
@@ -123,6 +140,6 @@ class EcmaSmartRPC extends NodeRPC
      */
     public function ecmaDeployMethodSignedBLock($contractAddress, $block)
     {
-        return $this->request('contracts/ecma/deploySignedMethod', ['source' => json_encode($block)], '/' . $contractAddress );
+        return $this->request('contracts/ecma/deploySignedMethod', ['source' => json_encode($block)], '/' . $contractAddress);
     }
 }
