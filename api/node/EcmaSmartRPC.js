@@ -7,7 +7,7 @@ class EcmaSmartRPC extends NodeRPC {
         this.METHODS = {
             ...this.METHODS,
             'contracts/ecma/getInfo':'GET',
-            'contracts/ecma/isContractExists':'GET',
+            'contracts/ecma/contractExists':'GET',
             'contracts/ecma/getContractInfo':'GET',
             'contracts/ecma/getContractProperty': 'GET',
             'contracts/ecma/callMethod': 'POST',
@@ -21,8 +21,8 @@ class EcmaSmartRPC extends NodeRPC {
      * @param {string} contractAddress
      * @returns {Promise}
      */
-    ecmaIsContractExists(contractAddress) {
-        return this._request('contracts/ecma/isContractExists', [], '/' + contractAddress)
+    ecmaContractExists(contractAddress) {
+        return this._request('contracts/ecma/contractExists', [], '/' + contractAddress)
     }
 
     /**

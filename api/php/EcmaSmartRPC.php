@@ -9,7 +9,7 @@ class EcmaSmartRPC extends NodeRPC
 {
     const METHODS = parent::METHODS + [
         'contracts/ecma/getInfo'             => ['httpMethod' => 'get'],
-        'contracts/ecma/isContractExists'    => ['httpMethod' => 'get'],
+        'contracts/ecma/contractExists'    => ['httpMethod' => 'get'],
         'contracts/ecma/getContractInfo'     => ['httpMethod' => 'get'],
         'contracts/ecma/getContractProperty' => ['httpMethod' => 'get'],
         'contracts/ecma/callMethod'          => ['httpMethod' => 'post'],
@@ -37,9 +37,9 @@ class EcmaSmartRPC extends NodeRPC
      * @throws ReturnException
      * @throws RpcCallException
      */
-    public function ecmaIsContractExists($contractAddress)
+    public function ecmaContractExists($contractAddress)
     {
-        return $this->request('contracts/ecma/isContractExists', [], '/' . $contractAddress);
+        return $this->request('contracts/ecma/contractExists', [], '/' . $contractAddress);
     }
 
     /**

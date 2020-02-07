@@ -1953,7 +1953,7 @@ class EcmaContract {
         });
 
 
-        app.get('/contracts/ecma/isContractExists/:address', async function (req, res) {
+        app.get('/contracts/ecma/contractExists/:address', async function (req, res) {
             try {
                 res.send(await that.contractExists(req.params.address));
             } catch (e) {
