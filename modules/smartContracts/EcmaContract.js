@@ -1362,6 +1362,39 @@ class EcmaContract {
     }
 
     /**
+     * Async version of getContractInstanceByAddres
+     * @param {string} address
+     * @returns {Promise<Object>}
+     */
+    getContractInstanceByAddressAsync(address) {
+        let that = this;
+        return new Promise((resolve, reject) => {
+            that.getContractInstanceByAddress(address, function (err, instance) {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve(instance);
+                }
+            })
+        })
+    }
+
+    /**
+     * Check if contract exists
+     * @param {string} address
+     * @returns {Promise<boolean>}
+     */
+    async contractExists(address) {
+        try {
+            await this.getContractInstanceByAddressAsync(address);
+        } catch (e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Deploy contract with current wallet
      * @param {string|object} code Smart contract code or Signed deploy block
      * @param {string} resourceRent resource rent amount
@@ -1908,6 +1941,7 @@ class EcmaContract {
 
         });
 
+
         app.get('/contracts/ecma/getContractInfo/:address', async function (req, res) {
             that.getContractInstanceByAddress(req.params.address, async function (err, instance) {
                 if(err) {
@@ -1916,6 +1950,15 @@ class EcmaContract {
                 }
                 res.send({info: instance.info, initState: instance.vm.state, source: instance.vm.script});
             });
+        });
+
+
+        app.get('/contracts/ecma/contractExists/:address', async function (req, res) {
+            try {
+                res.send(await that.contractExists(req.params.address));
+            } catch (e) {
+                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+            }
         });
 
         app.get('/contracts/ecma/getContractProperty/:address/:property', async function (req, res) {
