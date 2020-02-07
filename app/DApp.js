@@ -192,6 +192,14 @@ class DApp {
                         }
                     });
                 },
+                /**
+                 * Check if contract exists
+                 * @param {string} address
+                 * @returns {Promise<boolean>}
+                 */
+                contractExists: function (address) {
+                    return that.ecmaContract.contractExists(address);
+                }
             }
         };
 
