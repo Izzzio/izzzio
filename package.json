@@ -25,7 +25,7 @@
     "express": "^4.16.4",
     "fs-extra": "^4.0.3",
     "http-auth": "^3.2.3",
-    "isolated-vm": "^1.7.9",
+    "isolated-vm": "^3.1.4",
     "keypair": "^1.0.1",
     "level": "^6.0.0",
     "leveldown": "^5.4.1",
