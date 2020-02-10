@@ -143,7 +143,6 @@ class VM {
         }));
         jail.setSync('system', this.objToReference({
             processMessages: function () {
-                //console.log('PMSG')
                 return true;
             },
             getState: function () {
