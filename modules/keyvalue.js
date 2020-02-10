@@ -5,8 +5,11 @@
 
 const logger = new (require('./logger'))();
 const storj = require('./instanceStorage');
+const levelup = require('levelup');
+const memdown = require('memdown');
+const leveldown = require('leveldown');
 
-const level = require('level');
+//const level = require('level');
 
 const fs = require('fs-extra');
 const plugins = storj.get('plugins');//.ecma.getAllRegisteredFunctionsAsObject();
@@ -66,7 +69,7 @@ class KeyValue {
 
         if(typeof name !== 'undefined') { //LevelDB storage
             this.type = STORAGE_TYPE.LEVELDB;
-            this.levelup = level(this.config.workDir + '/' + name);
+            this.levelup = levelup(leveldown(this.config.workDir + '/' + name));
             return this;
         }
     }
@@ -318,7 +321,7 @@ class KeyValue {
                 try {
                     that.levelup.close(function () {
                         fs.removeSync(that.config.workDir + '/' + that.name);
-                        that.levelup = level(that.config.workDir + '/' + that.name);
+                        that.levelup = levelup(leveldown(that.config.workDir + '/' + that.name));
                         if(typeof callback !== 'undefined') {
                             callback();
                         }
