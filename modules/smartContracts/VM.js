@@ -404,13 +404,13 @@ class VM {
     runContextMethodAsyncPromise(context, cb, ...args) {
         let that = this;
         return new Promise((resolve, reject) => {
-            that.runContextMethod(context, function (err, result) {
+            that.runContextMethodAsync(context, function (err, result) {
                 if(err) {
                     reject(err);
                 } else {
                     resolve(result);
                 }
-            }, args)
+            }, args);
         });
     }
 
