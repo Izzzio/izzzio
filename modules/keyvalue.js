@@ -8,6 +8,9 @@ const storj = require('./instanceStorage');
 const levelup = require('levelup');
 const memdown = require('memdown');
 const leveldown = require('leveldown');
+
+//const level = require('level');
+
 const fs = require('fs-extra');
 const plugins = storj.get('plugins');//.ecma.getAllRegisteredFunctionsAsObject();
 

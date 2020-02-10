@@ -259,10 +259,16 @@ class EcmaContract {
                 that._setupVmFunctions(vm, db);
                 vm.execute();
                 vm.runContextMethod("updateExternalState");
-                vm.runContextMethodAsync('contract.init', function (err) {
+                vm.runContextMethodAsync('contract.init', async function (err) {
                     if(err) {
                         throw 'Contract initialization error ' + err;
                     }
+
+                    try {
+                        contractInfo = await vm.getContextProperty('contract.contract')
+                    } catch (e) {
+                    }
+
                     if(typeof cb === 'function') {
                         cb({vm: vm, db: db, info: contractInfo, limits: limits});
                     }
@@ -278,10 +284,7 @@ class EcmaContract {
             }
 
 
-            try {
-                contractInfo = vm.getContextProperty('contract.contract')
-            } catch (e) {
-            }
+
 
         }
 
@@ -1320,12 +1323,12 @@ class EcmaContract {
      * @param cb
      */
     getContractProperty(address, property, cb) {
-        this.getContractInstanceByAddress(address, function (err, instance) {
+        this.getContractInstanceByAddress(address, async function (err, instance) {
             if(err) {
                 cb(err);
             } else {
                 try {
-                    cb(null, instance.vm.getContextProperty(property));
+                    cb(null, await instance.vm.getContextProperty(property));
                 } catch (e) {
                     cb(e);
                 }

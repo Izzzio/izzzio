@@ -409,13 +409,13 @@ class VM {
     runContextMethodAsyncPromise(context, cb, ...args) {
         let that = this;
         return new Promise((resolve, reject) => {
-            that.runContextMethod(context, function (err, result) {
+            that.runContextMethodAsync(context, function (err, result) {
                 if(err) {
                     reject(err);
                 } else {
                     resolve(result);
                 }
-            }, args)
+            }, args);
         });
     }
 
@@ -440,18 +440,18 @@ class VM {
      * @param context
      * @return {*}
      */
-    getContextProperty(context) {
+    async getContextProperty(context) {
         let vmContext = this.context.global;
         let prevContext = vmContext;
         context = context.split('.');
         for (let a in context) {
             if(context.hasOwnProperty(a)) {
                 prevContext = vmContext;
-                vmContext = vmContext.getSync(context[a]);
+                vmContext = await vmContext.get(context[a]);
             }
         }
 
-        return vmContext.copySync()
+        return await vmContext.copy();
     }
 
     /**

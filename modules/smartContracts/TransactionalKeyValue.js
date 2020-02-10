@@ -137,10 +137,12 @@ class TransactionalKeyValue {
      * @param cb
      */
     clear(cb) {
+        this.transactions = {};
         return this.db.clear(cb);
     }
 
     close(cb){
+        this.transactions = {};
         return this.db.close(cb);
     }
 }
