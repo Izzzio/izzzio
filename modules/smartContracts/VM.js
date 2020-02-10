@@ -197,7 +197,7 @@ class VM {
              * @return {state}
              */
             global.getState = function () {
-                return  Object.assign({}, _state);
+                return Object.assign({}, _state);
             };
 
             /**
@@ -206,7 +206,6 @@ class VM {
             global.updateState = function () {
                 _state = decodeReferences(system.getState());
             };
-
 
 
             /**
@@ -436,18 +435,18 @@ class VM {
      * @param context
      * @return {*}
      */
-    getContextProperty(context) {
+    async getContextProperty(context) {
         let vmContext = this.context.global;
         let prevContext = vmContext;
         context = context.split('.');
         for (let a in context) {
             if(context.hasOwnProperty(a)) {
                 prevContext = vmContext;
-                vmContext = vmContext.getSync(context[a]);
+                vmContext = await vmContext.get(context[a]);
             }
         }
 
-        return vmContext.copySync()
+        return await vmContext.copy();
     }
 
     /**

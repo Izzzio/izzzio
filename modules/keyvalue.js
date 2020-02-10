@@ -103,8 +103,6 @@ class KeyValue {
         }
         key = String(key);
 
-          console.log('GET KEY', key, this.name, that.type);
-
         switch (that.type) {
             case STORAGE_TYPE.MEMORY:
                 if(typeof callback !== 'undefined') {
@@ -116,22 +114,7 @@ class KeyValue {
                 }
                 break;
             case STORAGE_TYPE.LEVELDB:
-                console.log('GETLEVEL1', key, that.name);
-                process.nextTick(() => {
-                    console.log('GETLEVEL', key, that.name);
-
-                    if(typeof options === 'function') {
-                        that.levelup.get(key, function (a, b, c) {
-                            console.log('GETCALLBACK2', a, b, c);
-                            options(a, b, c);
-                        });
-                    } else {
-                        that.levelup.get(key, options, function (a, b, c) {
-                            console.log('GETCALLBACK2', a, b, c);
-                            callback(a, b, c);
-                        });
-                    }
-                });
+                that.levelup.get(key, options, callback);
                 break;
             case STORAGE_TYPE.PLUGINDB:
                 that.pluginDB.get(key, options, callback);
