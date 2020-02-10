@@ -31,12 +31,14 @@ class TransactionalKeyValue {
     get(key, callback = () => {
     }) {
         if(typeof this.transactions[key] !== 'undefined') {
+            console.log('TRANSGET1', key);
             if(this.transactions[key] !== null) {
                 callback(null, this.transactions[key]);
             } else {
                 callback(true);
             }
         } else {
+            console.log('TRANSGET2', key);
             this.db.get(key, function (err, val) {
                 if(!err) {
                     callback(err, val.toString());
@@ -55,6 +57,7 @@ class TransactionalKeyValue {
      */
     put(key, value, callback = () => {
     }) {
+        console.log('TRANSDB PUT', key, value);
         this.transactions[key] = String(value);
         callback(null);
     }
@@ -137,10 +140,13 @@ class TransactionalKeyValue {
      * @param cb
      */
     clear(cb) {
+        this.transactions = {};
         return this.db.clear(cb);
     }
 
     close(cb){
+        console.log('TRANS DB CLOSED');
+        this.transactions = {};
         return this.db.close(cb);
     }
 }

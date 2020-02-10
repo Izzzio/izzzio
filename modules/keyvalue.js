@@ -5,9 +5,12 @@
 
 const logger = new (require('./logger'))();
 const storj = require('./instanceStorage');
-const levelup = require('levelup');
-const memdown = require('memdown');
-const leveldown = require('leveldown');
+//const levelup = require('levelup');
+//const memdown = require('memdown');
+//const leveldown = require('leveldown');
+
+const level = require('level');
+
 const fs = require('fs-extra');
 const plugins = storj.get('plugins');//.ecma.getAllRegisteredFunctionsAsObject();
 
@@ -66,7 +69,7 @@ class KeyValue {
 
         if(typeof name !== 'undefined') { //LevelDB storage
             this.type = STORAGE_TYPE.LEVELDB;
-            this.levelup = levelup(leveldown(this.config.workDir + '/' + name));
+            this.levelup = level(this.config.workDir + '/' + name);//levelup(leveldown(this.config.workDir + '/' + name));
             return this;
         }
     }
@@ -100,6 +103,8 @@ class KeyValue {
         }
         key = String(key);
 
+          console.log('GET KEY', key, this.name, that.type);
+
         switch (that.type) {
             case STORAGE_TYPE.MEMORY:
                 if(typeof callback !== 'undefined') {
@@ -111,7 +116,22 @@ class KeyValue {
                 }
                 break;
             case STORAGE_TYPE.LEVELDB:
-                that.levelup.get(key, options, callback);
+                console.log('GETLEVEL1', key, that.name);
+                process.nextTick(() => {
+                    console.log('GETLEVEL', key, that.name);
+
+                    if(typeof options === 'function') {
+                        that.levelup.get(key, function (a, b, c) {
+                            console.log('GETCALLBACK2', a, b, c);
+                            options(a, b, c);
+                        });
+                    } else {
+                        that.levelup.get(key, options, function (a, b, c) {
+                            console.log('GETCALLBACK2', a, b, c);
+                            callback(a, b, c);
+                        });
+                    }
+                });
                 break;
             case STORAGE_TYPE.PLUGINDB:
                 that.pluginDB.get(key, options, callback);
@@ -318,7 +338,7 @@ class KeyValue {
                 try {
                     that.levelup.close(function () {
                         fs.removeSync(that.config.workDir + '/' + that.name);
-                        that.levelup = levelup(leveldown(that.config.workDir + '/' + that.name));
+                        that.levelup = level(that.config.workDir + '/' + that.name);//levelup(leveldown(that.config.workDir + '/' + that.name));
                         if(typeof callback !== 'undefined') {
                             callback();
                         }

@@ -485,8 +485,11 @@ class EcmaContract {
                 return that._dbInstances[handleId].namespace;
             },
             _get: function (handleId, key) {
+                console.log('!GET', key);
                 let sync = vmSync();
+                //console.log('!2GET', key);
                 that._dbInstances[handleId].get(key, function (err, val) {
+                  //  console.log('!RETURN', err, val);
                     if(!err) {
                         sync.return(val);
                     } else {

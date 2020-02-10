@@ -105,9 +105,14 @@ class Contract {
      */
     init() {
         assert.false(contracts.isChild(), 'You can\'t call init method of another contract');
-        if(contracts.isDeploy()) {
-            this.deploy();
-        }
+
+        /**
+         * Basic contract params
+         * @type {BlockchainMap}
+         * @private
+         */
+        this._contract = new BlockchainMap('contract');
+
 
         /**
          * c2c Orders callbacks
@@ -122,6 +127,38 @@ class Contract {
          * @private
          */
         this._appInterfaceConfig = {type: false, code: '', infoMethods: {}, deployMethods: {}};
+
+
+        if(contracts.isDeploy()) {
+            //Set default owner
+            this._contract['ownerStr'] = false;
+            this.deploy();
+        }
+
+
+    }
+
+    /**
+     * Change contract owner field
+     * @param {string} newOwner New contract owner address
+     * @private
+     */
+    _changeOwner(newOwner = undefined) {
+        if(typeof newOwner === 'undefined') {
+            this._contract['ownerStr'] = global.getState().from
+        } else {
+            this._contract['ownerStr'] = newOwner;
+        }
+    }
+
+    /**
+     * Returns contract owner
+     * @returns {string|boolean}
+     * @private
+     */
+    _getContractOwner(){
+        console.log('GET CONTRACT OWNER');
+        return this._contract['ownerStr'];
     }
 
     /**
