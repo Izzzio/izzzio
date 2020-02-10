@@ -379,18 +379,24 @@ class VM {
             }
         }
         let cpuLimiter = this._startCPULimitTimer();
-        vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout}).then(function (result) {
-            that._stopCPULimitTimer(cpuLimiter);
+        try {
+            vmContext.apply(prevContext.derefInto(), args.map(arg => new ivm.ExternalCopy(arg).copyInto()), {timeout: this.timeout}).then(function (result) {
+                that._stopCPULimitTimer(cpuLimiter);
+                that.busy = false;
+                cb(null, result);
+            }).catch(function (reason) {
+                that.busy = false;
+                if(cpuLimiter.falled) {
+                    reason = new Error(cpuLimiter.reason);
+                }
+                that._stopCPULimitTimer(cpuLimiter);
+                cb(reason);
+            });
+        } catch (e) {
             that.busy = false;
-            cb(null, result);
-        }).catch(function (reason) {
-            that.busy = false;
-            if(cpuLimiter.falled) {
-                reason = new Error(cpuLimiter.reason);
-            }
             that._stopCPULimitTimer(cpuLimiter);
-            cb(reason);
-        });
+            cb(e);
+        }
     }
 
     /**

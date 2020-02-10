@@ -305,6 +305,7 @@ function Blockchain(config) {
         }
         blockHandler.changeMaxBlock(maxBlock);
         transactor.changeMaxBlock(maxBlock);
+
         blockchain.put(Number(index), JSON.stringify(block), function () {
             if(!noHandle) {
                 blockHandler.handleBlock(block, cb);
@@ -343,6 +344,7 @@ function Blockchain(config) {
      * @param {Function} cb
      */
     function addBlockToChain(block, noHandle, cb) {
+
         if(block.index > maxBlock) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);

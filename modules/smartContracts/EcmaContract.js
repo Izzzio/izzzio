@@ -1186,6 +1186,7 @@ class EcmaContract {
             throw new Error('Calling private contract method in deploy method not allowed');
         }
 
+
         this.getContractInstanceByAddress(address, function (err, instance) {
             if(err) {
                 cb(new Error('Error getting contract instance 2 for contract 1: ' + address + ' method ' + method));
@@ -1198,7 +1199,6 @@ class EcmaContract {
                             cb(new Error('VM is busy'));
                             return;
                         }
-
                         instance.vm.setState(state);
                         instance.vm.runContextMethod("updateExternalState");
 
@@ -1436,7 +1436,7 @@ class EcmaContract {
             that.blockchain.generateNextBlockAuto(deployBlock, async function (generatedBlock) {
 
                 if(!await checkDeployingContractLength(generatedBlock.index, code.length)) {
-                    logger.error('Deploying contract too big');
+                    logger.error(new Error('Deploying contract too big'));
                     cb(null);
                     return;
                 }
@@ -1718,6 +1718,7 @@ class EcmaContract {
             let contract = {code: code, state: state};
 
             that.contracts.put(address, JSON.stringify(contract), function (err) {
+
                 if(err) {
                     logger.error('Contract deploy handling error');
                     callback(true);
@@ -1748,6 +1749,7 @@ class EcmaContract {
          * Check deploy if master contract defined
          */
         function checkDeployByMaster() {
+
             that.blockchain.getLatestBlock(function (latestBlock) {
 
                 if(!that.config.ecmaContract.masterContract || that._lastKnownBlock < that.config.ecmaContract.masterContract || block.index === that.config.ecmaContract.masterContract) {
@@ -1874,8 +1876,12 @@ class EcmaContract {
         let testWallet = new Wallet(false, that.config);
 
 
+
+
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
+
+
 
                 verifyBlock = new EcmaContractDeployBlock(blockData.ecmaCode, blockData.state);
 
