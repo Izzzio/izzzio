@@ -157,7 +157,6 @@ class Contract {
      * @private
      */
     _getContractOwner(){
-        console.log('GET CONTRACT OWNER');
         return this._contract['ownerStr'];
     }
 
