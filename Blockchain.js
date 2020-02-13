@@ -1506,6 +1506,11 @@ function Blockchain(config) {
                 if(fullSockets) {
                     return s;
                 } else {
+
+                    if(!s._socket._isServer) {
+                        return s.url;
+                    }
+
                     return 'ws://' + s._socket.remoteAddress + ':' + /*s._socket.remotePort*/ config.p2pPort
                 }
             }
