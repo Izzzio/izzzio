@@ -61,8 +61,7 @@ class App extends DApp {
         });
 
         process.on('unhandledRejection', error => {
-            logger.fatal(error);
-            process.exit();
+            logger.fatalFall(error);
         });
 
         //Preparing environment

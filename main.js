@@ -265,8 +265,7 @@ if(global.PATH.configDir) {
 }
 
 if(!fs.existsSync(config.appEntry) && config.appEntry) {
-    logger.fatal('App entry not found ' + config.appEntry);
-    process.exit(1);
+    logger.fatalFall('App entry not found ' + config.appEntry);
 }
 
 if(config.startMessage) {

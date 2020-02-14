@@ -12,7 +12,7 @@ function log(type, log) {
 
 /**
  * Logger component
- * @return {{disable: boolean, log: log, write: write, info: info, error: error, fatal: fatal, init:init, warning: warning}}
+ * @return {{disable: boolean, log: log, write: write, info: info, error: error, fatal: fatal, init:init, warning: warning, fatalFall:fatalFall}}
  * @constructor
  */
 function Logger(prefix) {
@@ -53,6 +53,14 @@ function Logger(prefix) {
                 data = data.stack;
             }
             return this.log('Fatal', data);
+        },
+        /**
+         * Prints fatal error end exit with error code
+         * @param {string} data
+         */
+        fatalFall: function (data) {
+            this.fatal(data);
+            process.exit(1);
         },
         warning: function (data) {
             if(typeof data.stack !== 'undefined') {
