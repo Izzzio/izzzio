@@ -385,8 +385,7 @@ function Blockchain(config) {
             if(err) {
                 let genesisBlock = getGenesisBlock();
                 if(!config.validators[0].isValidHash(genesisBlock.hash)) {
-                    logger.fatal('Invalid genesis hash: ' + genesisBlock.hash);
-                    process.exit(1);
+                    logger.fatalFall('Invalid genesis hash: ' + genesisBlock.hash);
                 }
                 addBlockToChain(getGenesisBlock());
                 logger.info('New blockchain fork started');
@@ -398,14 +397,12 @@ function Blockchain(config) {
                 try {
                     zeroBlock = JSON.parse(value);
                 } catch (e) {
-                    logger.fatal('Error on parsing 0 genesis block: ' + e);
-                    process.exit(1);
+                    logger.fatalFall('Error on parsing 0 genesis block: ' + e);
                 }
 
                 let genesisBlock = getGenesisBlock();
                 if(zeroBlock.hash !== genesisBlock.hash || !config.validators[0].isValidHash(zeroBlock.hash)) {
-                    logger.fatal('Invalid genesis hash: ' + zeroBlock.hash + ' ' + genesisBlock.hash);
-                    process.exit(1);
+                    logger.fatalFall('Invalid genesis hash: ' + zeroBlock.hash + ' ' + genesisBlock.hash);
                 }
                 logger.info('Loading saved chain...');
                 blockchain.get('maxBlock', function (err, value) {
@@ -1775,8 +1772,7 @@ function Blockchain(config) {
                                 try {
                                     config.validators[a] = (require(process.cwd() + '/node_modules/' + +config.validators[a]));
                                 } catch (e) {
-                                    logger.fatal('Validator ' + config.validators[a] + ' not found');
-                                    process.exit(1);
+                                    logger.fatalFall('Validator ' + config.validators[a] + ' not found');
                                 }
 
                             }

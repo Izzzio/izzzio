@@ -200,8 +200,7 @@ class BlockHandler {
                                 logger.disable = false;
                                 console.log('PREV', JSON.parse(prevBlock));
                                 console.log('CURR', JSON.parse(result));
-                                logger.fatal('Saved chain corrupted in block ' + i + '. Remove wallets and blocks dirs for resync. Also you can use --autofix');
-                                process.exit(1);
+                                logger.fatalFall('Saved chain corrupted in block ' + i + '. Remove wallets and blocks dirs for resync. Also you can use --autofix');
                             }
                         }
                     }
@@ -212,8 +211,7 @@ class BlockHandler {
                         await that.blockchain.putAsync('maxBlock', i - 1);
                     } else {
                         console.log(e);
-                        logger.fatal('Saved chain corrupted. Remove wallets and blocks dirs for resync. Also you can use --autofix');
-                        process.exit(1);
+                        logger.fatalFall('Saved chain corrupted. Remove wallets and blocks dirs for resync. Also you can use --autofix');
                     }
                     //continue;
                 } //No important error. Ignore

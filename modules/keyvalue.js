@@ -61,8 +61,7 @@ class KeyValue {
                 this.pluginDB = require(plugins.db[protocol]).init(dbName, this.config.workDir);
                 return this;
             } else {
-                logger.fatal('Database plugin for protocol ' + protocol + ' noy found!');
-                process.exit(1);
+                logger.fatalFall('Database plugin for protocol ' + protocol + ' noy found!');
             }
         }
 

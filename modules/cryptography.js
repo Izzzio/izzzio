@@ -61,8 +61,7 @@ class Cryptography {
                 GostSign = require('../plugins/GOSTModules/gostSign');
                 GostDigest = require('../plugins/GOSTModules/gostDigest');
             } catch (e) {
-                logger.fatal('GOST plugin not found');
-                process.exit();
+                logger.fatalFall('GOST plugin not found');
             }
         }
 
@@ -240,7 +239,7 @@ class Cryptography {
             keyPair.public = this.coding.Hex.encode(keyPair.publicKey).replace(new RegExp(/\r\n/, 'g'), "");
             keyPair.private = this.coding.Hex.encode(keyPair.privateKey);
         } else {
-            logger.fatal('No generation functions found');
+            logger.fatalFall('No generation functions found');
             return {private: '', public: ''};
         }
         if(this.config.signFunction === 'NEWRSA') {
@@ -272,7 +271,7 @@ class Cryptography {
                 signedData = this.gostSign.sign(bKey, bData);
                 signedData = this.coding.Hex.encode(signedData);
             } else {
-                logger.fatal('No sign functions found');
+                logger.fatalFall('No sign functions found');
                 return {data: data, sign: ''};
             }
             signedData = signedData.replace('\r\n', ''); //delete wrong symbols
@@ -306,7 +305,7 @@ class Cryptography {
             bSign = this.coding.Hex.decode(sign);
             result = this.gostSign.verify(bKey, bSign, bData);
         } else {
-            logger.fatal('No verify functions found');
+            logger.fatalFall('No verify functions found');
             return false;
         }
         return result;
@@ -329,7 +328,7 @@ class Cryptography {
         if(this.gostDigest) {
             hashBuffer = this.gostDigest.digest(bData);
         } else {
-            logger.fatal('No hash functions found');
+            logger.fatalFall('No hash functions found');
             return '';
         }
         return this.coding.Hex.encode(hashBuffer).replace('\r\n', '');
