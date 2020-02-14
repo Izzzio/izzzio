@@ -12,7 +12,13 @@
 
 class NodeMetaInfo {
     constructor(config) {
-        this.validators = config ? config.validators : [];
+        let validators = [];
+        if(config) {
+            for (let validator of config.validators) {
+                validators.push(validator.consensusName);
+            }
+        }
+        this.validators = validators;
         this.modules = [];
         this.versions = {};
         this.messageBusAddress = config ? config.recieverAddress : '';
@@ -23,11 +29,11 @@ class NodeMetaInfo {
      * @param {NodeMetaInfo} nodeMetaInfo
      * @return {NodeMetaInfo}
      */
-    parse(nodeMetaInfo){
-        if(typeof nodeMetaInfo==='string'){
+    parse(nodeMetaInfo) {
+        if(typeof nodeMetaInfo === 'string') {
             try {
                 nodeMetaInfo = JSON.parse(nodeMetaInfo);
-            }catch (e) {
+            } catch (e) {
                 return this;
             }
         }
