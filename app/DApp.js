@@ -130,7 +130,7 @@ class DApp {
                  * @param accountName
                  * @return {Promise<any>}
                  */
-                deployContract: function (source, resourceRent, accountName = false) {
+                deployContract: function (source, resourceRent = 0, accountName = false) {
                     return new Promise((resolve, reject) => {
                         that.ecmaContract.deployContract(source, resourceRent, function (block) {
                             if(block === null) {
@@ -154,7 +154,7 @@ class DApp {
                  * @param accountName
                  * @return {Promise<any>}
                  */
-                deployMethod: function (address, method, args, state, accountName = false) {
+                deployMethod: function (address, method, args = [], state = {}, accountName = false) {
                     return new Promise((resolve, reject) => {
                         try {
                             that.ecmaContract.deployContractMethod(address, method, args, state, function (err, generatedBlock) {
@@ -177,7 +177,7 @@ class DApp {
                  * @param state
                  * @return {Promise<any>}
                  */
-                callMethodRollback: function (address, method, args, state) {
+                callMethodRollback: function (address, method, args = [], state = {}) {
                     return new Promise((resolve, reject) => {
                         try {
                             that.ecmaContract.callContractMethodRollback(address, method, state, function (err, result) {
