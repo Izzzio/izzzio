@@ -260,6 +260,14 @@ class DApp {
     }
 
     /**
+     * Returns appConfig section of config file
+     * @returns {*}
+     */
+    getAppConfig() {
+        return this.getConfig()['appConfig'];
+    }
+
+    /**
      * Returns block handler object
      * @return {BlockHandler}
      */
