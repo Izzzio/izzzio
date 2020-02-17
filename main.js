@@ -147,6 +147,8 @@ const config = {
     plugins: [                          //Crypto and other plugins
         "iz3-basic-crypto"
     ],
+    "appConfig": {                          //DApp config placement
+    }
 
 
 };
