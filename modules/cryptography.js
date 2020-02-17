@@ -227,10 +227,9 @@ class Cryptography {
      * @returns {{private: *, public: *}}
      */
     generateKeyPair() {
-
         //External generator function
-        if(this._generatorFunctions[this.config.generatorFunction]) {
-            return this._generatorFunctions[this.config.generatorFunction]();
+        if(this._generatorFunctions[this.config.generatorFunction.toUpperCase()]) {
+            return this._generatorFunctions[this.config.generatorFunction.toUpperCase()]();
         }
 
         let keyPair;
