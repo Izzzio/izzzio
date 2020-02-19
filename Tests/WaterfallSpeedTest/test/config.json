@@ -4,6 +4,10 @@
   "httpPort": 3017,
   "initialPeers": [
   ],
+  "validators": [
+    "lcpoa",
+    "thrusted"
+  ],
   "recieverAddress": "nodeOne",
   "blockHashFilter": {
     "blockEndls": [
