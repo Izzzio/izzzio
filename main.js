@@ -35,7 +35,7 @@ program
     .option('--work-dir [path]', 'Working directory', false)
     .option('--keyring-emission', 'Generate and deploy keyring', false)
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
-    .option('--new-chain', 'Generates keyring and token emission if possible', false)
+    .option('--new-chain', 'Starts new chain', false)
     .option('--fall-on-errors', 'Allow stop node on uncaught exceptions', false)
     .option('--block-accept-count [count]', 'Number of blocks to confirm transaction')
     .option('--http-port [port]', 'Interface and RPC binding port')
