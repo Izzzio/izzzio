@@ -32,6 +32,7 @@ program
     .option('--clear', 'Clear all saved chain and deletes wallet. WARNING: You can lose important data')
     .option('--clear-db', 'Clear all saved chain and calculated wallets.')
     .option('-c, --config [path]', 'Core config path', 'config.json')
+    .option('--write-config [path]', 'Save config in [path] file', false)
     .option('--work-dir [path]', 'Working directory', false)
     .option('--keyring-emission', 'Generate and deploy keyring', false)
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
@@ -170,14 +171,17 @@ try {
         }
     }
 
-
-    /*   try {
-           fs.writeFileSync('config.json', JSON.stringify(config));
-       } catch (e) {
-           console.log('Info: Can\'t save config');
-       }*/
 } catch (e) {
-    logger.info('No configure found. Using standard configuration.');
+    logger.warning('No configure found. Using standard configuration.');
+}
+
+
+if(program.writeConfig) {
+    try {
+        fs.writeFileSync(program.writeConfig, JSON.stringify(config));
+    } catch (e) {
+        logger.warning('Can\'t save config');
+    }
 }
 
 config.program = program;
