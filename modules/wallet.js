@@ -270,7 +270,7 @@ let Wallet = function (walletFile, config) {
 
 
     wallet.update = function () {
-        wallet.log('Info: Wallet balance: ' + formatToken(wallet.balance, config.precision));
+        //wallet.log('Info: Wallet balance: ' + formatToken(wallet.balance, config.precision));
         wallet.save();
     };
 

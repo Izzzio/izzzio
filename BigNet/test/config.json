@@ -5,6 +5,10 @@
   "initialPeers": [
   ],
   "recieverAddress": "nodeOne",
+  "validators": [
+    "lcpoa",
+    "thrusted"
+  ],
   "blockHashFilter": {
     "blockEndls": [
       "f3c3",
@@ -32,5 +36,7 @@
     "masterContract": 5
   },
   "signFunction": "NEWRSA",
-  "plugins": [ "iz3-basic-crypto"  ]
+  "plugins": [
+    "iz3-basic-crypto"
+  ]
 }

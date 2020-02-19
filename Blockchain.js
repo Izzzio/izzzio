@@ -1697,7 +1697,6 @@ function Blockchain(config) {
                 config.validators[0].generateNextBlock(blockData, function (generatedBlock) {
                     addBlock(generatedBlock);
                     broadcastLastBlock();
-                    setTimeout(coinEmission, 2000);
                     cb(generatedBlock);
                 });
             }, function () {
@@ -1708,41 +1707,6 @@ function Blockchain(config) {
         }
     }
 
-    /**
-     * Первичный выпуск монет
-     * Заложенно config.initialEmission * precision
-     * где precision это максимальная точность при операциях с не дробными монетами
-     */
-    function coinEmission() {
-        if(config.disableInternalToken) {
-            return;
-        }
-        if(!blockHandler.isKeyFromKeyring(wallet.keysPair.public)) {
-            logger.error("The selected key does not belong to the keychain! Emission corrupted.");
-            return;
-        }
-
-        logger.info('Starting coin emission ' + (config.initialEmission));
-
-        wallet.transanctions = [];
-        wallet.transact(wallet.id, config.initialEmission * config.precision, null, true);
-        let blockData = wallet.transanctions.pop();
-
-        transactor.transact(blockData, function (blockData, cb) {
-            config.validators[0].generateNextBlock(blockData, function (generatedBlock) {
-                addBlock(generatedBlock);
-                broadcastLastBlock();
-                setTimeout(function () {
-                    config.validators[0].generateEmptyBlock(true);
-                }, 1000);
-                cb(generatedBlock);
-
-            });
-        }, function () {
-            console.log('Emission: Emission accepted');
-            blockHandler.resync();
-        });
-    }
 
 
     /**
@@ -1923,7 +1887,6 @@ function Blockchain(config) {
         broadcastMessage: broadcastMessage,
         createWalletIfNotExsists: createWalletIfNotExsists,
         keyringEmission: keyringEmission,
-        coinEmission: coinEmission,
         genesisTiemstamp: genesisTiemstamp,
         wallet: wallet,
         app: app,
