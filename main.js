@@ -133,7 +133,7 @@ const config = {
 
     //Cryptography
     hashFunction: 'SHA256',                 //функция вычисления хэша
-    signFunction: '',                       //Функция вычисления цифровой подписи и генерации паролей(пустая-значит, по умолчанию используется), 'GOST' 'GOST256' 'NEWRSA'
+    signFunction: 'NEWRSA',                       //Функция вычисления цифровой подписи и генерации паролей(пустая-значит, по умолчанию используется), 'GOST' 'GOST256' 'NEWRSA'
     keyLength: 2048,                        //Key length for some algorithms
     generatorFunction: 'NEWRSA',            //Key generator function
 
