@@ -1,4 +1,5 @@
 const http = require("http");
+const stringify = require("json-stable-stringify");
 
 class NodeRPC {
 
@@ -78,7 +79,7 @@ class NodeRPC {
             });
 
             if (req.method === "POST") {
-                req.write(JSON.stringify(postBody));
+                req.write(stringify(postBody));
             }
             req.end();
         });

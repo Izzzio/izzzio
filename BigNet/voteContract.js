@@ -15,6 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
+const stringify = require("json-stable-stringify");
 
 const CONTRACT_OWNER = '-----BEGIN RSA PUBLIC KEY-----\n' +
     'MIIBCgKCAQEApSJ2Lm6h26vHgiqB4VcyOZE+meRB6Jaow6Z+6cBn43fvcM57l8O2DfFTgo9R\n' +
@@ -247,7 +248,7 @@ class voteContract extends Contract {
                 results[voteVariants[no]] = this._voteResults[no];
             }
         }
-        return JSON.stringify({results, state: this._voteState});
+        return stringify({results, state: this._voteState});
     }
 
     /**

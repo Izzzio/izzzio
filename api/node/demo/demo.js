@@ -1,4 +1,5 @@
 const EcmaSmartRPC = require('../EcmaSmartRPC');
+const stringify = require("json-stable-stringify");
 
 let izNode = new EcmaSmartRPC('http://localhost:3015/');
 
@@ -32,9 +33,9 @@ async function main() {
     let newAddress = newContract['address'];
     console.log("Deployed contract address: " + newAddress);
     let allInfo = (await izNode.ecmaGetInfo());
-    console.log('All info ' + JSON.stringify(allInfo));
+    console.log('All info ' + stringify(allInfo));
     let contractInfo = (await izNode.ecmaGetContractProperty(newAddress, 'contract')).result;
-    console.log("Deployed contract info: " + JSON.stringify(contractInfo));
+    console.log("Deployed contract info: " + stringify(contractInfo));
     console.log("Deploy contract method 'call'");
     let withDeploy = (await izNode.ecmaDeployMethod(newAddress, 'call', [])).result;
     console.log("New deploy block: "+ withDeploy['index']);
@@ -42,7 +43,7 @@ async function main() {
     let withoutDeploy = (await izNode.ecmaCallMethod(newAddress, 'plus', [2, 3])).result;
     console.log("Result: " + withoutDeploy);
     let blockByID = (await izNode.getBlockById(3));
-    console.log('Block ' + JSON.stringify(blockByID));
+    console.log('Block ' + stringify(blockByID));
 }
 
 main()

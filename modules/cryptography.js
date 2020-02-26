@@ -20,6 +20,7 @@
  * Class realises universal functions for cryptography in project
  */
 
+const stringify = require("json-stable-stringify");
 const logger = new (require('./logger'))();
 
 const CodingFunctions = require('./codingFunctions');
@@ -138,7 +139,7 @@ class Cryptography {
             bData = this.coding.Chars.decode(data, 'utf8');
 
         } catch (e) {
-            bData = this.coding.Chars.decode(JSON.stringify(data), 'utf8');
+            bData = this.coding.Chars.decode(stringify(data), 'utf8');
         }
         return bData;
     }

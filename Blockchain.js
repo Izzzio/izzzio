@@ -5,6 +5,8 @@
 
 'use strict';
 
+const stringify = require("json-stable-stringify");
+
 /**
  * Blockchain constructor
  * @param {object} config
@@ -306,7 +308,7 @@ function Blockchain(config) {
         blockHandler.changeMaxBlock(maxBlock);
         transactor.changeMaxBlock(maxBlock);
 
-        blockchain.put(Number(index), JSON.stringify(block), function () {
+        blockchain.put(Number(index), stringify(block), function () {
             if(!noHandle) {
                 blockHandler.handleBlock(block, cb);
             } else {
@@ -465,9 +467,9 @@ function Blockchain(config) {
                 }
 
                 if(Buffer.isBuffer(result)) {
-                    result = JSON.stringify(String(result));
+                    result = stringify(String(result));
                 } else {
-                    result = JSON.stringify(result);
+                    result = stringify(result);
                 }
 
                 res.write('"' + i + '":' + result + ',');
@@ -564,7 +566,7 @@ function Blockchain(config) {
                     }
 
                     if(config.program.verbose) {
-                        logger.info('UPnP: Detected new peers ' + JSON.stringify(service.addresses));
+                        logger.info('UPnP: Detected new peers ' + stringify(service.addresses));
                     }
 
 
@@ -951,7 +953,7 @@ function Blockchain(config) {
      * @returns {*|string|a}
      */
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
-        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
+        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + stringify(data)).toString();
     }
 
     /**
@@ -1277,7 +1279,7 @@ function Blockchain(config) {
      * @returns {boolean}
      */
     function isValidChain(blockchainToValidate) {
-        /*if(JSON.stringify(blockchainToValidate[0]) !== JSON.stringify(getGenesisBlock())) {
+        /*if(stringify(blockchainToValidate[0]) !== stringify(getGenesisBlock())) {
          return false;
          }*/
         try {
@@ -1338,7 +1340,7 @@ function Blockchain(config) {
      */
     function responseChainMsg(blockchain) {
         return {
-            'type': MessageType.RESPONSE_BLOCKCHAIN, 'data': JSON.stringify(blockchain)
+            'type': MessageType.RESPONSE_BLOCKCHAIN, 'data': stringify(blockchain)
         }
     }
 
@@ -1350,7 +1352,7 @@ function Blockchain(config) {
         getLatestBlock(function (block) {
             callback({
                 'type': MessageType.RESPONSE_BLOCKCHAIN,
-                'data': JSON.stringify([block])
+                'data': stringify([block])
             })
         });
     }
@@ -1373,7 +1375,7 @@ function Blockchain(config) {
      */
     function metaMsg(v = nodeMetaInfo) {
         return {
-            'type': MessageType.META, 'data': JSON.stringify(v)
+            'type': MessageType.META, 'data': stringify(v)
         }
     }
 
@@ -1397,7 +1399,7 @@ function Blockchain(config) {
      */
     const write = function (ws, message) {
         try {
-            ws.send(JSON.stringify(message))
+            ws.send(stringify(message))
         } catch (e) { //ошибка записи, возможно сокет уже не активен
             if(config.program.verbose) {
                 logger.info('Send error ' + e + ' ' + ws._socket.remoteAddress)

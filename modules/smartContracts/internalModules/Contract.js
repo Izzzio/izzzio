@@ -16,6 +16,8 @@
  limitations under the License.
  */
 
+const stringify = require("json-stable-stringify");
+
 /**
  * Recommended basis environment
  */
@@ -235,7 +237,7 @@ class Contract {
      */
     getAppData() {
         if(this._appInterfaceConfig.type !== false) {
-            return JSON.stringify(this._appInterfaceConfig);
+            return stringify(this._appInterfaceConfig);
         }
 
         return false;

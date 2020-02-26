@@ -3,7 +3,7 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-
+const stringify = require("json-stable-stringify");
 const Signable = require('../../blocksModels/signable');
 let type = 'EcmaContractCallBlock';
 const storj = require('../../instanceStorage');
@@ -43,7 +43,7 @@ class EcmaContractCallBlock extends Signable {
      * Data hash for sign
      */
     generateData() {
-        this.data = cryptography.hash(this.type + this.address + JSON.stringify(this.state) + JSON.stringify(this.args) + this.method).toString();
+        this.data = cryptography.hash(this.type + this.address + stringify(this.state) + stringify(this.args) + this.method).toString();
 
     }
 

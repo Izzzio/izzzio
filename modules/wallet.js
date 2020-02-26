@@ -4,8 +4,8 @@
  */
 
 const fs = require('fs');
-const moment = require('moment');
-const formatToken = require('./formatToken');
+const stringify = require("json-stable-stringify");
+//const formatToken = require('./formatToken');
 const storj = require('./instanceStorage');
 const cryptography = storj.get('cryptography');
 
@@ -238,7 +238,7 @@ let Wallet = function (walletFile, config) {
      */
     wallet.save = function () {
         try {
-            fs.writeFileSync(wallet.walletFile, JSON.stringify(wallet))
+            fs.writeFileSync(wallet.walletFile, stringify(wallet))
         } catch (e) {
             return false;
         }

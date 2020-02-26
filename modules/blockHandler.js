@@ -4,8 +4,8 @@
  */
 
 const Keyring = require("./blocksModels/keyring");
-const Wallet = require("./wallet");
 const fs = require('fs-extra');
+const stringify = require("json-stable-stringify");
 
 const logger = new (require('./logger'))();
 const storj = require('./instanceStorage');
@@ -274,7 +274,7 @@ class BlockHandler {
                     }
                     logger.info('Keyring recived in block ' + block.index);
                     that.keyring = blockData.keys;
-                    fs.writeFileSync(that.config.workDir + '/keyring.json', JSON.stringify(that.keyring));
+                    fs.writeFileSync(that.config.workDir + '/keyring.json', stringify(that.keyring));
                     return callback();
                     break;
                 case 'Empty':

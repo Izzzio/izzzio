@@ -4,6 +4,7 @@
  */
 'use strict';
 
+const stringify = require("json-stable-stringify");
 const logger = new (require('./logger'))('BlockchainInfo');
 
 class BlockchainInfo {
@@ -63,7 +64,7 @@ class BlockchainInfo {
     sendOurInfo(ws, sendFunction, info = this.getOurBlockchainInfo()) {
         let data;
         try {
-            data = JSON.stringify(info);
+            data = stringify(info);
         } catch (e) {
             logger.error('Error creating JSON data' + e);
             return;

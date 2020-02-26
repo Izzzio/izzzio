@@ -12,8 +12,8 @@ const random = require('../random');
 const EventsDB = require('./EventsDB');
 const Wallet = require('../wallet');
 const moment = require('moment');
+const stringify = require("json-stable-stringify");
 
-const path = require('path');
 const fs = require('fs');
 
 const EcmaContractDeployBlock = require('./blocksModels/EcmaContractDeployBlock');
@@ -1717,7 +1717,7 @@ class EcmaContract {
             state.contractAddress = address;
             let contract = {code: code, state: state};
 
-            that.contracts.put(address, JSON.stringify(contract), function (err) {
+            that.contracts.put(address, stringify(contract), function (err) {
 
                 if(err) {
                     logger.error('Contract deploy handling error');
@@ -1966,7 +1966,7 @@ class EcmaContract {
             try {
                 res.send(await that.contractExists(req.params.address));
             } catch (e) {
-                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+                res.send({error: true, message: e.message, message2: stringify(e)});
             }
         });
 
@@ -1975,7 +1975,7 @@ class EcmaContract {
             try {
                 res.send({result: await contract.getPropertyPromise(req.params.property)});
             } catch (e) {
-                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+                res.send({error: true, message: e.message, message2: stringify(e)});
             }
         });
 
@@ -2001,7 +2001,7 @@ class EcmaContract {
             try {
                 res.send({result: await contract[req.params.method](...req.body.args)});
             } catch (e) {
-                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+                res.send({error: true, message: e.message, message2: stringify(e)});
             }
         });
 
@@ -2026,7 +2026,7 @@ class EcmaContract {
             try {
                 res.send({result: await contract[req.params.method](...req.body.args)});
             } catch (e) {
-                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+                res.send({error: true, message: e.message, message2: stringify(e)});
             }
         });
 
@@ -2040,7 +2040,7 @@ class EcmaContract {
             try {
                 res.send({result: await contract.deployContractMethod(req.params.method, source)});
             } catch (e) {
-                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+                res.send({error: true, message: e.message, message2: stringify(e)});
             }
         });
 
@@ -2075,7 +2075,7 @@ class EcmaContract {
                     accountName
                 );
             } catch (e) {
-                res.send({error: true, message: e.message, message2: JSON.stringify(e)});
+                res.send({error: true, message: e.message, message2: stringify(e)});
             }
         });
     }

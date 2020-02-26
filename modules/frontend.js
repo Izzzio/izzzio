@@ -4,6 +4,7 @@
  */
 
 const express = require("express");
+const stringify = require("json-stable-stringify");
 const Wallet = require("./wallet");
 const storj = require('./instanceStorage');
 const utils = require('./utils');
@@ -96,7 +97,7 @@ class Frontend {
                 data.recivingBlocks = storj.get('chainResponseMutex');
                 data.isReadyForTransaction = that.blockchainObject.isReadyForTransaction();
                 data.options = that.options;
-                let wallet = JSON.parse(JSON.stringify(that.wallet));
+                let wallet = JSON.parse(stringify(that.wallet));
                 delete wallet.keysPair;
                 data.wallet = wallet;
                 res.send(data);
@@ -119,7 +120,7 @@ class Frontend {
 
     isReadyForTransaction(req, res) {
         let that = this;
-        res.send(JSON.stringify(that.blockchainObject.isReadyForTransaction()));
+        res.send(stringify(that.blockchainObject.isReadyForTransaction()));
     }
 
 
@@ -151,7 +152,7 @@ class Frontend {
             'Content-Type': 'application/json',
             'Content-Disposition': 'attachment; filename="wallet.json"'
         });
-        res.write(JSON.stringify(this.wallet));
+        res.write(stringify(this.wallet));
 
         res.end();
     }

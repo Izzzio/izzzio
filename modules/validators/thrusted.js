@@ -3,6 +3,7 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
+const stringify = require("json-stable-stringify");
 
 /**
  * Thrusted Nodes validator
@@ -184,7 +185,7 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
     }
 
     if(typeof blockData === 'object') {
-        blockData = JSON.stringify(blockData);
+        blockData = stringify(blockData);
     }
 
     blockchain.getLatestBlock(function (previousBlock) {

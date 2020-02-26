@@ -3,6 +3,7 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
+const stringify = require("json-stable-stringify");
 
 /**
  * Abstract
@@ -68,7 +69,7 @@ class _BlockchainArray extends KeyValue {
                     target._setLength(target.length + (item - target.length) + 1);
                 }
 
-                target.put(String(item), JSON.stringify({val: value}));
+                target.put(String(item), stringify({val: value}));
 
                 if(!value) {
                     return true;

@@ -9,6 +9,8 @@
  * Backend for C2C ordering
  *
  */
+const stringify = require("json-stable-stringify");
+
 /**
  * Token emission amount
  * @type {number}
@@ -258,7 +260,7 @@ class mainToken extends TokenContract {
 
         assert.true(order.buyerAddress === String(contracts.caller()), 'Access denied for this orderId');
 
-        return JSON.stringify(order.result);
+        return stringify(order.result);
     }
 
     /**
@@ -338,7 +340,7 @@ class mainToken extends TokenContract {
      * @return JSON {{callLimit: number, timeLimit: number, ram: number}}
      */
     getCalculatedResources(amount) {
-        return JSON.stringify(this.calculateResources(amount));
+        return stringify(this.calculateResources(amount));
     }
 
     /**
@@ -350,7 +352,7 @@ class mainToken extends TokenContract {
         if(!resourcesAmount) {
             return false;
         }
-        return JSON.stringify(this.calculateResources(resourcesAmount));
+        return stringify(this.calculateResources(resourcesAmount));
     }
 
     /**
@@ -449,7 +451,7 @@ class mainToken extends TokenContract {
      * @returns {string}
      */
     getCurrentResources() {
-        return JSON.stringify({
+        return stringify({
             ram: this._resourcePrice['ram'],
             timeLimit: this._resourcePrice['timeLimit'],
             callLimit: this._resourcePrice['callLimit']
@@ -478,10 +480,10 @@ class mainToken extends TokenContract {
      * @param newVariant multiplier for new resources cost (new = old * multiplier)
      */
     startVotingForChangeResourcesPrice(voteContractAddress, newVariant) {
-        let newCost = JSON.stringify(this.calculateResources(newVariant));
+        let newCost = stringify(this.calculateResources(newVariant));
         let oldCost = this.getCurrentResources();
         contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newCost, oldCost]);
-        return JSON.stringify([newCost, oldCost]);
+        return stringify([newCost, oldCost]);
     }
 
     /**
@@ -493,7 +495,7 @@ class mainToken extends TokenContract {
         let newVal = newVariant;
         let oldVal = this.getCurrentMaxContractLength();
         contracts.callMethodDeploy(voteContractAddress, 'startVoting',[newVal, oldVal]);
-        return JSON.stringify([newVal, oldVal]);
+        return stringify([newVal, oldVal]);
     }
 
 

@@ -24,6 +24,7 @@
     "dnssd": "^0.4.1",
     "express": "^4.16.4",
     "fs-extra": "^4.0.3",
+    "json-stable-stringify": "^1.0.1",
     "http-auth": "^3.2.3",
     "isolated-vm": "^3.1.4",
     "keypair": "^1.0.1",

@@ -3,6 +3,8 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
+const stringify = require("json-stable-stringify");
+
 /**
  * KeyValue that saves types
  */
@@ -18,7 +20,7 @@ class TypedKeyValue {
      * @param value
      */
     put(key, value) {
-        return this.db.put(key, JSON.stringify(value));
+        return this.db.put(key, stringify(value));
     }
 
     /**

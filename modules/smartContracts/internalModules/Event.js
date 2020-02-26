@@ -3,6 +3,7 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
+const stringify = require("json-stable-stringify");
 
 /**
  * Event helper
@@ -85,7 +86,7 @@ class Event {
                     if(typeof args[a] !== 'object') {
                         assert.true(false, 'Invalid argument type for argument no ' + a + '. Provided ' + typeof args[a] + ', object expected');
                     }
-                    args[a] = JSON.stringify(args[a]);
+                    args[a] = stringify(args[a]);
                     break;
                 case 'boolean':
                 case 'bool':
@@ -98,7 +99,7 @@ class Event {
                     if(Array.isArray(args[a])) {
                         assert.true(false, 'Invalid argument type for argument no ' + a + '. Provided ' + typeof args[a] + ', Array expected');
                     }
-                    args[a] = JSON.stringify(args[a]);
+                    args[a] = stringify(args[a]);
                     break;
             }
         }

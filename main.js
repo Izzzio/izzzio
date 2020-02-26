@@ -24,6 +24,7 @@
 const logger = new (require('./modules/logger'))();
 const version = require('./package.json').version;
 let program = require('commander');
+const stringify = require("json-stable-stringify");
 
 program
     .version(version)
@@ -178,7 +179,7 @@ try {
 
 if(program.writeConfig) {
     try {
-        fs.writeFileSync(program.writeConfig, JSON.stringify(config));
+        fs.writeFileSync(program.writeConfig, stringify(config));
     } catch (e) {
         logger.warning('Can\'t save config');
     }

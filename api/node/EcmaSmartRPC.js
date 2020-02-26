@@ -1,4 +1,5 @@
 const NodeRPC = require('./NodeRPC');
+const stringify = require("json-stable-stringify");
 
 class EcmaSmartRPC extends NodeRPC {
     
@@ -60,7 +61,7 @@ class EcmaSmartRPC extends NodeRPC {
      * @returns {Promise}
      */
     ecmaCallMethod(contractAddress, method, params) {
-        return this._request('contracts/ecma/callMethod', ['argsEncoded=' + JSON.stringify(params)], '/' + contractAddress + '/' + method);    
+        return this._request('contracts/ecma/callMethod', ['argsEncoded=' + stringify(params)], '/' + contractAddress + '/' + method);    
     }
 
     /**
@@ -71,7 +72,7 @@ class EcmaSmartRPC extends NodeRPC {
      * @returns {Promise}
      */
     ecmaDeployMethod(contractAddress, method, params) {
-        return this._request('contracts/ecma/deployMethod', ['argsEncoded=' + JSON.stringify(params)], '/' + contractAddress + '/' + method);
+        return this._request('contracts/ecma/deployMethod', ['argsEncoded=' + stringify(params)], '/' + contractAddress + '/' + method);
     }
 
     /**
@@ -90,7 +91,7 @@ class EcmaSmartRPC extends NodeRPC {
      * @returns {Promise}
      */
     ecmaDeployContractSignedBlock(block, resourceRent = '0') {
-        return this._request('contracts/ecma/deployContract', ['source='+ JSON.stringify(block), 'resourceRent=' + resourceRent]);
+        return this._request('contracts/ecma/deployContract', ['source='+ stringify(block), 'resourceRent=' + resourceRent]);
     }
 
     /**
@@ -100,7 +101,7 @@ class EcmaSmartRPC extends NodeRPC {
      * @returns {Promise}
      */
     ecmaDeployMethodSignedBLock(contractAddress, block) {
-        return this._request('contracts/ecma/deploySignedMethod', ['source='+ JSON.stringify(block)], '/' + contractAddress );
+        return this._request('contracts/ecma/deploySignedMethod', ['source='+ stringify(block)], '/' + contractAddress );
     }
 
 }

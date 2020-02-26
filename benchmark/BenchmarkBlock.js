@@ -20,6 +20,7 @@
 const Signable = require('../modules/blocksModels/signable');
 //const CryptoJS = require("crypto-js");
 const storj = require('../modules/instanceStorage');
+const stringify = require("json-stable-stringify");
 const cryptography = storj.get('cryptography');
 let type = 'BenchmarkBlock';
 
@@ -42,8 +43,8 @@ class BenchmarkBlock extends Signable {
      * Создаёт строку данных для подписи
      */
     generateData() {
-        //this.data =  CryptoJS.SHA256(this.type+JSON.stringify(this.blockData)).toString();
-        this.data =  cryptography.hash(this.type+JSON.stringify(this.blockData)).toString();
+        //this.data =  CryptoJS.SHA256(this.type+stringify(this.blockData)).toString();
+        this.data =  cryptography.hash(this.type+stringify(this.blockData)).toString();
     }
 
 

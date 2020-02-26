@@ -3,6 +3,8 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
+const stringify = require("json-stable-stringify");
+
 /**
  * LCPoA validator
  * LCPoA - is a Limited Confidence Proof-of-Activity
@@ -85,7 +87,7 @@ function generateNextBlock(blockData, cb, cancelCondition) {
      return;
      }*/
     if(typeof blockData === 'object') {
-        blockData = JSON.stringify(blockData);
+        blockData = stringify(blockData);
     }
 
     /*if(blockchain.config.program.disableMining){

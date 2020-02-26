@@ -4,6 +4,7 @@
  */
 
 
+const stringify = require("json-stable-stringify");
 const Signable = require('../../blocksModels/signable');
 let type = 'EcmaContractDeploy';
 const storj = require('../../instanceStorage');
@@ -40,7 +41,7 @@ class EcmaContractDeployBlock extends Signable {
      * Data hash for sign
      */
     generateData() {
-        this.data = cryptography.hash(this.type + this.ecmaCode + JSON.stringify(this.state)).toString();
+        this.data = cryptography.hash(this.type + this.ecmaCode + stringify(this.state)).toString();
     }
 
 

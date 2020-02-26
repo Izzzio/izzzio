@@ -30,6 +30,7 @@ const Block = require('../block');
 const Signable = require('../blocksModels/signable');
 
 const moment = require('moment');
+const stringify = require("json-stable-stringify");
 const logger = require('../logger')('DLCPoA');
 
 
@@ -133,7 +134,7 @@ function generateNextBlock(blockData, cb, cancelCondition) {
      return;
      }*/
     if(typeof blockData === 'object') {
-        blockData = JSON.stringify(blockData);
+        blockData = stringify(blockData);
     }
 
     /*if(blockchain.config.program.disableMining){
