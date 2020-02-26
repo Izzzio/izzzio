@@ -18,6 +18,7 @@ let blockchain = null;
 
 const Block = require('../block');
 const Signable = require('../blocksModels/signable');
+const stableStringify = require('json-stable-stringify');
 
 /**
  * Хотим ли мы генерировать блоки поддержки сети:
@@ -85,7 +86,7 @@ function generateNextBlock(blockData, cb, cancelCondition) {
      return;
      }*/
     if(typeof blockData === 'object') {
-        blockData = JSON.stringify(blockData);
+        blockData = stableStringify(blockData);
     }
 
     /*if(blockchain.config.program.disableMining){

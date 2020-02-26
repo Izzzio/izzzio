@@ -23,6 +23,8 @@
  */
 let blockchain = null;
 
+const stableStringify = require('json-stable-stringify');
+
 const ThrustedNodesTimeout = 86400 * 1000; //24hours
 const MessageTimeout = 60000;
 const AddMessageTimeout = 10000;
@@ -184,7 +186,7 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
     }
 
     if(typeof blockData === 'object') {
-        blockData = JSON.stringify(blockData);
+        blockData = stableStringify(blockData);
     }
 
     blockchain.getLatestBlock(function (previousBlock) {

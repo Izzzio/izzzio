@@ -4,6 +4,7 @@
  */
 
 const logger = new (require('./logger'))();
+const stableStringify = require('json-stable-stringify');
 const storj = require('./instanceStorage');
 const levelup = require('levelup');
 const memdown = require('memdown');
@@ -173,7 +174,7 @@ class KeyValue {
                 break;
             case STORAGE_TYPE.LEVELDB:
                 /*if(typeof value !== 'string'){
-                    value = JSON.stringify(value);
+                    value = stableStringify(value);
                 }*/
                 that.levelup.put(key, value, callback);
                 break;
@@ -200,7 +201,7 @@ class KeyValue {
 
 
         if(typeof value === 'object' && this.type === STORAGE_TYPE.LEVELDB) {
-            value = 'JSON:' + JSON.stringify(value);
+            value = 'JSON:' + stableStringify(value);
         }
 
         const that = this;
@@ -354,7 +355,7 @@ class KeyValue {
         switch (that.type) {
             case STORAGE_TYPE.MEMORY:
                 if(typeof that.name !== 'undefined') {
-                    fs.writeFileSync(that.config.workDir + '/' + that.name, JSON.stringify(that.memKeyValue));
+                    fs.writeFileSync(that.config.workDir + '/' + that.name, stableStringify(that.memKeyValue));
                 }
                 if(typeof callback !== 'undefined') {
                     callback();

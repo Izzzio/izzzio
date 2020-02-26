@@ -19,7 +19,7 @@
 const levelup = require('levelup');
 const leveldown = require('leveldown');
 const fs = require('fs-extra');
-
+const stableStringify = require('json-stable-stringify');
 
 class CustomDB {
     constructor(name, workdir) {
@@ -49,7 +49,7 @@ class CustomDB {
     put(key, value, options, callback) {
 
         if(typeof value === 'object') {
-            value = 'JSON:' + JSON.stringify(value);
+            value = 'JSON:' + stableStringify(value);
         }
 
         this.levelup.put(key, value, function (err,) {

@@ -26,6 +26,7 @@ function Blockchain(config) {
 
     //Init first
     const logger = new (require('./modules/logger'))();
+    const stableStringify = require('json-stable-stringify');
     const getid = require('./modules/getid');
     const fs = require('fs-extra');
     //Instance storage
@@ -306,7 +307,7 @@ function Blockchain(config) {
         blockHandler.changeMaxBlock(maxBlock);
         transactor.changeMaxBlock(maxBlock);
 
-        blockchain.put(Number(index), JSON.stringify(block), function () {
+        blockchain.put(Number(index), stableStringify(block), function () {
             if(!noHandle) {
                 blockHandler.handleBlock(block, cb);
             } else {
@@ -465,9 +466,9 @@ function Blockchain(config) {
                 }
 
                 if(Buffer.isBuffer(result)) {
-                    result = JSON.stringify(String(result));
+                    result = stableStringify(String(result));
                 } else {
-                    result = JSON.stringify(result);
+                    result = stableStringify(result);
                 }
 
                 res.write('"' + i + '":' + result + ',');
@@ -564,7 +565,7 @@ function Blockchain(config) {
                     }
 
                     if(config.program.verbose) {
-                        logger.info('UPnP: Detected new peers ' + JSON.stringify(service.addresses));
+                        logger.info('UPnP: Detected new peers ' + stableStringify(service.addresses));
                     }
 
 
@@ -951,7 +952,7 @@ function Blockchain(config) {
      * @returns {*|string|a}
      */
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
-        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
+        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + stableStringify(data)).toString();
     }
 
     /**
@@ -1277,7 +1278,7 @@ function Blockchain(config) {
      * @returns {boolean}
      */
     function isValidChain(blockchainToValidate) {
-        /*if(JSON.stringify(blockchainToValidate[0]) !== JSON.stringify(getGenesisBlock())) {
+        /*if(stableStringify(blockchainToValidate[0]) !== stableStringify(getGenesisBlock())) {
          return false;
          }*/
         try {
@@ -1338,7 +1339,7 @@ function Blockchain(config) {
      */
     function responseChainMsg(blockchain) {
         return {
-            'type': MessageType.RESPONSE_BLOCKCHAIN, 'data': JSON.stringify(blockchain)
+            'type': MessageType.RESPONSE_BLOCKCHAIN, 'data': stableStringify(blockchain)
         }
     }
 
@@ -1350,7 +1351,7 @@ function Blockchain(config) {
         getLatestBlock(function (block) {
             callback({
                 'type': MessageType.RESPONSE_BLOCKCHAIN,
-                'data': JSON.stringify([block])
+                'data': stableStringify([block])
             })
         });
     }
@@ -1373,7 +1374,7 @@ function Blockchain(config) {
      */
     function metaMsg(v = nodeMetaInfo) {
         return {
-            'type': MessageType.META, 'data': JSON.stringify(v)
+            'type': MessageType.META, 'data': stableStringify(v)
         }
     }
 
@@ -1397,7 +1398,7 @@ function Blockchain(config) {
      */
     const write = function (ws, message) {
         try {
-            ws.send(JSON.stringify(message))
+            ws.send(stableStringify(message))
         } catch (e) { //ошибка записи, возможно сокет уже не активен
             if(config.program.verbose) {
                 logger.info('Send error ' + e + ' ' + ws._socket.remoteAddress)

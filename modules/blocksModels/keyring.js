@@ -3,6 +3,7 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
+const stableStringify = require('json-stable-stringify');
 const Signable = require('./signable');
 const fs = require('fs-extra');
 const keypair = require('keypair');
@@ -33,7 +34,7 @@ class Keyring extends Signable {
      * Создаёт строку данных для подписи
      */
     generateData() {
-        this.data = this.type + JSON.stringify(this.keys) + this.initiator;
+        this.data = this.type + stableStringify(this.keys) + this.initiator;
     }
 
     /**
@@ -53,7 +54,7 @@ class Keyring extends Signable {
             generatedKeys.push(key);
         }
 
-        fs.writeFileSync(keyfile, JSON.stringify(generatedKeys));
+        fs.writeFileSync(keyfile, stableStringify(generatedKeys));
 
         console.log('Keyring: Saving generated keys to ' + keyfile);
 

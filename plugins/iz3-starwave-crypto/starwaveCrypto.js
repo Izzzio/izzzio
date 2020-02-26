@@ -34,6 +34,7 @@ const SWCRYPTO_CONNECTION_MESSAGE_TYPE = 'DH-CONNECTION';
 const crypto = require("crypto");
 const CryptoJS = require('crypto-js');
 const logger = new (require('./logger'))('StarwaveCrypto');
+const stableStringify = require('json-stable-stringify');
 
 /**
  * Crypto module for StarWave protocol
@@ -151,7 +152,7 @@ class StarwaveCrypto {
         let cryptedData;
         //should be assotiated secret key and check that message has not been already encrypted
         if(this.secretKeys[message.reciver] && !message.encrypted) {
-            cryptedData = this.cipherData(JSON.stringify(message.data), this.secretKeys[message.reciver]);
+            cryptedData = this.cipherData(stableStringify(message.data), this.secretKeys[message.reciver]);
             message.encrypted = true;
             message.data = cryptedData;
         }

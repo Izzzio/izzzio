@@ -10,6 +10,7 @@ const storj = require('./instanceStorage');
 const cryptography = storj.get('cryptography');
 
 const logger = new (require('./logger'))();
+const stableStringify = require('json-stable-stringify');
 
 /**
  * Wallet object
@@ -238,7 +239,7 @@ let Wallet = function (walletFile, config) {
      */
     wallet.save = function () {
         try {
-            fs.writeFileSync(wallet.walletFile, JSON.stringify(wallet))
+            fs.writeFileSync(wallet.walletFile, stableStringify(wallet))
         } catch (e) {
             return false;
         }

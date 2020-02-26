@@ -8,6 +8,7 @@ const Wallet = require("./wallet");
 const storj = require('./instanceStorage');
 const utils = require('./utils');
 const logger = new (require('./logger'))();
+const stableStringify = require('json-stable-stringify');
 
 /**
  * Wallet and RPC interface
@@ -96,7 +97,7 @@ class Frontend {
                 data.recivingBlocks = storj.get('chainResponseMutex');
                 data.isReadyForTransaction = that.blockchainObject.isReadyForTransaction();
                 data.options = that.options;
-                let wallet = JSON.parse(JSON.stringify(that.wallet));
+                let wallet = JSON.parse(stableStringify(that.wallet));
                 delete wallet.keysPair;
                 data.wallet = wallet;
                 res.send(data);
@@ -119,7 +120,7 @@ class Frontend {
 
     isReadyForTransaction(req, res) {
         let that = this;
-        res.send(JSON.stringify(that.blockchainObject.isReadyForTransaction()));
+        res.send(stableStringify(that.blockchainObject.isReadyForTransaction()));
     }
 
 
@@ -151,7 +152,7 @@ class Frontend {
             'Content-Type': 'application/json',
             'Content-Disposition': 'attachment; filename="wallet.json"'
         });
-        res.write(JSON.stringify(this.wallet));
+        res.write(stableStringify(this.wallet));
 
         res.end();
     }
