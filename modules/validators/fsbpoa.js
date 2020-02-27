@@ -19,9 +19,6 @@ const MessageTimeout = 60000;
 const AddMessageTimeout = 10000;
 const consensusName = "fsbPoA Nodes";
 
-const addKeyType = "TYPE-KEY-ISSUE";
-const deleteKeyType = "KEY-DELETE";
-
 const keyOperation = {
     add: "TYPE-KEY-ISSUE",
     delete: "KEY-DELETE"
