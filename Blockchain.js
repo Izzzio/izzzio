@@ -1617,6 +1617,12 @@ function Blockchain(config) {
         if(config.program.enableAddressRotation) {
             rotateAddress();
         }
+
+        //Converts block data object to str
+        if(typeof blockData === 'object') {
+            blockData = stableStringify(blockData);
+        }
+
         let validators = config.validators;
         /**
          * Модули консенсусов изначально расположены в порядке повышения приоритета.
@@ -1707,7 +1713,6 @@ function Blockchain(config) {
             logger.error('Cant generate keyring');
         }
     }
-
 
 
     /**

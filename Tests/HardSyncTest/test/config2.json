@@ -31,7 +31,7 @@
   "accountsDB": "accountByPlugin",
   "appEntry": "./test.js",
   "ecmaContract": {
-    "enabled": true,
+    "enabled": false,
     "allowDebugMessages": true,
     "contractInstanceCacheLifetime": 10000,
     "masterContract": 1
