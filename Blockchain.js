@@ -58,6 +58,7 @@ function Blockchain(config) {
     const moment = require('moment');
     const url = require('url');
     const path = require('path');
+    const stableStringify = require('json-stable-stringify');
 
     //Blockchain
     const Block = require('./modules/block');
@@ -937,7 +938,7 @@ function Blockchain(config) {
      * @returns {*|string|a}
      */
     function calculateHashForBlock(block) {
-        return calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.startTimestamp, '');
+        return calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.startTimestamp, block.sign); //Was empty sign
     }
 
     /**
@@ -951,7 +952,7 @@ function Blockchain(config) {
      * @returns {*|string|a}
      */
     function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
-        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + JSON.stringify(data)).toString();
+        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + stableStringify(data)).toString();
     }
 
     /**

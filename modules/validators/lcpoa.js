@@ -84,9 +84,9 @@ function generateNextBlock(blockData, cb, cancelCondition) {
     /*if(miningNow) {
      return;
      }*/
-    if(typeof blockData === 'object') {
+   /* if(typeof blockData === 'object') {
         blockData = JSON.stringify(blockData);
-    }
+    }*/
 
     /*if(blockchain.config.program.disableMining){
         throw('Error: Mining disabled');
