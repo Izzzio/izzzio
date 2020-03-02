@@ -95,15 +95,34 @@ class App extends DApp {
     testMessaging() {
         logger.info("Test key messaging");
         logger.info(this.config.workDir);
+
+
+
         if (that.config.recieverAddress === "nodeTwo") {
-            const message = that.blocks.generateBlock("data");
-            console.log(
-                that.blockchain.broadcastMessage(message, Date.now(), "nodeOne")
-            );
+            let blockData = {
+                data = '',
+                sign = '',
+                pubkey = '',
+                type = 'Empty',
+            }
+            this.generateAndAddBlock(blockData, cb, cancelCondition)    
         }
     }
 
+    /*createBlock(private, public, type) {
+        let testWallet = new Wallet();
+        return {
+            data:
+        }
+               
     }
+
+    createSigned(private, public, type){
+        return {
+            data:{public, type};
+        }
+    }*/
+
 
     /**
      * Run tests

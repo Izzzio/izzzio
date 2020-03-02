@@ -205,16 +205,25 @@ class BlockHandler {
      * @param {string} type Admin | System
      */
     saveKeyToKeyStorage(publicKey, type = "System") {
+        let changed = false;
         if (type === "System") {
-            this.keyStorage.System.push(publicKey);
+            if (!this.keyStorage.System.find(x => x === publicKey)) {
+                this.keyStorage.System.push(publicKey);
+                changed = true;
+            }
         } else {
             //по ТЗ админский ключ может быть только один, поэтому заменяем его
-            this.keyStorage.Admin = publicKey;
+            if (this.keyStorage.Admin !== publicKey) {
+                this.keyStorage.Admin = publicKey;
+                changed = true;
+            }
         }
-        fs.writeFileSync(
-            config.workDir + "/" + keyStorageFile,
-            JSON.stringify(this.keyStorage)
-        );
+        if (changed) {
+            fs.writeFileSync(
+                config.workDir + "/" + keyStorageFile,
+                JSON.stringify(this.keyStorage)
+            );
+        }
     }
 
     /**
