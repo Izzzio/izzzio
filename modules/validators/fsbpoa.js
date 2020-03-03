@@ -342,7 +342,6 @@ function isReady() {
         }
 
         if (typeof previousBlock.sign === "undefined") {
-            console.log(previousBlock);
             isReadyNow = false;
             return isReadyNow;
         }
