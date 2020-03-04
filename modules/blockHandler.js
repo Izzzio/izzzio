@@ -49,12 +49,9 @@ class BlockHandler {
         } catch (e) { }
 
         this.keyStorage = { Admin: "", System: [] };
+        const keyStorageFromFile = this._loadKeyStorage();
 
-        try {
-            this.keyStorage = JSON.parse(
-                fs.readFileSync(config.workDir + "/" + keyStorageFile)
-            );
-        } catch (e) { }
+        this.keyStorage = keyStorageFromFile ? keyStorageFromFile : this.keyStorage;
 
         this.blockchainObject = blockchainObject;
         this.config = config;
@@ -63,16 +60,20 @@ class BlockHandler {
         this.frontend = undefined;
     }
 
-    _loadKeyStorage() {
+    _loadKeyStorage(dir = storj.get('config').workDir, file = keyStorageFile) {
         try {
-            this.keyStorage = JSON.parse(
-                fs.readFileSync(config.workDir + "/" + keyStorageFile)
+            return JSON.parse(
+                Buffer.from(fs.readFileSync(dir + "/" + file)).toString()
             );
-        } catch (e) { }
+        } catch (e) {
+            console.log(e);
+            return;
+        }
     }
 
+
     /**
-     * Регестрируем новый обработчик блока
+     * Регистрируем новый обработчик блока
      * @param {string} type
      * @param {function} handler
      */
@@ -172,7 +173,8 @@ class BlockHandler {
     isKeyFromKeyStorage(publicKey) {
         //ключ администратора должен быть всегда. если его нет, пробуем загрузить
         if (!this.keyStorage.Admin) {
-            this._loadKeyStorage();
+            const keyStorageFromFile = this._loadKeyStorage();
+            this.keyStorage = keyStorageFromFile ? keyStorageFromFile : this.keyStorage;
         }
         return (
             this.keyStorage.Admin === publicKey ||
@@ -194,7 +196,8 @@ class BlockHandler {
     isAdminKey(publicKey) {
         //ключ администратора должен быть всегда. если его нет, пробуем загрузить
         if (!this.keyStorage.Admin) {
-            this._loadKeyStorage();
+            const keyStorageFromFile = this._loadKeyStorage();
+            this.keyStorage = keyStorageFromFile ? keyStorageFromFile : this.keyStorage;
         }
         return publicKey === this.keyStorage.Admin;
     }
@@ -249,12 +252,23 @@ class BlockHandler {
     }
 
     /**
+     * ключ администратора должен быть всегда. если его нет, пробуем загрузить
+     */
+    adminKeyPersistenseCheck() {
+        if (!this.keyStorage.Admin) {
+            const keyStorageFromFile = this._loadKeyStorage();
+            this.keyStorage = keyStorageFromFile ? keyStorageFromFile : this.keyStorage;
+        }
+    }
+
+    /**
      * Возвращает тип ключа(Admin | System), если подпись сделана доверенным ключем или false в противном случае
      * @param {Block} newBlock
      */
     checkBlockSign(newBlock) {
+        this.adminKeyPersistenseCheck();
         const keyStorageArr = this.keyStorageToArray();
-
+        //console.log(this.keyStorage);
         for (let key of keyStorageArr) {
             if (this.wallet.verifyData(newBlock.hash, newBlock.sign, key)) {
                 return this.isAdminKey(key) ? "Admin" : "System";

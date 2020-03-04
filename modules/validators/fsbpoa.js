@@ -103,15 +103,13 @@ function isValidNewBlock(newBlock, previousBlock) {
         //блок не подписан, отдаём дальше
         return false;
     }
-
+    //console.log(newBlock);
     if (blockchain.blockHandler.checkBlockSign(newBlock)) return true;
 
     console.log("Error: Fake signed block");
 
     return false;
 }
-
-
 
 /**
  * Получает коллбек по таймстампу
