@@ -38,12 +38,15 @@ const TokenContractConnector = require(global.PATH.mainDir +
 const fs = require("fs");
 const fse = require("fs-extra");
 const keyStorageFile = "keyStorage.json";
-//const Buffer = require('Buffer')
-//createkeystoragefile
+
+const keyOperation = {
+    add: "TYPE-KEY-ISSUE",
+    delete: "KEY-DELETE"
+};
 
 function createKeyStoragefile(path, public) {
     fs.writeFileSync(
-        path + "/keyStorage.json",
+        path + '/' + keyStorageFile,
         JSON.stringify({ Admin: public, System: [] })
     );
 }
@@ -106,10 +109,10 @@ class App extends DApp {
         //console.log(Buffer.from(fse.readFileSync(that.config.workDir + "/" + keyStorageFile)).toString());
 
         let blockData = {
-            data: 'data',
+            data: { publicKey: 'newKey', keyType: 'System' },
             sign: '',
-            pubkey: that.blockchain.wallet.keysPair.public,
-            type: 'Empty',
+            pubkey: '',
+            type: keyOperation.add,
         }
         this.generateAndAddBlock(blockData, console.log, false);
 
