@@ -5,7 +5,6 @@
 
 /**
  * fsbPoA Nodes validator
- *
  */
 
 /**
@@ -15,8 +14,6 @@
 let blockchain = null;
 
 const fsbPoANodesTimeout = 86400 * 1000; //24hours
-const MessageTimeout = 60000;
-const AddMessageTimeout = 10000;
 const consensusName = "fsbpoa";
 
 const keyOperation = {
@@ -103,7 +100,6 @@ function isValidNewBlock(newBlock, previousBlock) {
         //блок не подписан, отдаём дальше
         return false;
     }
-    //console.log(newBlock);
     if (blockchain.blockHandler.checkBlockSign(newBlock)) return true;
 
     console.log("Error: Fake signed block");
@@ -124,7 +120,6 @@ function getfsbPoAAwait(timestamp) {
             }
         }
     }
-
     return false;
 }
 
@@ -137,71 +132,18 @@ function getfsbPoAAwait(timestamp) {
  * @param {int} timestamp
  */
 function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
-    // /**
-    //  * Если у нас нет ключей для немедленного добавления блока в сеть,
-    //  * можем только просить добавить блок других участников
-    //  */
-    // if (
-    //     !blockchain.blockHandler.isKeyFromKeyStorage(
-    //         blockchain.wallet.keysPair.public
-    //     )
-    // ) {
-    //     console.log("Info: fsbPoA Nodes: Sending block addition request");
-
-    //     /**
-    //      * Отправляем сообщение
-    //      */
-    //     let message = blockchain.broadcastMessage(
-    //         blockData,
-    //         Math.random(),
-    //         "fsbPoA_node",
-    //         blockchain.config.recieverAddress,
-    //         0
-    //     );
-
-    //     /**
-    //      * Если время ожидания превысило таймаут, то считаем транзакцию неуспешной
-    //      * @type {number}
-    //      */
-    //     let timer = setTimeout(function () {
-    //         for (let a in fsbPoAAwait) {
-    //             if (fsbPoAAwait.hasOwnProperty(a)) {
-    //                 if (
-    //                     Number(fsbPoAAwait[a].timestamp) ===
-    //                     Number(message.timestamp)
-    //                 ) {
-    //                     fsbPoAAwait[a].callback();
-    //                     delete fsbPoAAwait[a];
-    //                     return;
-    //                 }
-    //             }
-    //         }
-    //     }, AddMessageTimeout);
-
-    //     /**
-    //      * Добавляем в лист ожидания блоки
-    //      */
-    //     fsbPoAAwait.push({
-    //         callback: cb,
-    //         timestamp: message.timestamp,
-    //         timer: timer
-    //     });
-
-    //     return false;
-    // }
-
     if (typeof blockData === "object") {
         blockData = JSON.stringify(blockData);
     }
 
-    blockchain.getLatestBlock(function (previousBlock) {
+    blockchain.getLatestBlock(function(previousBlock) {
         if (!previousBlock) {
             return;
         }
 
         let startTimestamp = moment()
-            .utc()
-            .valueOf(),
+                .utc()
+                .valueOf(),
             nextTimestamp = moment()
                 .utc()
                 .valueOf();
@@ -242,7 +184,7 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
 function generateEmptyBlock() {
     let empty = new Signable();
     if (isReady()) {
-        generateNextBlock(empty, function (generatedBlock) {
+        generateNextBlock(empty, function(generatedBlock) {
             blockchain.addBlock(generatedBlock);
             blockchain.broadcastLastBlock();
         });
@@ -265,7 +207,7 @@ function generateEmptyBlockCheck() {
             generateEmptyBlocks = false;
             return false;
         }
-        blockchain.getLatestBlock(function (previousBlock) {
+        blockchain.getLatestBlock(function(previousBlock) {
             if (!previousBlock) {
                 return;
             }
@@ -273,7 +215,7 @@ function generateEmptyBlockCheck() {
                 moment()
                     .utc()
                     .valueOf() -
-                previousBlock.timestamp >
+                    previousBlock.timestamp >
                 blockchain.config.generateEmptyBlockDelay
             ) {
                 console.log("Info: Create empty block");
@@ -321,7 +263,7 @@ function isReady() {
         isReadyNow = false;
     }
 
-    blockchain.getLatestBlock(function (previousBlock) {
+    blockchain.getLatestBlock(function(previousBlock) {
         if (!previousBlock) {
             isReadyNow = false;
         }
@@ -336,8 +278,8 @@ function isReady() {
             moment()
                 .utc()
                 .valueOf() -
-            previousBlock.timestamp >
-            fsbPoANodesTimeout
+                previousBlock.timestamp >
+                fsbPoANodesTimeout
         ) {
             isReadyNow = false;
         } else {
@@ -345,7 +287,7 @@ function isReady() {
                 moment()
                     .utc()
                     .valueOf() -
-                previousBlock.timestamp >
+                    previousBlock.timestamp >
                 fsbPoANodesTimeout
             ) {
                 isReadyNow = false;
@@ -368,12 +310,11 @@ function isValidHash() {
 
 /**
  * обработка блоков с добавлением ключей
- * @param {Block} block 
- * @param {Signable} blockData 
- * @param {function} cb 
+ * @param {Block} block
+ * @param {Signable} blockData
+ * @param {function} cb
  */
-function _handleKeyBlock(block, blockData, cb) {
-
+function _handleKeyBlock(blockData, block, cb) {
     const keyType = blockchain.blockHandler.checkBlockSign(block);
 
     //если тип ключа не админский, то делать ничего не нужно
@@ -397,129 +338,20 @@ function _handleKeyBlock(block, blockData, cb) {
     if (blockData.type === keyOperation.add) {
         blockchain.blockHandler.saveKeyToKeyStorage(
             blockData.data.publicKey,
-            blockData.data.keyType  //'Admin' | 'System'
+            blockData.data.keyType //'Admin' | 'System'
         );
         return true;
     }
 
     if (blockData.type === keyOperation.delete) {
         blockchain.blockHandler.deleteKeyFromKeyStorage(
-            blockData.data.publicKey,
-            blockData.data.keyType  //'Admin' | 'System'
+            blockData.data.publicKey
         );
         return true;
     }
     //неизвестный тип, не требует обработки
     return false;
 }
-
-// /**
-//  * Обработчик входящих сообщений
-//  * @param message
-//  */
-// function handleMessage(message) {
-//     //проверяем блок. если подписан не доверенной подписью, то выходим и останавливаем обработку
-//     const blockInMessage = message.data.block;
-//     blockInMessage =
-//         typeof blockInMessage === "string"
-//             ? JSON.parse(blockInMessage)
-//             : blockInMessage;
-
-//     const keyType = _checkBlockSign(blockInMessage);
-//     if (!keyType) return false;
-
-//     //разворачиваем сообщение и смотрим что там внутри. обрабатываем действия с ключами, если они там записаны
-//     _handleKeyBlock(blockInMessage, keyType);
-
-//     /**
-//      * Если мы получили сообщение для нас, как для доверенной ноды
-//      */
-//     if (
-//         message.reciver === "fsbPoA_node" &&
-//         blockchain.blockHandler.isKeyFromKeyStorage(
-//             blockchain.wallet.keysPair.public
-//         )
-//     ) {
-//         if (
-//             moment()
-//                 .utc()
-//                 .valueOf() -
-//                 message.timestamp <
-//                 MessageTimeout &&
-//             lastTimestampRequest < message.timestamp &&
-//             message.recepient !== lastRecepient
-//         ) {
-//             lastTimestampRequest = message.timestamp;
-//             lastRecepient = message.recepient;
-
-//             /**
-//              * Блок-кандидат на добавление в сеть
-//              * Несколько доверенных нод могут взять один и тот же блок для добавления
-//              * в сеть. Для этого используется timestamp сообщения в качестве времени блока
-//              * Проверка совпадения Timestampов в этом случае отбракует дублируемый блок
-//              */
-//             generateNextBlock(
-//                 message.data,
-//                 function(generatedBlock) {
-//                     blockchain.addBlock(generatedBlock);
-//                     blockchain.broadcastLastBlock();
-
-//                     // console.log(message);
-//                     console.log("Block added for " + message.recepient);
-
-//                     /**
-//                      * Отправляем ответ об успешном добавлении блока
-//                      * с небольшой задержкой
-//                      */
-//                     setTimeout(function() {
-//                         blockchain.broadcastMessage(
-//                             {
-//                                 type: "fsbPoA_block_add",
-//                                 timestamp: message.timestamp,
-//                                 block: generatedBlock
-//                             },
-//                             Math.random(),
-//                             message.recepient,
-//                             blockchain.config.recieverAddress,
-//                             0
-//                         );
-//                     }, 100);
-//                 },
-//                 null,
-//                 message.timestamp
-//             );
-//         }
-
-//         return true;
-//     }
-
-//     /**
-//      * Если мы получили сообщение от доверенной ноды
-//      */
-//     if (
-//         message.reciver === blockchain.config.recieverAddress &&
-//         typeof message.data.type !== "undefined" &&
-//         message.data.type === "fsbPoA_block_add"
-//     ) {
-//         let timestamp = message.data.timestamp;
-//         let block = message.data.block;
-//         for (let a in fsbPoAAwait) {
-//             if (fsbPoAAwait.hasOwnProperty(a)) {
-//                 if (Number(fsbPoAAwait[a].timestamp) === Number(timestamp)) {
-//                     /**
-//                      * Отмечаем добавление блока
-//                      */
-//                     clearTimeout(fsbPoAAwait[a].timer);
-//                     fsbPoAAwait[a].callback(block);
-//                     delete fsbPoAAwait[a];
-//                     return true;
-//                 }
-//             }
-//         }
-//     }
-
-//     return false;
-// }
 
 /**
  * Toggle empty blocks generation
@@ -529,17 +361,23 @@ function setGenerateEmptyBlocks(generate) {
     generateEmptyBlocks = generate;
 }
 
-module.exports = function (blockchainVar) {
+module.exports = function(blockchainVar) {
     blockchain = blockchainVar;
     console.log("Info: fsbPoA Nodes validator loaded");
     setInterval(generateEmptyBlockCheck, blockchain.config.emptyBlockInterval);
-    setTimeout(function () {
+    setTimeout(function() {
         isReady();
     }, 5000);
 
     //blockchain.registerMessageHandler("fsbPoANodes", handleMessage);
-    blockchain.blockHandler.registerBlockHandler(keyOperation.add, _handleKeyBlock);
-    blockchain.blockHandler.registerBlockHandler(keyOperation.delete, _handleKeyBlock);
+    blockchain.blockHandler.registerBlockHandler(
+        keyOperation.add,
+        _handleKeyBlock
+    );
+    blockchain.blockHandler.registerBlockHandler(
+        keyOperation.delete,
+        _handleKeyBlock
+    );
 
     return {
         consensusName: consensusName,
