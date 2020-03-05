@@ -39,6 +39,8 @@ const fs = require("fs");
 const fse = require("fs-extra");
 const keyStorageFile = "keyStorage.json";
 
+
+
 const keyOperation = {
     add: "TYPE-KEY-ISSUE",
     delete: "KEY-DELETE"
@@ -90,24 +92,32 @@ class App extends DApp {
             //that.testLeech();
             logger.info("Node two started");
         }
-
-        this.testMessaging();
+        this.run();
     }
 
     /**
      * Server side test
      * @return {Promise<void>}
      */
-    testMessaging() {
+    testKeyOperations() {
+
+        const Cryptography = require('../../../modules/cryptography');
+        const cryptography = new Cryptography(this.blockchain.config);
+
+
+
         logger.info("Test key Deploying");
-        let blockData = this.createSignableBlock();
-        this.generateAndAddBlock(blockData, () => {}, false);
 
-        /* if (that.config.recieverAddress === "nodeTwo") {
-        }
+        logger.info("Adding System key 1");
+        logger.info(this.blockchain.config.hashFunction);
+        const pub = cryptography.hexToPem(cryptography.generateKeyPair().public);
+        let blockData = this.createSignableBlock(pub, 'System', keyOperation.add);
+        this.generateAndAddBlock(blockData, () => { }, false);
 
-        let testWallet = new Wallet();
-*/
+        logger.info("Adding System key 2");
+        pub = cryptography.hexToPem(cryptography.generateKeyPair().public);
+        blockData = this.createSignableBlock(pub, 'System', keyOperation.add);
+        this.generateAndAddBlock(blockData, () => { }, false);
     }
 
     createSignableBlock(key, keytype, type) {
@@ -123,16 +133,19 @@ class App extends DApp {
      * Run tests
      * @return {Promise<void>}
      */
-    async run(deployedContract) {
+    async run() {
         ///await wait(12000);
         //await this.testNetwork(deployedContract);
+        if (this.config.recieverAddress === "nodeTwo") {
+            this.testKeyOperations()
+        }
 
         console.log("");
         console.log("");
         console.log("");
-        logger.info("Tests passed");
+        //logger.info("Tests passed");
         //await wait(25000);
-        process.exit();
+        //process.exit();
     }
 }
 

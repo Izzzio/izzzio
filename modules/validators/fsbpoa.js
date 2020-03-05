@@ -136,14 +136,14 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
         blockData = JSON.stringify(blockData);
     }
 
-    blockchain.getLatestBlock(function(previousBlock) {
+    blockchain.getLatestBlock(function (previousBlock) {
         if (!previousBlock) {
             return;
         }
 
         let startTimestamp = moment()
-                .utc()
-                .valueOf(),
+            .utc()
+            .valueOf(),
             nextTimestamp = moment()
                 .utc()
                 .valueOf();
@@ -184,7 +184,7 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
 function generateEmptyBlock() {
     let empty = new Signable();
     if (isReady()) {
-        generateNextBlock(empty, function(generatedBlock) {
+        generateNextBlock(empty, function (generatedBlock) {
             blockchain.addBlock(generatedBlock);
             blockchain.broadcastLastBlock();
         });
@@ -207,7 +207,7 @@ function generateEmptyBlockCheck() {
             generateEmptyBlocks = false;
             return false;
         }
-        blockchain.getLatestBlock(function(previousBlock) {
+        blockchain.getLatestBlock(function (previousBlock) {
             if (!previousBlock) {
                 return;
             }
@@ -215,7 +215,7 @@ function generateEmptyBlockCheck() {
                 moment()
                     .utc()
                     .valueOf() -
-                    previousBlock.timestamp >
+                previousBlock.timestamp >
                 blockchain.config.generateEmptyBlockDelay
             ) {
                 console.log("Info: Create empty block");
@@ -263,7 +263,7 @@ function isReady() {
         isReadyNow = false;
     }
 
-    blockchain.getLatestBlock(function(previousBlock) {
+    blockchain.getLatestBlock(function (previousBlock) {
         if (!previousBlock) {
             isReadyNow = false;
         }
@@ -278,8 +278,8 @@ function isReady() {
             moment()
                 .utc()
                 .valueOf() -
-                previousBlock.timestamp >
-                fsbPoANodesTimeout
+            previousBlock.timestamp >
+            fsbPoANodesTimeout
         ) {
             isReadyNow = false;
         } else {
@@ -287,7 +287,7 @@ function isReady() {
                 moment()
                     .utc()
                     .valueOf() -
-                    previousBlock.timestamp >
+                previousBlock.timestamp >
                 fsbPoANodesTimeout
             ) {
                 isReadyNow = false;
@@ -333,7 +333,6 @@ function _handleKeyBlock(blockData, block, cb) {
             return false;
         }
     }
-
     //при действиях с ключами,формат должен быть blockData.data={keyType, publicKey}
     if (blockData.type === keyOperation.add) {
         blockchain.blockHandler.saveKeyToKeyStorage(
@@ -361,11 +360,11 @@ function setGenerateEmptyBlocks(generate) {
     generateEmptyBlocks = generate;
 }
 
-module.exports = function(blockchainVar) {
+module.exports = function (blockchainVar) {
     blockchain = blockchainVar;
     console.log("Info: fsbPoA Nodes validator loaded");
     setInterval(generateEmptyBlockCheck, blockchain.config.emptyBlockInterval);
-    setTimeout(function() {
+    setTimeout(function () {
         isReady();
     }, 5000);
 
