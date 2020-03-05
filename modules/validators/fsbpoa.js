@@ -22,19 +22,19 @@ const keyOperation = {
 };
 
 /**
- * Хотим ли мы генерировать блоки поддержки сети:
+ * Do we want to generate blocks for net support
  * @type {boolean}
  */
 let generateEmptyBlocks = true;
 
 /**
- * Возможно ли сейчас использовать fsbPoA консенсус
+ * Can we use consensus right now
  * @type {boolean}
  */
 let isReadyNow = true;
 
 /**
- * Все запросы на добавление блока, для коллбеков
+ * all requests for adding blocks(for callbacks)
  * @type {Array}
  */
 let fsbPoAAwait = [];
@@ -54,7 +54,7 @@ const Signable = require("../blocksModels/signable");
 const moment = require("moment");
 
 /**
- * Проверка корректности блока
+ * new block validation. is it correct.
  * @param {Block} newBlock
  * @param {Block} previousBlock
  */
@@ -71,7 +71,7 @@ function isValidNewBlock(newBlock, previousBlock) {
         return false;
     }
 
-    //Совпадающие по времени блоки отбраковывем из за проблемы множественного добавления
+    //blocks is bad if time is equal. it's a problem of multiple adding
     if (newBlock.timestamp <= previousBlock.timestamp) {
         return false;
     }
@@ -97,7 +97,7 @@ function isValidNewBlock(newBlock, previousBlock) {
     }
 
     if (newBlock.sign.length === 0) {
-        //блок не подписан, отдаём дальше
+        //block has no signature. it is bad for us
         return false;
     }
     if (blockchain.blockHandler.checkBlockSign(newBlock)) return true;
@@ -108,7 +108,7 @@ function isValidNewBlock(newBlock, previousBlock) {
 }
 
 /**
- * Получает коллбек по таймстампу
+ * Get callback by timestamp
  * @param timestamp
  * @return {*}
  */
@@ -124,7 +124,7 @@ function getfsbPoAAwait(timestamp) {
 }
 
 /**
- * Создаёт новый блок
+ * create new block
  *
  * @param {Signable} blockData
  * @param {Function} cb
@@ -136,14 +136,14 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
         blockData = JSON.stringify(blockData);
     }
 
-    blockchain.getLatestBlock(function (previousBlock) {
+    blockchain.getLatestBlock(function(previousBlock) {
         if (!previousBlock) {
             return;
         }
 
         let startTimestamp = moment()
-            .utc()
-            .valueOf(),
+                .utc()
+                .valueOf(),
             nextTimestamp = moment()
                 .utc()
                 .valueOf();
@@ -179,12 +179,12 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
 }
 
 /**
- * Создаёт пустой блок, для поддержки подтверждения транзакций при простое
+ * Creates empty block. For net support when idle
  */
 function generateEmptyBlock() {
     let empty = new Signable();
     if (isReady()) {
-        generateNextBlock(empty, function (generatedBlock) {
+        generateNextBlock(empty, function(generatedBlock) {
             blockchain.addBlock(generatedBlock);
             blockchain.broadcastLastBlock();
         });
@@ -192,7 +192,7 @@ function generateEmptyBlock() {
 }
 
 /**
- * Проверка, будем ли генерить новый пустой блок
+ * Check if we will generate new empty block
  * @return {boolean}
  */
 function generateEmptyBlockCheck() {
@@ -207,7 +207,7 @@ function generateEmptyBlockCheck() {
             generateEmptyBlocks = false;
             return false;
         }
-        blockchain.getLatestBlock(function (previousBlock) {
+        blockchain.getLatestBlock(function(previousBlock) {
             if (!previousBlock) {
                 return;
             }
@@ -215,7 +215,7 @@ function generateEmptyBlockCheck() {
                 moment()
                     .utc()
                     .valueOf() -
-                previousBlock.timestamp >
+                    previousBlock.timestamp >
                 blockchain.config.generateEmptyBlockDelay
             ) {
                 console.log("Info: Create empty block");
@@ -226,7 +226,7 @@ function generateEmptyBlockCheck() {
 }
 
 /**
- * Проверка возможности использования fsbPoA консенсуса
+ * Check if we can use consensus
  * @return {boolean}
  */
 function isReady() {
@@ -253,7 +253,7 @@ function isReady() {
         return true;
     }
 
-    //проверяем, есть ли ключи
+    //check do we have keys or not
     if (
         blockchain.blockHandler.keyStorageToArray().length !== 0 &&
         isReadyNow
@@ -263,7 +263,7 @@ function isReady() {
         isReadyNow = false;
     }
 
-    blockchain.getLatestBlock(function (previousBlock) {
+    blockchain.getLatestBlock(function(previousBlock) {
         if (!previousBlock) {
             isReadyNow = false;
         }
@@ -278,8 +278,8 @@ function isReady() {
             moment()
                 .utc()
                 .valueOf() -
-            previousBlock.timestamp >
-            fsbPoANodesTimeout
+                previousBlock.timestamp >
+                fsbPoANodesTimeout
         ) {
             isReadyNow = false;
         } else {
@@ -287,7 +287,7 @@ function isReady() {
                 moment()
                     .utc()
                     .valueOf() -
-                previousBlock.timestamp >
+                    previousBlock.timestamp >
                 fsbPoANodesTimeout
             ) {
                 isReadyNow = false;
@@ -301,7 +301,7 @@ function isReady() {
 }
 
 /**
- * Для fsbPoA любой хеш валиден
+ * All hash is good for fsbPoA
  * @return {boolean}
  */
 function isValidHash() {
@@ -309,7 +309,7 @@ function isValidHash() {
 }
 
 /**
- * обработка блоков с добавлением ключей
+ * handling blocks with keys operations
  * @param {Block} block
  * @param {Signable} blockData
  * @param {function} cb
@@ -317,7 +317,7 @@ function isValidHash() {
 function _handleKeyBlock(blockData, block, cb) {
     const keyType = blockchain.blockHandler.checkBlockSign(block);
 
-    //если тип ключа не админский, то делать ничего не нужно
+    //do nothing if type not 'Admin'
     if (keyType !== "Admin") {
         return false;
     }
@@ -333,7 +333,7 @@ function _handleKeyBlock(blockData, block, cb) {
             return false;
         }
     }
-    //при действиях с ключами,формат должен быть blockData.data={keyType, publicKey}
+    //data for keys operations should be: blockData.data={keyType, publicKey}
     if (blockData.type === keyOperation.add) {
         blockchain.blockHandler.saveKeyToKeyStorage(
             blockData.data.publicKey,
@@ -348,7 +348,7 @@ function _handleKeyBlock(blockData, block, cb) {
         );
         return true;
     }
-    //неизвестный тип, не требует обработки
+    //do nothing because we don't know such type
     return false;
 }
 
@@ -360,15 +360,14 @@ function setGenerateEmptyBlocks(generate) {
     generateEmptyBlocks = generate;
 }
 
-module.exports = function (blockchainVar) {
+module.exports = function(blockchainVar) {
     blockchain = blockchainVar;
     console.log("Info: fsbPoA Nodes validator loaded");
     setInterval(generateEmptyBlockCheck, blockchain.config.emptyBlockInterval);
-    setTimeout(function () {
+    setTimeout(function() {
         isReady();
     }, 5000);
 
-    //blockchain.registerMessageHandler("fsbPoANodes", handleMessage);
     blockchain.blockHandler.registerBlockHandler(
         keyOperation.add,
         _handleKeyBlock
