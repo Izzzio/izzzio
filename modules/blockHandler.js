@@ -46,7 +46,7 @@ class BlockHandler {
             this.keyring = JSON.parse(
                 fs.readFileSync(config.workDir + "/keyring.json")
             );
-        } catch (e) { }
+        } catch (e) {}
 
         this.keyStorage = { Admin: "", System: [] };
         const keyStorageFromFile = this._loadKeyStorage();
@@ -110,7 +110,7 @@ class BlockHandler {
      */
     clearDb(cb) {
         let that = this;
-        setTimeout(function () {
+        setTimeout(function() {
             cb();
         }, 100);
     }
@@ -128,8 +128,8 @@ class BlockHandler {
         storj.put("syncInProgress", true);
 
         logger.info("Blockchain resynchronization started");
-        that.clearDb(function () {
-            that.playBlockchain(0, function () {
+        that.clearDb(function() {
+            that.playBlockchain(0, function() {
                 logger.info("Blockchain resynchronization finished");
                 if (cb) {
                     cb();
@@ -282,9 +282,11 @@ class BlockHandler {
         this.adminKeyPersistenseCheck();
         const keyStorageArr = this.keyStorageToArray();
         for (let key of keyStorageArr) {
-            if (this.wallet.verifyData(newBlock.hash, newBlock.sign, key)) {
-                return this.isAdminKey(key) ? "Admin" : "System";
-            }
+            try {
+                if (this.wallet.verifyData(newBlock.hash, newBlock.sign, key)) {
+                    return this.isAdminKey(key) ? "Admin" : "System";
+                }
+            } catch {}
         }
         return false;
     }
@@ -303,7 +305,7 @@ class BlockHandler {
             logger.disable = true;
             that.wallet.enableLogging = false;
         }
-        (async function () {
+        (async function() {
             let prevBlock = null;
             for (let i = fromBlock; i < that.maxBlock + 1; i++) {
                 let result;
@@ -317,8 +319,8 @@ class BlockHandler {
                             if (that.config.program.autofix) {
                                 logger.info(
                                     "Autofix: Delete chain data after " +
-                                    i +
-                                    " block"
+                                        i +
+                                        " block"
                                 );
 
                                 for (let a = i; a < that.maxBlock + 1; a++) {
@@ -327,7 +329,7 @@ class BlockHandler {
 
                                 logger.info(
                                     "Info: Autofix: Set new blockchain height " +
-                                    i
+                                        i
                                 );
                                 await that.blockchain.putAsync(
                                     "maxBlock",
@@ -351,8 +353,8 @@ class BlockHandler {
                                 console.log("CURR", JSON.parse(result));
                                 logger.fatalFall(
                                     "Saved chain corrupted in block " +
-                                    i +
-                                    ". Remove wallets and blocks dirs for resync. Also you can use --autofix"
+                                        i +
+                                        ". Remove wallets and blocks dirs for resync. Also you can use --autofix"
                                 );
                             }
                         }
@@ -362,7 +364,7 @@ class BlockHandler {
                     if (that.config.program.autofix) {
                         console.log(
                             "Info: Autofix: Set new blockchain height " +
-                            (i - 1)
+                                (i - 1)
                         );
                         await that.blockchain.putAsync("maxBlock", i - 1);
                     } else {
@@ -397,7 +399,7 @@ class BlockHandler {
     handleBlock(block, callback) {
         let that = this;
         if (typeof callback === "undefined") {
-            callback = function () {
+            callback = function() {
                 //Dumb
             };
         }
