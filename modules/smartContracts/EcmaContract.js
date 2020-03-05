@@ -1882,7 +1882,6 @@ class EcmaContract {
             case EcmaContractDeployBlock.blockType:
 
 
-
                 verifyBlock = new EcmaContractDeployBlock(blockData.ecmaCode, blockData.state);
 
                 if(verifyBlock.data !== blockData.data) {

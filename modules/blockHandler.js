@@ -247,12 +247,16 @@ class BlockHandler {
 
         try {
             let blockData;
-            try {
-                blockData = JSON.parse(block.data);
-            } catch (e) {
-                logger.info('Not JSON block ' + block.index);
-                return callback();
-            }
+           // if(typeof block.data !== 'object') {
+                try {
+                    blockData = JSON.parse(block.data);
+                } catch (e) {
+                    logger.info('Not JSON block ' + block.index);
+                    return callback();
+                }
+           /* } else {
+                blockData = block.data;
+            }*/
 
 
             if(block.index === keyEmissionMaxBlock) {

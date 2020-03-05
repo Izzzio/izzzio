@@ -96,6 +96,30 @@ class DApp {
             addBlock: function () {
                 return that.blockchain.addBlock.apply(that, arguments)
             },
+            /**
+             * Async get block by index
+             * @param {number} blockIndex
+             * @returns {Promise<Block>}
+             */
+            getBlockAsync: function (blockIndex) {
+                return new Promise((resolve, reject) => {
+                    that.blockchain.getBlockById(blockIndex, (err, val) => {
+                        if(err) {
+                            return reject(err);
+                        }
+
+                        resolve(val);
+                    })
+                });
+            },
+            /**
+             * Returns block by index
+             * @param {number} blockIndex
+             * @param {Function} cb
+             */
+            getBlock: function (blockIndex, cb) {
+                that.blockchain.getBlockById(blockIndex, cb);
+            },
             handler: {
                 get: that.getBlockHandler,
                 registerHandler: that.registerBlockHandler
