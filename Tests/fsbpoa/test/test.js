@@ -39,17 +39,15 @@ const fs = require("fs");
 const fse = require("fs-extra");
 const keyStorageFile = "keyStorage.json";
 
-
-
 const keyOperation = {
     add: "TYPE-KEY-ISSUE",
     delete: "KEY-DELETE"
 };
 
-function createKeyStoragefile(path, public) {
+function createKeyStoragefile(path, publicKey) {
     fs.writeFileSync(
         path + "/" + keyStorageFile,
-        JSON.stringify({ Admin: public, System: [] })
+        JSON.stringify({ Admin: publicKey, System: [] })
     );
 }
 
@@ -99,25 +97,71 @@ class App extends DApp {
      * Server side test
      * @return {Promise<void>}
      */
-    testKeyOperations() {
-
-        const Cryptography = require('../../../modules/cryptography');
-        const cryptography = new Cryptography(this.blockchain.config);
-
-
-
+    async testKeyOperations() {
         logger.info("Test key Deploying");
 
         logger.info("Adding System key 1");
-        logger.info(this.blockchain.config.hashFunction);
-        const pub = cryptography.hexToPem(cryptography.generateKeyPair().public);
-        let blockData = this.createSignableBlock(pub, 'System', keyOperation.add);
-        this.generateAndAddBlock(blockData, () => { }, false);
+        let blockData = this.createSignableBlock(
+            "test1",
+            "System",
+            keyOperation.add
+        );
+        this.generateAndAddBlock(blockData, () => {}, false);
+        await wait(1000);
 
         logger.info("Adding System key 2");
-        pub = cryptography.hexToPem(cryptography.generateKeyPair().public);
-        blockData = this.createSignableBlock(pub, 'System', keyOperation.add);
-        this.generateAndAddBlock(blockData, () => { }, false);
+        blockData = this.createSignableBlock(
+            "test2",
+            "System",
+            keyOperation.add
+        );
+        this.generateAndAddBlock(blockData, () => {}, false);
+        await wait(1000);
+
+        logger.info("Adding Admin Key as System key");
+        blockData = this.createSignableBlock(
+            this.blockchain.wallet.keysPair.public,
+            "System",
+            keyOperation.add
+        );
+        this.generateAndAddBlock(blockData, () => {}, false);
+        await wait(1000);
+
+        logger.info("Deleting System key 2");
+        blockData = this.createSignableBlock(
+            "test2",
+            "System",
+            keyOperation.delete
+        );
+        this.generateAndAddBlock(blockData, () => {}, false);
+        await wait(1000);
+
+        logger.info("Replacing Admin Key");
+        blockData = this.createSignableBlock(
+            "NewAdminKey",
+            "Admin",
+            keyOperation.add
+        );
+        this.generateAndAddBlock(blockData, () => {}, false);
+        await wait(1000);
+
+        logger.info("Trying To add key");
+        blockData = this.createSignableBlock(
+            "newKey",
+            "System",
+            keyOperation.add
+        );
+        this.generateAndAddBlock(blockData, () => {}, false);
+        await wait(1000);
+
+        logger.info("Trying To delete key");
+        blockData = this.createSignableBlock(
+            "test1",
+            "System",
+            keyOperation.delete
+        );
+        this.generateAndAddBlock(blockData, () => {}, false);
+        await wait(1000);
     }
 
     createSignableBlock(key, keytype, type) {
@@ -134,18 +178,24 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async run() {
-        ///await wait(12000);
-        //await this.testNetwork(deployedContract);
         if (this.config.recieverAddress === "nodeTwo") {
-            this.testKeyOperations()
+            await this.testKeyOperations();
         }
-
+        const currentKeyStorage = Buffer.from(
+            fs.readFileSync(this.config.workDir + "/" + keyStorageFile)
+        ).toString();
+        const currentKeyStorageObj = JSON.parse(currentKeyStorage);
         console.log("");
         console.log("");
         console.log("");
-        //logger.info("Tests passed");
-        //await wait(25000);
-        //process.exit();
+        if (
+            !currentKeyStorageObj.Admin ||
+            currentKeyStorageObj.System.length !== 2
+        ) {
+            throw "Wrong state of key storage";
+        }
+        logger.info("Tests passed");
+        process.exit();
     }
 }
 

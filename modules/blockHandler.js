@@ -191,7 +191,7 @@ class BlockHandler {
      * раскладывает объект ключей в одномерный массив
      */
     keyStorageToArray() {
-        return [...this.keyStorage.System, this.keyStorage.Admin];
+        return [this.keyStorage.Admin, ...this.keyStorage.System];
     }
 
     /**
@@ -251,7 +251,9 @@ class BlockHandler {
     deleteKeyFromKeyStorage(publicKey) {
         let changed = false;
         if (this.keyStorage.System.find(v => v === publicKey)) {
-            this.keyStorage.System.filter(v => v !== publicKey);
+            this.keyStorage.System = this.keyStorage.System.filter(
+                v => v !== publicKey
+            );
             changed = true;
         }
         if (changed) {
