@@ -23,6 +23,7 @@
 
 const logger = new (require('./modules/logger'))();
 const version = require('./package.json').version;
+const _ = require('lodash');
 let program = require('commander');
 
 program
@@ -51,7 +52,7 @@ program
 
 const getid = require('./modules/getid');
 
-const config = {
+let config = {
 
     //Networking
     httpPort: 3001,                     //Порт биндинга RPC и интерфейса
@@ -164,13 +165,8 @@ global.PATH = {}; //object for saving paths
 global.PATH.configDir = path.dirname(program.config);
 
 try {
-    let loadedConfig = JSON.parse(fs.readFileSync(program.config));
-    for (let i in config) {
-        if(typeof loadedConfig[i] !== 'undefined') {
-            config[i] = loadedConfig[i];
-        }
-    }
-
+    const loadedConfig = JSON.parse(fs.readFileSync(program.config));
+    config = _.defaultsDeep(loadedConfig,config);
 } catch (e) {
     logger.warning('No configure found. Using standard configuration.');
 }
