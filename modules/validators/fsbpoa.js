@@ -13,8 +13,11 @@
  */
 let blockchain = null;
 
+const fs = require("fs-extra");
+
 const fsbPoANodesTimeout = 86400 * 1000; //24hours
 const consensusName = "fsbpoa";
+const logger = new (require("../logger"))("fsboa");
 
 const keyOperation = {
     add: "TYPE-KEY-ISSUE",
@@ -301,48 +304,6 @@ function isValidHash() {
 }
 
 /**
- * handling blocks with keys operations
- * @param {Block} block
- * @param {Signable} blockData
- * @param {function} cb
- */
-function handleKeyBlock(blockData, block, cb) {
-    const keyType = checkBlockSign(block);
-
-    //do nothing if type not 'Admin'
-    if (keyType !== "Admin") {
-        return false;
-    }
-
-    if (!blockData) {
-        return false;
-    }
-
-    if (typeof blockData === "string") {
-        try {
-            blockData = JSON.parse(blockData);
-        } catch (e) {
-            return false;
-        }
-    }
-    //data for keys operations should be: blockData.data={keyType, publicKey}
-    if (blockData.type === keyOperation.add) {
-        saveKeyToKeyStorage(
-            blockData.data.publicKey,
-            blockData.data.keyType //'Admin' | 'System'
-        );
-        return true;
-    }
-
-    if (blockData.type === keyOperation.delete) {
-        deleteKeyFromKeyStorage(blockData.data.publicKey);
-        return true;
-    }
-    //do nothing because we don't know such type
-    return false;
-}
-
-/**
  * Toggle empty blocks generation
  * @param generate
  */
@@ -481,6 +442,47 @@ function loadKeyStorage(
     } catch (e) {
         return;
     }
+}
+
+/**
+ * handling blocks with keys operations
+ * @param {Block} block
+ * @param {Signable} blockData
+ * @param {function} cb
+ */
+function handleKeyBlock(blockData, block, cb) {
+    const keyType = checkBlockSign(block);
+    //do nothing if type not 'Admin'
+    if (keyType !== "Admin") {
+        return false;
+    }
+
+    if (!blockData) {
+        return false;
+    }
+
+    if (typeof blockData === "string") {
+        try {
+            blockData = JSON.parse(blockData);
+        } catch (e) {
+            return false;
+        }
+    }
+    //data for keys operations should be: blockData.data={keyType, publicKey}
+    if (blockData.type === keyOperation.add) {
+        saveKeyToKeyStorage(
+            blockData.data.publicKey,
+            blockData.data.keyType //'Admin' | 'System'
+        );
+        return true;
+    }
+
+    if (blockData.type === keyOperation.delete) {
+        deleteKeyFromKeyStorage(blockData.data.publicKey);
+        return true;
+    }
+    //do nothing because we don't know such type
+    return false;
 }
 
 module.exports = function(blockchainVar) {
