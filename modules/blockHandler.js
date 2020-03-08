@@ -10,8 +10,6 @@ const fs = require("fs-extra");
 const logger = new (require("./logger"))();
 const storj = require("./instanceStorage");
 
-const keyStorageFile = "keyStorage.json";
-
 /**
  * Предел до которого сеть может принять блок ключей
  * @type {number}
@@ -48,28 +46,11 @@ class BlockHandler {
             );
         } catch (e) {}
 
-        this.keyStorage = { Admin: "", System: [] };
-        const keyStorageFromFile = this._loadKeyStorage();
-
-        this.keyStorage = keyStorageFromFile
-            ? keyStorageFromFile
-            : this.keyStorage;
-
         this.blockchainObject = blockchainObject;
         this.config = config;
 
         this.transactor = undefined;
         this.frontend = undefined;
-    }
-
-    _loadKeyStorage(dir = storj.get("config").workDir, file = keyStorageFile) {
-        try {
-            return JSON.parse(
-                Buffer.from(fs.readFileSync(dir + "/" + file)).toString()
-            );
-        } catch (e) {
-            return;
-        }
     }
 
     /**
@@ -163,134 +144,6 @@ class BlockHandler {
      */
     isKeyFromKeyring(publicKey) {
         return this.keyring.indexOf(publicKey) !== -1;
-    }
-
-    /**
-     * Проверяет содержится ли этот публичный ключ в списке
-     * @param {String} publicKey
-     * @returns {boolean}
-     */
-    isKeyFromKeyStorage(publicKey) {
-        //ключ администратора должен быть всегда. если его нет, пробуем загрузить
-        if (!this.keyStorage.Admin) {
-            const keyStorageFromFile = this._loadKeyStorage(
-                this.config.workDir,
-                keyStorageFile
-            );
-            this.keyStorage = keyStorageFromFile
-                ? keyStorageFromFile
-                : this.keyStorage;
-        }
-        return (
-            this.keyStorage.Admin === publicKey ||
-            this.keyStorage.System.indexOf(publicKey) !== -1
-        );
-    }
-
-    /**
-     * раскладывает объект ключей в одномерный массив
-     */
-    keyStorageToArray() {
-        return [this.keyStorage.Admin, ...this.keyStorage.System];
-    }
-
-    /**
-     * проверяем, является ли данный ключ ключом администратора
-     * @param {string} publicKey
-     */
-    isAdminKey(publicKey) {
-        //ключ администратора должен быть всегда. если его нет, пробуем загрузить
-        if (!this.keyStorage.Admin) {
-            const keyStorageFromFile = this._loadKeyStorage(
-                this.config.workDir,
-                keyStorageFile
-            );
-            this.keyStorage = keyStorageFromFile
-                ? keyStorageFromFile
-                : this.keyStorage;
-        }
-        return publicKey === this.keyStorage.Admin;
-    }
-
-    rewriteKeyFile(
-        object = this.keyStorage,
-        dir = this.config.workDir,
-        file = keyStorageFile
-    ) {
-        fs.writeFileSync(dir + "/" + file, JSON.stringify(object));
-    }
-
-    /**
-     * сохраняет новый ключ в хранилище
-     * @param {string} publicKey
-     * @param {string} type Admin | System
-     */
-    saveKeyToKeyStorage(publicKey, type = "System") {
-        let changed = false;
-        if (type === "System") {
-            if (!this.keyStorage.System.find(x => x === publicKey)) {
-                this.keyStorage.System.push(publicKey);
-                changed = true;
-            }
-        } else {
-            //по ТЗ админский ключ может быть только один, поэтому заменяем его
-            if (this.keyStorage.Admin !== publicKey) {
-                this.keyStorage.Admin = publicKey;
-                changed = true;
-            }
-        }
-        if (changed) {
-            this.rewriteKeyFile();
-        }
-    }
-
-    /**
-     * удаляет ключ из хранилища. Только для системных ключей. админский удалить нельзя, только заменить
-     * @param {string} publicKey
-     */
-    deleteKeyFromKeyStorage(publicKey) {
-        let changed = false;
-        if (this.keyStorage.System.find(v => v === publicKey)) {
-            this.keyStorage.System = this.keyStorage.System.filter(
-                v => v !== publicKey
-            );
-            changed = true;
-        }
-        if (changed) {
-            this.rewriteKeyFile();
-        }
-    }
-
-    /**
-     * ключ администратора должен быть всегда. если его нет, пробуем загрузить
-     */
-    adminKeyPersistenseCheck() {
-        if (!this.keyStorage.Admin) {
-            const keyStorageFromFile = this._loadKeyStorage(
-                this.config.workDir,
-                keyStorageFile
-            );
-            this.keyStorage = keyStorageFromFile
-                ? keyStorageFromFile
-                : this.keyStorage;
-        }
-    }
-
-    /**
-     * Возвращает тип ключа(Admin | System), если подпись сделана доверенным ключем или false в противном случае
-     * @param {Block} newBlock
-     */
-    checkBlockSign(newBlock) {
-        this.adminKeyPersistenseCheck();
-        const keyStorageArr = this.keyStorageToArray();
-        for (let key of keyStorageArr) {
-            try {
-                if (this.wallet.verifyData(newBlock.hash, newBlock.sign, key)) {
-                    return this.isAdminKey(key) ? "Admin" : "System";
-                }
-            } catch {}
-        }
-        return false;
     }
 
     /**

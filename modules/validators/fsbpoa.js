@@ -39,15 +39,20 @@ let isReadyNow = true;
  */
 let fsbPoAAwait = [];
 
+/**
+ * read all keys from keystorage file
+ */
+const keyStorageFile = "keyStorage.json";
+let keyStorage = { Admin: "", System: [] };
+const keyStorageFromFile = loadKeyStorage();
+keyStorage = keyStorageFromFile ? keyStorageFromFile : keyStorage;
+
 const Wallet = require("../wallet");
 /**
  * Test wallet
  * @type {Wallet}
  */
 let testWallet = new Wallet();
-
-let lastTimestampRequest = 0;
-let lastRecepient = "";
 
 const Block = require("../block");
 const Signable = require("../blocksModels/signable");
@@ -100,7 +105,7 @@ function isValidNewBlock(newBlock, previousBlock) {
         //block has no signature. it is bad for us
         return false;
     }
-    if (blockchain.blockHandler.checkBlockSign(newBlock)) return true;
+    if (checkBlockSign(newBlock)) return true;
 
     console.log("Error: Fake signed block");
 
@@ -198,11 +203,7 @@ function generateEmptyBlock() {
 function generateEmptyBlockCheck() {
     if (blockchain !== "null" && generateEmptyBlocks) {
         //Мы не выпускали ключи
-        if (
-            !blockchain.blockHandler.isKeyFromKeyStorage(
-                blockchain.wallet.keysPair.public
-            )
-        ) {
+        if (!isKeyFromKeyStorage(blockchain.wallet.keysPair.public)) {
             console.log("Info: We can't generate empty fsbPoA blocks");
             generateEmptyBlocks = false;
             return false;
@@ -230,11 +231,7 @@ function generateEmptyBlockCheck() {
  * @return {boolean}
  */
 function isReady() {
-    if (
-        blockchain.blockHandler.isKeyFromKeyStorage(
-            blockchain.wallet.keysPair.public
-        )
-    ) {
+    if (isKeyFromKeyStorage(blockchain.wallet.keysPair.public)) {
         //Если мы готовы работать, то выключаем генерацию пустых блоков остальных консенсусов
         for (let a in blockchain.config.validators) {
             if (
@@ -254,10 +251,7 @@ function isReady() {
     }
 
     //check do we have keys or not
-    if (
-        blockchain.blockHandler.keyStorageToArray().length !== 0 &&
-        isReadyNow
-    ) {
+    if (keyStorageToArray().length !== 0 && isReadyNow) {
         isReadyNow = true;
     } else {
         isReadyNow = false;
@@ -314,8 +308,8 @@ function isValidHash() {
  * @param {Signable} blockData
  * @param {function} cb
  */
-function _handleKeyBlock(blockData, block, cb) {
-    const keyType = blockchain.blockHandler.checkBlockSign(block);
+function handleKeyBlock(blockData, block, cb) {
+    const keyType = checkBlockSign(block);
 
     //do nothing if type not 'Admin'
     if (keyType !== "Admin") {
@@ -335,7 +329,7 @@ function _handleKeyBlock(blockData, block, cb) {
     }
     //data for keys operations should be: blockData.data={keyType, publicKey}
     if (blockData.type === keyOperation.add) {
-        blockchain.blockHandler.saveKeyToKeyStorage(
+        saveKeyToKeyStorage(
             blockData.data.publicKey,
             blockData.data.keyType //'Admin' | 'System'
         );
@@ -343,9 +337,7 @@ function _handleKeyBlock(blockData, block, cb) {
     }
 
     if (blockData.type === keyOperation.delete) {
-        blockchain.blockHandler.deleteKeyFromKeyStorage(
-            blockData.data.publicKey
-        );
+        deleteKeyFromKeyStorage(blockData.data.publicKey);
         return true;
     }
     //do nothing because we don't know such type
@@ -360,6 +352,139 @@ function setGenerateEmptyBlocks(generate) {
     generateEmptyBlocks = generate;
 }
 
+/**
+ * Checks if this public key is in the list
+ * @param {String} publicKey
+ * @returns {boolean}
+ */
+function isKeyFromKeyStorage(publicKey) {
+    keyStorage = adminKeyPersistenseCheck();
+    return (
+        keyStorage.Admin === publicKey ||
+        keyStorage.System.indexOf(publicKey) !== -1
+    );
+}
+
+/**
+ * make array from keys object
+ */
+function keyStorageToArray() {
+    return [keyStorage.Admin, ...keyStorage.System];
+}
+
+/**
+ * checks if this key is aadmin key
+ * @param {string} publicKey
+ */
+function isAdminKey(publicKey) {
+    keyStorage = adminKeyPersistenseCheck();
+    return publicKey === keyStorage.Admin;
+}
+
+/**
+ * save currebt state of keyObject to file as JSON
+ * @param {object} object
+ * @param {string} dir
+ * @param {string} file
+ */
+function rewriteKeyFile(
+    object = keyStorage,
+    dir = blockchain.config.workDir,
+    file = keyStorageFile
+) {
+    fs.writeFileSync(dir + "/" + file, JSON.stringify(object));
+}
+
+/**
+ * add new key to keyStorage(if admin key, then rewrite it)
+ * @param {string} publicKey
+ * @param {string} type Admin | System
+ */
+function saveKeyToKeyStorage(publicKey, type = "System") {
+    let changed = false;
+    if (type === "System") {
+        if (!keyStorage.System.find(x => x === publicKey)) {
+            keyStorage.System.push(publicKey);
+            changed = true;
+        }
+    } else {
+        //there could be only one admin key so we rewrite it
+        if (keyStorage.Admin !== publicKey) {
+            keyStorage.Admin = publicKey;
+            changed = true;
+        }
+    }
+    if (changed) {
+        rewriteKeyFile();
+    }
+}
+
+/**
+ * delete key from keystorage. only for keys of type "System". we cannot delete key with type "Admin"
+ * @param {string} publicKey
+ */
+function deleteKeyFromKeyStorage(publicKey) {
+    let changed = false;
+    if (keyStorage.System.find(v => v === publicKey)) {
+        keyStorage.System = keyStorage.System.filter(v => v !== publicKey);
+        changed = true;
+    }
+    if (changed) {
+        rewriteKeyFile();
+    }
+}
+
+/**
+ * check if we have admin key. if not, then we try to load
+ */
+function adminKeyPersistenseCheck() {
+    let keyStorageFromFile = "";
+    if (!keyStorage.Admin) {
+        keyStorageFromFile = loadKeyStorage(
+            blockchain.config.workDir,
+            keyStorageFile
+        );
+    }
+    return keyStorageFromFile ? keyStorageFromFile : keyStorage;
+}
+
+/**
+ * returns key type (Admin | System) if block was signed with key from keystorage. returns false if signed with other key
+ * @param {Block} newBlock
+ */
+function checkBlockSign(newBlock) {
+    keyStorage = adminKeyPersistenseCheck();
+    const keyStorageArr = keyStorageToArray();
+    for (let key of keyStorageArr) {
+        try {
+            if (
+                blockchain.wallet.verifyData(newBlock.hash, newBlock.sign, key)
+            ) {
+                return isAdminKey(key) ? "Admin" : "System";
+            }
+        } catch {}
+    }
+    return false;
+}
+
+/**
+ * get and parse keystorage object from file
+ * @param {string} dir
+ * @param {string} file
+ */
+function loadKeyStorage(
+    dir = blockchain.config.workDir,
+    file = keyStorageFile
+) {
+    try {
+        return JSON.parse(
+            Buffer.from(fs.readFileSync(dir + "/" + file)).toString()
+        );
+    } catch (e) {
+        return;
+    }
+}
+
 module.exports = function(blockchainVar) {
     blockchain = blockchainVar;
     console.log("Info: fsbPoA Nodes validator loaded");
@@ -370,11 +495,11 @@ module.exports = function(blockchainVar) {
 
     blockchain.blockHandler.registerBlockHandler(
         keyOperation.add,
-        _handleKeyBlock
+        handleKeyBlock
     );
     blockchain.blockHandler.registerBlockHandler(
         keyOperation.delete,
-        _handleKeyBlock
+        handleKeyBlock
     );
 
     return {
