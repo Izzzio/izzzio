@@ -40,12 +40,10 @@ let isReadyNow = true;
 let fsbPoAAwait = [];
 
 /**
- * read all keys from keystorage file
+ * keystorageObject
  */
 const keyStorageFile = "keyStorage.json";
 let keyStorage = { Admin: "", System: [] };
-const keyStorageFromFile = loadKeyStorage();
-keyStorage = keyStorageFromFile ? keyStorageFromFile : keyStorage;
 
 const Wallet = require("../wallet");
 /**
@@ -501,6 +499,9 @@ module.exports = function(blockchainVar) {
         keyOperation.delete,
         handleKeyBlock
     );
+
+    //load keystorage
+    keyStorage = adminKeyPersistenseCheck();
 
     return {
         consensusName: consensusName,
