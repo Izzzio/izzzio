@@ -242,13 +242,6 @@ function constructBlockchainObject(appConfig = {}) {
             config.walletFile = config.workDir + '/wallet.json';
         }
 
-        if(program.clearDb) {
-            fs.removeSync(config.workDir + '/wallets');
-            fs.removeSync(config.workDir + '/blocks');
-            logger.info('DB cleared');
-        }
-
-
         if(program.generateWallets) {
             const Wallet = require('./modules/wallet');
 

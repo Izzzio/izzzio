@@ -474,7 +474,6 @@ function Blockchain(config) {
      */
     function stopNode(stopCb = () => {
     }) {
-        console.log(namedStorage.get('active'));
         if(!namedStorage.get('active')) {
             throw (new Error('Already stopped'));
         }
