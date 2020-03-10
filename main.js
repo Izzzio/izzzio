@@ -165,7 +165,7 @@ global.PATH = {}; //object for saving paths
 global.PATH.configDir = path.dirname(program.config);
 
 try {
-    config = _.defaultsDeep(JSON.parse(fs.readFileSync(program.config)));
+    Object.assign(config, _.defaultsDeep(JSON.parse(fs.readFileSync(program.config))));
 
 } catch (e) {
     logger.warning('No configure found. Using standard configuration.');
