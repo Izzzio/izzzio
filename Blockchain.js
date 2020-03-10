@@ -377,6 +377,8 @@ function Blockchain(config) {
     }
 
 
+    storj.put('active', false);
+
     /**
      * Запуск ноды
      */
@@ -447,6 +449,70 @@ function Blockchain(config) {
 
 
     /**
+     * Stop blockchain node
+     * @param {function} stopCb
+     */
+    function stopNode(stopCb = () => {
+    }) {
+        if(!storj.get('active')) {
+            throw (new Error('Already stopped'));
+        }
+        storj.put('terminating', true);
+        storj.put('active', false);
+        if(config.upnp.enabled) {
+            try {
+                upnpAdvertisment.stop();
+                upnpBrowser.stop();
+            } catch (e) {
+            }
+        }
+
+        if(storj.get('httpServer')) {
+            storj.get('httpServer').close();
+        }
+
+        if(storj.get('wsServer')) {
+            storj.get('wsServer').close();
+        }
+
+
+        console.log('');
+        logger.info('Terminating...');
+        blockHandler.syncInProgress = true;
+        wallet.save();
+        config.emptyBlockInterval = 10000000000;
+        setTimeout(function () {
+
+            function terminate() {
+                if(config.ecmaContract.enabled) {
+                    blockchainObject.ecmaContract.terminate(terminateBlockchain);
+                } else {
+                    terminateBlockchain();
+                }
+            }
+
+            function terminateBlockchain() {
+                logger.info('Saving blockchain DB');
+                blockchain.close(function () {
+                    setTimeout(function () {
+                        stopCb();
+                        if(!config.loadedAsModule) {
+                            process.exit();
+                        }
+                    }, 2000);
+                });
+            }
+
+            if(storj.get("dapp") !== null) {
+                storj.get("dapp").terminate(terminate);
+            } else {
+                terminate();
+            }
+
+        }, 1000);
+    }
+
+    /**
      * Запуск сервера интерфейса
      */
     function initHttpServer() {
@@ -493,6 +559,7 @@ function Blockchain(config) {
         });
 
         let server = app.listen(config.httpPort, config.httpServer, () => logger.init('Listening http on: ' + config.httpServer + ':' + config.httpPort + '@' + config.rpcPassword));
+        storj.put('httpServer', server);
         server.timeout = 0;
     }
 
@@ -512,6 +579,9 @@ function Blockchain(config) {
             } else {
                 wss = new WebSocket.Server({port: config.p2pPort, perMessageDeflate: false});
             }
+
+            storj.put('wsServer', wss);
+
 
             wss.on('connection', function (ws) {
                 if(config.program.verbose) {
@@ -1476,7 +1546,7 @@ function Blockchain(config) {
         }
 
 
-        if(config.appEntry) {
+        if(config.appEntry && !config.loadedAsModule) {
             logger.info("Loading DApp...\n");
             try {
                 /**
@@ -1490,6 +1560,12 @@ function Blockchain(config) {
                 console.log(e);
                 process.exit(1);
             }
+        } else if(config.appEntry && config.loadedAsModule) {
+
+            let clientApplication = config.appEntry;
+            clientApplication.init();
+            storj.put("dapp", clientApplication);
+
         }
 
     }
@@ -1718,7 +1794,14 @@ function Blockchain(config) {
     /**
      * Starts node with config
      */
-    function start() {
+    function start(startCb = () => {
+    }, terminationCb = () => {
+    }, stopCb = () => {
+    }) {
+
+        if(storj.get('active')) {
+            throw(new Error('Already started'));
+        }
 
         if(config.validators.length === 0) {
             throw ('Error: No consensus validators loaded!');
@@ -1727,32 +1810,36 @@ function Blockchain(config) {
         //Loading validators
         for (let a in config.validators) {
             if(config.validators.hasOwnProperty(a)) {
-                try { //Trying to load validator from path
-                    config.validators[a] = (require('./modules/validators/' + config.validators[a]));
-                } catch (e) { //If error trying to load validator from modules
-                    try {
-                        config.validators[a] = (require(config.validators[a]));
-                    } catch (e) {
+                //If validator already loaded, skip
+                if(typeof config.validators[a] === 'string') {
+                    try { //Trying to load validator from path
+                        config.validators[a] = (require('./modules/validators/' + config.validators[a]));
+                    } catch (e) { //If error trying to load validator from modules
                         try {
-                            config.validators[a] = (require('./plugins/' + config.validators[a]));
+                            config.validators[a] = (require(config.validators[a]));
                         } catch (e) {
                             try {
-                                config.validators[a] = (require(process.cwd() + '/' + config.validators[a]));
+                                config.validators[a] = (require('./plugins/' + config.validators[a]));
                             } catch (e) {
                                 try {
-                                    config.validators[a] = (require(process.cwd() + '/node_modules/' + +config.validators[a]));
+                                    config.validators[a] = (require(process.cwd() + '/' + config.validators[a]));
                                 } catch (e) {
-                                    logger.fatalFall('Validator ' + config.validators[a] + ' not found');
+                                    try {
+                                        config.validators[a] = (require(process.cwd() + '/node_modules/' + +config.validators[a]));
+                                    } catch (e) {
+                                        logger.fatalFall('Validator ' + config.validators[a] + ' not found');
+                                    }
+
                                 }
 
                             }
 
                         }
-
                     }
-                }
 
-                config.validators[a] = new config.validators[a](blockchainObject);
+                    //Construct validator
+                    config.validators[a] = new config.validators[a](blockchainObject);
+                }
             }
         }
 
@@ -1770,65 +1857,46 @@ function Blockchain(config) {
             lastBlockInfo = blockchainInfo.getOurBlockchainInfo()['lastBlockInfo'];
             transactor.startWatch(5000);
 
-            process.on('SIGINT', () => {
+
+            if(!config.ignoreSIGINT) {
+                process.on('SIGINT', () => {
 
 
-                if(storj.get('terminateAttempts') === 1) {
-                    logger.info('Terminating immediately.');
-                    process.exit(1);
-                    return;
-                }
-
-                if(storj.get('terminateAttempts') === 0) {
-                    storj.put('terminateAttempts', 1);
-                    logger.warning('Press the Ctrl+C again to exit without saving data.');
-                    return;
-                }
-
-                storj.put('terminating', true);
-                storj.put('terminateAttempts', 0);
-
-                if(config.upnp.enabled) {
-                    try {
-                        upnpAdvertisment.stop();
-                        upnpBrowser.stop();
-                    } catch (e) {
+                    if(storj.get('terminateAttempts') === 1) {
+                        stopCb();
+                        logger.info('Terminating immediately.');
+                        process.exit(1);
+                        return;
                     }
-                }
 
-                console.log('');
-                logger.info('Terminating...');
-                blockHandler.syncInProgress = true;
-                wallet.save();
-                config.emptyBlockInterval = 10000000000;
-                setTimeout(function () {
+                    if(storj.get('terminateAttempts') === 0) {
+                        storj.put('terminateAttempts', 1);
+                        logger.warning('Press the Ctrl+C again to exit without saving data.');
+                        return;
+                    }
 
-                    function terminate() {
-                        if(config.ecmaContract.enabled) {
-                            blockchainObject.ecmaContract.terminate(terminateBlockchain);
-                        } else {
-                            terminateBlockchain();
+                    storj.put('terminating', true);
+                    storj.put('terminateAttempts', 0);
+
+                    if(storj.get('terminateAttempts') === 0) {
+                        if(terminationCb()) {
+                            storj.put('terminateAttempts', 0);
+                            storj.put('terminating', false)
+                            logger.warning('Termination process stopped by application');
+
+                            return;
                         }
                     }
 
-                    function terminateBlockchain() {
-                        logger.info('Saving blockchain DB');
-                        blockchain.close(function () {
-                            setTimeout(function () {
-                                process.exit();
-                            }, 2000);
-                        });
-                    }
 
-                    if(storj.get("dapp") !== null) {
-                        storj.get("dapp").terminate(terminate);
-                    } else {
-                        terminate();
-                    }
+                    stopNode(stopCb);
 
-                }, 1000);
+                });
+            }
 
-            });
+            storj.put('active', true);
+            startCb();
+
         });
 
 
@@ -1860,6 +1928,8 @@ function Blockchain(config) {
         addBlockToChainIndex: addBlockToChainIndex,
         addBlockToChain: addBlockToChain,
         startNode: startNode,
+        stopNode: stopNode,
+        stop: stopNode,
         initHttpServer: initHttpServer,
         initP2PServer: initP2PServer,
         initConnection: initConnection,
