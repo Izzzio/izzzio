@@ -51,7 +51,7 @@ program
 
 const getid = require('./modules/getid');
 
-const config = {
+let config = {
 
     //Networking
     httpPort: 3001,                     //Порт биндинга RPC и интерфейса
@@ -151,6 +151,7 @@ const config = {
 };
 
 //*********************************************************************
+const _ = require('lodash');
 const fs = require('fs-extra');
 const Blockchain = require('./Blockchain');
 const path = require('path');
@@ -162,19 +163,15 @@ Array.prototype.remove = function (from, to) {
 
 global.PATH = {}; //object for saving paths
 global.PATH.configDir = path.dirname(program.config);
+let loadedConfig;
 
 try {
-    let loadedConfig = JSON.parse(fs.readFileSync(program.config));
-    for (let i in config) {
-        if(typeof loadedConfig[i] !== 'undefined') {
-            config[i] = loadedConfig[i];
-        }
-    }
-
+    loadedConfig = JSON.parse(fs.readFileSync(program.config));
 } catch (e) {
     logger.warning('No configure found. Using standard configuration.');
 }
 
+config = _.defaultsDeep(loadedConfig, config);
 
 if(program.writeConfig) {
     try {
