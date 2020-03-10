@@ -474,6 +474,7 @@ function Blockchain(config) {
      */
     function stopNode(stopCb = () => {
     }) {
+        console.log(namedStorage.get('active'));
         if(!namedStorage.get('active')) {
             throw (new Error('Already stopped'));
         }
@@ -1848,6 +1849,7 @@ function Blockchain(config) {
             throw ('Error: No consensus validators loaded!');
         }
 
+
         //Loading validators
         for (let a in config.validators) {
             if(config.validators.hasOwnProperty(a)) {
@@ -1866,9 +1868,9 @@ function Blockchain(config) {
                                     config.validators[a] = (require(process.cwd() + '/' + config.validators[a]));
                                 } catch (e) {
                                     try {
-                                        config.validators[a] = (require(process.cwd() + '/node_modules/' + +config.validators[a]));
+                                        config.validators[a] = (require(process.cwd() + '/node_modules/' + config.validators[a]));
                                     } catch (e) {
-                                        logger.fatalFall('Validator ' + config.validators[a] + ' not found');
+                                        logger.fatalFall('Can\'t load validator "' + config.validators[a] + '"');
                                     }
 
                                 }
@@ -1941,6 +1943,7 @@ function Blockchain(config) {
             }
 
             storj.put('active', true);
+            namedStorage.put('active', true);
             startCb();
 
         });

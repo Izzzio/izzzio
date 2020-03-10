@@ -17,7 +17,7 @@ class ContractConnector {
         this.ecmaContract = ecmaContract;
 
         //Assign named storage
-        this.namedStorage = new (require('./NamedInstanceStorage'))(this.ecmaContract.config.instanceId);
+        this.namedStorage = new (require('../../NamedInstanceStorage'))(this.ecmaContract.config.instanceId);
 
         this.address = address;
         this.blockchain = this.namedStorage.get('blockchainObject');

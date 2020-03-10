@@ -23,7 +23,7 @@ class EventsDB {
         this.config = config;
 
         //Assign named storage
-        this.namedStorage = new (require('./NamedInstanceStorage'))(config.instanceId);
+        this.namedStorage = new (require('../NamedInstanceStorage'))(config.instanceId);
 
         if (path === '' || path === ':memory:') {
             this.path = path;

@@ -53,7 +53,7 @@ const Wallet = require('../wallet');
  * Test wallet
  * @type {Wallet}
  */
-let testWallet = new Wallet();
+let testWallet;
 
 
 let lastTimestampRequest = 0;
@@ -183,9 +183,9 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
         return false;
     }
 
-   /* if(typeof blockData === 'object') {
-        blockData = JSON.stringify(blockData);
-    }*/
+    /* if(typeof blockData === 'object') {
+         blockData = JSON.stringify(blockData);
+     }*/
 
     blockchain.getLatestBlock(function (previousBlock) {
         if(!previousBlock) {
@@ -283,7 +283,7 @@ function isReady() {
         /*console.log(previousBlock.sign.length);
         console.log(moment().utc().valueOf() - previousBlock.timestamp);*/
 
-        if(typeof previousBlock.sign === 'undefined'){
+        if(typeof previousBlock.sign === 'undefined') {
             console.log(previousBlock);
             isReadyNow = false;
             return isReadyNow;
@@ -398,6 +398,8 @@ function setGenerateEmptyBlocks(generate) {
 
 module.exports = function (blockchainVar) {
     blockchain = blockchainVar;
+    testWallet = new Wallet(undefined, blockchain.config);
+
     console.log('Info: Thrusted Nodes validator loaded');
     setInterval(generateEmptyBlockCheck, blockchain.config.emptyBlockInterval);
     setTimeout(function () {
