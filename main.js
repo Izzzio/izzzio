@@ -25,7 +25,12 @@ const logger = new (require('./modules/logger'))();
 const version = require('./package.json').version;
 let program;
 
-function constructBlockchainObject(appConfig) {
+/**
+ * Creates Blockchain instance
+ * @param {Object} appConfig
+ * @returns {Blockchain}
+ */
+function constructBlockchainObject(appConfig = {}) {
 
     if(!module.parent) {
 
@@ -303,7 +308,7 @@ function constructBlockchainObject(appConfig) {
         if(!fs.existsSync(config.appEntry) && config.appEntry) {
             logger.fatalFall('App entry not found ' + config.appEntry);
         }
-    }else{
+    } else {
         config.loadedAsModule = true;
     }
 
@@ -333,5 +338,6 @@ function constructBlockchainObject(appConfig) {
 if(!module.parent) {
     constructBlockchainObject();
 } else {
-    module.exports = constructBlockchainObject;
+    module.exports.Blockchain = constructBlockchainObject;
+    module.exports.DApp = require('./app/DApp.js');
 }
