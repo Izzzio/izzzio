@@ -6,8 +6,6 @@
 
 const Signable = require('../../blocksModels/signable');
 let type = 'EcmaContractDeploy';
-const storj = require('../../instanceStorage');
-const cryptography = storj.get('cryptography');
 
 const stableStringify = require('json-stable-stringify');
 
@@ -28,13 +26,16 @@ class EcmaContractDeployBlock extends Signable {
      * Create EcmaContract block
      * @param {string} ecmaCode
      * @param {Object} state
+     * @param {NamedInstanceStorage} namedStorage
      */
-    constructor(ecmaCode, state) {
+    constructor(ecmaCode, state, namedStorage) {
         super();
+        this._cryptography = namedStorage.get('cryptography');
+        
         this.type = type;
         this.ecmaCode = ecmaCode;
         this.state = state;
-        this.state.codeHash = cryptography.hash(this.ecmaCode).toString();
+        this.state.codeHash = this._cryptography.hash(this.ecmaCode).toString();
         this.generateData();
     }
 
@@ -42,7 +43,7 @@ class EcmaContractDeployBlock extends Signable {
      * Data hash for sign
      */
     generateData() {
-        this.data = cryptography.hash(this.type + this.ecmaCode + stableStringify(this.state)).toString();
+        this.data = this._cryptography.hash(this.type + this.ecmaCode + stableStringify(this.state)).toString();
     }
 
 

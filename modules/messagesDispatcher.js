@@ -6,11 +6,19 @@
 const MESSAGE_MUTEX_TIMEOUT = 1000;
 const RESPONSE_SUFFIX = '_RESP';
 
+/**
+ * @deprecated
+ * @type {{get: function(string): *, put: function(string, *): void}}
+ */
 const storj = require('./instanceStorage');
 
 class MessagesDispatcher {
 
     constructor(config, blockchain) {
+
+        //Assign named storage
+        this.namedStorage = new (require('./NamedInstanceStorage'))(config.instanceId);
+
         this.config = config;
         this.blockchain = blockchain;
         /**
@@ -24,6 +32,7 @@ class MessagesDispatcher {
         this.RESPONSE_SUFFIX = RESPONSE_SUFFIX;
 
         storj.put('messagesDispatcher', this);
+        this.namedStorage.put('messagesDispatcher', this);
     }
 
 

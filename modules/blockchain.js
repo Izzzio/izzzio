@@ -16,12 +16,7 @@
  limitations under the License.
  */
 
-const logger = new (require('./logger'))();
-const storj = require('./instanceStorage');
 const KeyValue = require('./keyvalue');
-const levelup = require('levelup');
-const memdown = require('memdown');
-const leveldown = require('leveldown');
 
 /**
  * Blockchain manager object
@@ -29,11 +24,9 @@ const leveldown = require('leveldown');
  */
 
 class Blockchain {
-    constructor() {
-        this.config = storj.get('config');
-        //this.levelup = levelup(leveldown(this.config.workDir + '/blocks'));
-        //this.levelup = levelup(memdown());//levelup(this.config.workDir + '/blocks');
-        this.db = new KeyValue(this.config.blocksDB);
+    constructor(config) {
+        this.config = config;
+        this.db = new KeyValue(this.config.blocksDB, this.config);
     }
 
     getLevelup() {

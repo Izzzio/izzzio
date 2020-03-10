@@ -20,13 +20,22 @@
 const MESSAGE_MUTEX_TIMEOUT = 1000;
 const LATENCY_TIME = 2 * 1000; //отклонение на устаревание сообщения
 
+/**
+ * @deprecated
+ * @type {{get: function(string): *, put: function(string, *): void}}
+ */
 const storj = require('./instanceStorage');
+
 const moment = require('moment');
 const getid = require('./getid');
 
 class starwaveProtocol {
 
     constructor(config, blockchain) {
+
+        //Assign named storage
+        this.namedStorage = new (require('./NamedInstanceStorage'))(config.instanceId);
+
         this.config = config;
         this.blockchain = blockchain;
         /**
@@ -36,6 +45,7 @@ class starwaveProtocol {
          */
         this._messageMutex = {};
         storj.put('starwaveProtocol', this);
+        this.namedStorage.put('starwaveProtocol', this);
     }
 
     /**

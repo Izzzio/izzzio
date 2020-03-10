@@ -9,7 +9,7 @@ const KeyValue = require('../keyvalue');
  * Transactional key-value DB
  */
 class TransactionalKeyValue {
-    constructor(name) {
+    constructor(name, config) {
         /**
          * Содержит в себе транзакции, готовые к записи
          * @type {{}}
@@ -20,7 +20,7 @@ class TransactionalKeyValue {
          * Хранилище значений
          * @type {KeyValue}
          */
-        this.db = new KeyValue(name);
+        this.db = new KeyValue(name, config);
     }
 
     /**

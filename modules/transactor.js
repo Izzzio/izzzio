@@ -3,7 +3,6 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-const storj = require('./instanceStorage');
 const logger = new (require('./logger'))();
 
 
@@ -21,6 +20,9 @@ class Transactor {
      */
     constructor(wallet, blockchain, options, blockchainObject) {
 
+        //Assign named storage
+        this.namedStorage = new (require('./NamedInstanceStorage'))(blockchain.config.instanceId);
+
         this.wallet = wallet;
         this.blockchain = blockchain;
         this.blockchainObject = blockchainObject;
@@ -29,7 +31,7 @@ class Transactor {
         this.enableLogging = true;
         this.transactions = [];
 
-        storj.put('transactor', this);
+        this.namedStorage.put('transactor', this);
 
     }
 

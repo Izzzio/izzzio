@@ -6,10 +6,13 @@
 const fs = require('fs');
 const moment = require('moment');
 const formatToken = require('./formatToken');
-const storj = require('./instanceStorage');
-const cryptography = storj.get('cryptography');
+
+const namedStorage = new (require('./NamedInstanceStorage'))();
 
 const logger = new (require('./logger'))();
+
+
+let cryptography;
 
 /**
  * Wallet object
@@ -19,6 +22,11 @@ const logger = new (require('./logger'))();
  * @constructor
  */
 let Wallet = function (walletFile, config) {
+
+    //Assign named storage
+    namedStorage.assign(config.instanceId);
+
+    cryptography = namedStorage.get('cryptography');
 
     let wallet = {};
 
@@ -164,7 +172,7 @@ let Wallet = function (walletFile, config) {
      */
     wallet.init = function () {
         if(wallet.id.length === 0) {
-           // wallet.generate();
+            // wallet.generate();
             logger.info('Empty wallet created');
         } /*else if(!wallet.selfValidate()) {
             throw logger.fatal('Wallet self-validation error! Invalid key or sign checking');

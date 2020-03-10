@@ -19,11 +19,14 @@
 const logger = new (require('./logger'))('Accounts');
 const KeyValue = require('./keyvalue');
 const Wallet = require('./wallet');
-const storj = require('./instanceStorage');
 
 class AccountManager {
     constructor(config = {}) {
-        this._accounts = new KeyValue(config.accountsDB);
+
+        //Assign named storage
+        this.namedStorage = new (require('./NamedInstanceStorage'))(config.instanceId);
+
+        this._accounts = new KeyValue(config.accountsDB, config);
         this._config = config;
         this._registerRPCMethods();
 
@@ -121,7 +124,7 @@ class AccountManager {
      */
     _registerRPCMethods() {
         const that = this;
-        let app = storj.get('httpServer');
+        let app = this.namedStorage .get('httpServer');
         if(!app) {
             logger.error("Can't register RPC methods for AccountManager");
             return;

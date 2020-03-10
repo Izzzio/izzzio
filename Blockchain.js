@@ -29,19 +29,27 @@ function Blockchain(config) {
     const getid = require('./modules/getid');
     const fs = require('fs-extra');
     //Instance storage
+    const namedStorage = new (require('./modules/NamedInstanceStorage'))(config.instanceId);
+    /**
+     * @deprecated
+     * @type {{get: function(string): *, put: function(string, *): void}}
+     */
     const storj = require('./modules/instanceStorage');
 
     //Cryptography
     const Cryptography = require('./modules/cryptography');
     const cryptography = new Cryptography(config);
     storj.put('cryptography', cryptography);
+    namedStorage.put('cryptography', cryptography);
+
     //Crypto
     //const CryptoJS = require("crypto-js");
 
     //Plugins
     const Plugins = require('./modules/plugins');
-    const plugins = new Plugins();
+    const plugins = new Plugins(config);
     storj.put('plugins', plugins);
+    namedStorage.put('plugins', plugins);
 
     //Networking
     const express = require("express");
@@ -74,12 +82,14 @@ function Blockchain(config) {
 
     storj.put('app', app);
     storj.put('config', config);
+    namedStorage.put('app', app);
+    namedStorage.put('config', config);
 
     //load DB plugin
     if(config.dbPlugins.length > 0) {
         logger.info("Loading DB plugins...\n");
         for (let plugin of config.dbPlugins) {
-            let res = loadPlugin(plugin, blockchainObject, config, storj);
+            let res = loadPlugin(plugin, blockchainObject, config, namedStorage);
             if(typeof res === "object") {
                 logger.fatal("Plugin fatal:\n");
                 console.log(e);
@@ -90,7 +100,7 @@ function Blockchain(config) {
     }
 
     //Subsystems
-    const blockController = new (require('./modules/blockchain'))();
+    const blockController = new (require('./modules/blockchain'))(config);
     const NodeMetaInfo = require('./modules/NodeMetaInfo');
     const StarwaveProtocol = require('./modules/starwaveProtocol');
     let starwave = new StarwaveProtocol(config, blockchainObject);
@@ -136,6 +146,7 @@ function Blockchain(config) {
 
     let wallet = Wallet(config.walletFile, config).init();
     storj.put('wallet', wallet);
+    namedStorage.put('wallet', wallet);
     if(wallet.id.length !== 0) {
         logger.info('Wallet address ' + wallet.getAddress(false));
         if(wallet.block !== -1) {
@@ -153,6 +164,7 @@ function Blockchain(config) {
         // let blockchain = levelup(config.workDir + '/blocks');
     let blockchain = blockController;
     storj.put('blocks', blockchain);
+    namedStorage.put('blocks', blockchain);
 
 
     /**
@@ -183,6 +195,7 @@ function Blockchain(config) {
      */
     const blockHandler = new BlockHandler(wallet, blockchain, blockchainObject, config, {acceptCount: config.blockAcceptCount});
     storj.put('blockHandler', blockHandler);
+    namedStorage.put('blockHandler', blockHandler);
 
     /**
      * Модуль, следящий за прохождением транзакций
@@ -193,6 +206,7 @@ function Blockchain(config) {
         blockHandler: blockHandler
     }, blockchainObject);
     storj.put('transactor', transactor);
+    namedStorage.put('transactor', transactor);
 
     /**
      * Фронтенд с интерфейсом и RPC
@@ -267,6 +281,7 @@ function Blockchain(config) {
     blockHandler.frontend = frontend;
 
     storj.put('frontend', frontend);
+    namedStorage.put('frontend', frontend);
 
 
     //************************************************************************************
@@ -303,6 +318,7 @@ function Blockchain(config) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
             storj.put('maxBlock', maxBlock);
+            namedStorage.put('maxBlock', maxBlock);
         }
         blockHandler.changeMaxBlock(maxBlock);
         transactor.changeMaxBlock(maxBlock);
@@ -350,6 +366,7 @@ function Blockchain(config) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
             storj.put('maxBlock', maxBlock);
+            namedStorage.put('maxBlock', maxBlock);
         }
 
         if(!noHandle) {
@@ -378,6 +395,7 @@ function Blockchain(config) {
 
 
     storj.put('active', false);
+    namedStorage.put('active', false);
 
     /**
      * Запуск ноды
@@ -415,6 +433,8 @@ function Blockchain(config) {
                     }
                     maxBlock = Number(value);
                     storj.put('maxBlock', maxBlock);
+                    namedStorage.put('maxBlock', maxBlock);
+
                     lastKnownBlock = maxBlock;
                     logger.info('Block count: ' + maxBlock);
                     blockHandler.changeMaxBlock(maxBlock);
@@ -454,11 +474,15 @@ function Blockchain(config) {
      */
     function stopNode(stopCb = () => {
     }) {
-        if(!storj.get('active')) {
+        if(!namedStorage.get('active')) {
             throw (new Error('Already stopped'));
         }
         storj.put('terminating', true);
         storj.put('active', false);
+        namedStorage.put('terminating', true);
+        namedStorage.put('active', false);
+
+
         if(config.upnp.enabled) {
             try {
                 upnpAdvertisment.stop();
@@ -467,12 +491,12 @@ function Blockchain(config) {
             }
         }
 
-        if(storj.get('httpServer')) {
-            storj.get('httpServer').close();
+        if(namedStorage.get('httpServer')) {
+            namedStorage.get('httpServer').close();
         }
 
-        if(storj.get('wsServer')) {
-            storj.get('wsServer').close();
+        if(namedStorage.get('wsServer')) {
+            namedStorage.get('wsServer').close();
         }
 
 
@@ -503,8 +527,8 @@ function Blockchain(config) {
                 });
             }
 
-            if(storj.get("dapp") !== null) {
-                storj.get("dapp").terminate(terminate);
+            if(namedStorage.get("dapp") !== null) {
+                namedStorage.get("dapp").terminate(terminate);
             } else {
                 terminate();
             }
@@ -560,6 +584,7 @@ function Blockchain(config) {
 
         let server = app.listen(config.httpPort, config.httpServer, () => logger.init('Listening http on: ' + config.httpServer + ':' + config.httpPort + '@' + config.rpcPassword));
         storj.put('httpServer', server);
+        namedStorage.put('httpServer', server);
         server.timeout = 0;
     }
 
@@ -581,6 +606,7 @@ function Blockchain(config) {
             }
 
             storj.put('wsServer', wss);
+            namedStorage.put('wsServer', wss);
 
 
             wss.on('connection', function (ws) {
@@ -771,11 +797,14 @@ function Blockchain(config) {
                     handleBlockchainResponse(message);
                     break;
                 case MessageType.MY_PEERS:
-                    if(!storj.get('peerExchangeMutex')) { //Блокируем получение списка пиров на таймаут обмена
+                    if(!namedStorage.get('peerExchangeMutex')) { //Блокируем получение списка пиров на таймаут обмена
 
                         storj.put('peerExchangeMutex', true);
+                        namedStorage.put('peerExchangeMutex', true);
                         setTimeout(function () {
                             storj.put('peerExchangeMutex', false);
+                            namedStorage.put('peerExchangeMutex', false);
+
                         }, config.peerExchangeInterval);
 
                         connectToPeers(message.data);
@@ -1130,12 +1159,13 @@ function Blockchain(config) {
         }
 
         //Now we process some chain
-        if(storj.get('chainResponseMutex')) {
+        if(namedStorage.get('chainResponseMutex')) {
             return;
         }
 
         //Set block for new chain responses
         storj.put('chainResponseMutex', true);
+        namedStorage.put('chainResponseMutex', true);
 
 
         let receivedBlocks = JSON.parse(message.data);
@@ -1143,6 +1173,7 @@ function Blockchain(config) {
 
         if(receivedBlocks.length === 0 || receivedBlocks[0] === false) {
             storj.put('chainResponseMutex', false);
+            namedStorage.put('chainResponseMutex', false);
             return;
         }
 
@@ -1161,6 +1192,7 @@ function Blockchain(config) {
                     logger.error('Can\'t receive last block. Maybe database busy?');
                 }
                 storj.put('chainResponseMutex', false);
+                namedStorage.put('chainResponseMutex', false);
                 return;
             }
 
@@ -1170,6 +1202,7 @@ function Blockchain(config) {
                         logger.error('Incorrect received block timestamp or local time ' + latestBlockReceived.timestamp + ' current ' + moment().utc().valueOf());
                     }
                     storj.put('chainResponseMutex', false);
+                    namedStorage.put('chainResponseMutex', false);
 
                     return;
                 }
@@ -1192,6 +1225,7 @@ function Blockchain(config) {
                             addBlockToChain(latestBlockReceived, true);
                             responseLatestMsg(function (msg) {
                                 storj.put('chainResponseMutex', false);
+                                namedStorage.put('chainResponseMutex', false);
                                 broadcast(msg);
                             });
                         }
@@ -1209,6 +1243,7 @@ function Blockchain(config) {
                         }
 
                         storj.put('chainResponseMutex', false);
+                        namedStorage.put('chainResponseMutex', false);
 
                     } else {
 
@@ -1228,9 +1263,11 @@ function Blockchain(config) {
                             }
                             replaceChain(receivedBlocks, function () {
                                 storj.put('chainResponseMutex', false);
+                                namedStorage.put('chainResponseMutex', false);
                             });
                         } else {
                             storj.put('chainResponseMutex', false);
+                            namedStorage.put('chainResponseMutex', false);
                         }
 
 
@@ -1238,11 +1275,13 @@ function Blockchain(config) {
                 } else {
                     //console.log('received blockchain is not longer than received blockchain. Do nothing');
                     storj.put('chainResponseMutex', false);
+                    namedStorage.put('chainResponseMutex', false);
 
                 }
             } catch (e) {
                 logger.info('Received chain corrupted error');
                 storj.put('chainResponseMutex', false);
+                namedStorage.put('chainResponseMutex', false);
             }
         });
 
@@ -1317,7 +1356,7 @@ function Blockchain(config) {
                     clearTimeout(replaceChainTimer);
                     replaceChainTimer = setTimeout(function () {
                         //If receiving chain, no syncing
-                        if(storj.get('chainResponseMutex')) {
+                        if(namedStorage.get('chainResponseMutex')) {
                             return;
                         }
                         blockHandler.resync();
@@ -1555,6 +1594,7 @@ function Blockchain(config) {
                 let clientApplication = new (require(config.appEntry))(config, blockchainObject);
                 clientApplication.init();
                 storj.put("dapp", clientApplication);
+                namedStorage.put("dapp", clientApplication);
             } catch (e) {
                 logger.error("DApp fatal:\n");
                 console.log(e);
@@ -1565,6 +1605,7 @@ function Blockchain(config) {
             let clientApplication = config.appEntry;
             clientApplication.init();
             storj.put("dapp", clientApplication);
+            namedStorage.put("dapp", clientApplication);
 
         }
 
@@ -1739,7 +1780,7 @@ function Blockchain(config) {
             return false;
         }
 
-        if(storj.get('chainResponseMutex')) {
+        if(namedStorage.get('chainResponseMutex')) {
             return false;
         }
 
@@ -1774,7 +1815,7 @@ function Blockchain(config) {
         ) {
             logger.info('Starting keyring emission');
 
-            let keyring = new (require('./modules/blocksModels/keyring'))([], wallet.id);
+            let keyring = new (require('./modules/blocksModels/keyring'))([], wallet.id, config);
             keyring.generateKeys(config.workDir + '/keyringKeys.json', config.keyringKeysCount, wallet);
             transactor.transact(keyring, function (blockData, cb) {
                 config.validators[0].generateNextBlock(blockData, function (generatedBlock) {
@@ -1799,7 +1840,7 @@ function Blockchain(config) {
     }, stopCb = () => {
     }) {
 
-        if(storj.get('active')) {
+        if(namedStorage.get('active')) {
             throw(new Error('Already started'));
         }
 
@@ -1849,7 +1890,7 @@ function Blockchain(config) {
             setInterval(broadcastLastBlock, config.hearbeatInterval);
             if(config.blocksSavingInterval) {
                 setInterval(function () {
-                    if(!storj.get('terminating')) {
+                    if(!namedStorage.get('terminating')) {
                         blockchain.save();
                     }
                 }, config.blocksSavingInterval);
@@ -1862,26 +1903,31 @@ function Blockchain(config) {
                 process.on('SIGINT', () => {
 
 
-                    if(storj.get('terminateAttempts') === 1) {
+                    if(namedStorage.get('terminateAttempts') === 1) {
                         stopCb();
                         logger.info('Terminating immediately.');
                         process.exit(1);
                         return;
                     }
 
-                    if(storj.get('terminateAttempts') === 0) {
+                    if(namedStorage.get('terminateAttempts') === 0) {
                         storj.put('terminateAttempts', 1);
+                        namedStorage.put('terminateAttempts', 1);
                         logger.warning('Press the Ctrl+C again to exit without saving data.');
                         return;
                     }
 
                     storj.put('terminating', true);
+                    namedStorage.put('terminating', true);
                     storj.put('terminateAttempts', 0);
+                    namedStorage.put('terminateAttempts', 0);
 
-                    if(storj.get('terminateAttempts') === 0) {
+                    if(namedStorage.get('terminateAttempts') === 0) {
                         if(terminationCb()) {
                             storj.put('terminateAttempts', 0);
+                            namedStorage.put('terminateAttempts', 0);
                             storj.put('terminating', false)
+                            namedStorage.put('terminating', false)
                             logger.warning('Termination process stopped by application');
 
                             return;
@@ -2013,7 +2059,7 @@ function Blockchain(config) {
     if(config.plugins.length > 0) {
         logger.info("Loading plugins...\n");
         for (let plugin of config.plugins) {
-            let res = loadPlugin(plugin, blockchainObject, config, storj);
+            let res = loadPlugin(plugin, blockchainObject, config, namedStorage);
             if(typeof res === "object") {
                 logger.fatal("Plugin fatal:\n");
                 console.log(res);
@@ -2075,15 +2121,18 @@ function Blockchain(config) {
     let accountManager = new AccountManager(config);
     accountManager.addAccountWallet('default', wallet);
     storj.put('accountManager', accountManager);
+    namedStorage.put('accountManager', accountManager);
 
     //EcmaContract Smartcontracts
     if(typeof config.ecmaContract !== 'undefined' && config.ecmaContract.enabled) {
-        blockchainObject.ecmaContract = new EcmaContract();
+        blockchainObject.ecmaContract = new EcmaContract(config);
         storj.put('ecmaContract', blockchainObject.ecmaContract);
+        namedStorage.put('ecmaContract', blockchainObject.ecmaContract);
     }
 
 
     storj.put('blockchainObject', blockchainObject);
+    namedStorage.put('blockchainObject', blockchainObject);
     return blockchainObject;
 }
 

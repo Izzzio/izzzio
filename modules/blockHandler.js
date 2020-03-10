@@ -8,7 +8,14 @@ const Wallet = require("./wallet");
 const fs = require('fs-extra');
 
 const logger = new (require('./logger'))();
+
+/**
+ * @deprecated
+ * @type {{get: function(string): *, put: function(string, *): void}}
+ */
 const storj = require('./instanceStorage');
+
+
 
 /**
  * Предел до которого сеть может принять блок ключей
@@ -23,6 +30,10 @@ const keyEmissionMaxBlock = 5;
 class BlockHandler {
 
     constructor(wallet, blockchain, blockchainObject, config, options) {
+
+        //Assign named storage
+        this.namedStorage = new (require('./NamedInstanceStorage'))(config.instanceId);
+
         this.wallet = wallet;
         this.blockchain = blockchain;
 
@@ -41,6 +52,7 @@ class BlockHandler {
 
         this.syncInProgress = false;
         storj.put('syncInProgress', false);
+        this.namedStorage.put('syncInProgress', false);
         this.keyring = [];
 
         try {
@@ -110,6 +122,7 @@ class BlockHandler {
         }
         that.syncInProgress = true;
         storj.put('syncInProgress', true);
+        this.namedStorage.put('syncInProgress', true);
 
         logger.info('Blockchain resynchronization started');
         that.clearDb(function () {
@@ -160,6 +173,7 @@ class BlockHandler {
         let that = this;
         that.syncInProgress = true;
         storj.put('syncInProgress', true);
+        this.namedStorage.put('syncInProgress', true);
         if(!that.config.program.verbose) {
             that.enableLogging = false;
             logger.disable = true;
@@ -184,6 +198,7 @@ class BlockHandler {
                                 await that.blockchain.putAsync('maxBlock', i - 1);
                                 that.syncInProgress = false;
                                 storj.put('syncInProgress', false);
+                                that.namedStorage.put('syncInProgress', false);
                                 that.enableLogging = true;
                                 logger.disable = false;
                                 that.wallet.enableLogging = true;
@@ -220,6 +235,7 @@ class BlockHandler {
 
             that.syncInProgress = false;
             storj.put('syncInProgress', false);
+            that.namedStorage.put('syncInProgress', false);
             that.enableLogging = true;
             logger.disable = false;
             that.wallet.enableLogging = true;
@@ -247,16 +263,16 @@ class BlockHandler {
 
         try {
             let blockData;
-           // if(typeof block.data !== 'object') {
-                try {
-                    blockData = JSON.parse(block.data);
-                } catch (e) {
-                    logger.info('Not JSON block ' + block.index);
-                    return callback();
-                }
-           /* } else {
-                blockData = block.data;
-            }*/
+            // if(typeof block.data !== 'object') {
+            try {
+                blockData = JSON.parse(block.data);
+            } catch (e) {
+                logger.info('Not JSON block ' + block.index);
+                return callback();
+            }
+            /* } else {
+                 blockData = block.data;
+             }*/
 
 
             if(block.index === keyEmissionMaxBlock) {

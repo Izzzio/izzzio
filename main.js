@@ -40,8 +40,6 @@ function constructBlockchainObject(appConfig = {}) {
             .version(version)
             .description(' iZ3 - IZZZIO blockchain core.')
             .option('-a, --autofix', 'Fix saved chain if possible. WARNING: You can lose important data')
-            .option('--clear', 'Clear all saved chain and deletes wallet. WARNING: You can lose important data')
-            .option('--clear-db', 'Clear all saved chain and calculated wallets.')
             .option('-c, --config [path]', 'Core config path', 'config.json')
             .option('--write-config [path]', 'Save config in [path] file', false)
             .option('--work-dir [path]', 'Working directory', false)
@@ -63,7 +61,7 @@ function constructBlockchainObject(appConfig = {}) {
 
     const getid = require('./modules/getid');
 
-    const config = {
+    let config = {
 
         //Networking
         httpPort: 3001,                     //Порт биндинга RPC и интерфейса
@@ -169,6 +167,8 @@ function constructBlockchainObject(appConfig = {}) {
     const fs = require('fs-extra');
     const Blockchain = require('./Blockchain');
     const path = require('path');
+
+
     Array.prototype.remove = function (from, to) {
         let rest = this.slice((to || from) + 1 || this.length);
         this.length = from < 0 ? this.length + from : from;
@@ -219,15 +219,6 @@ function constructBlockchainObject(appConfig = {}) {
         config.program = program;
         if(config.program.splash) {
             require('./modules/splash')();
-        }
-
-
-        if(program.clear) {
-            logger.info('Clear up.');
-            fs.removeSync('wallets');
-            fs.removeSync('blocks');
-            fs.removeSync(config.walletFile);
-            logger.info('End');
         }
 
         if(program.newChain) {
@@ -314,6 +305,11 @@ function constructBlockchainObject(appConfig = {}) {
 
     if(config.startMessage) {
         console.log(config.startMessage);
+    }
+
+    //Generates instance ID
+    if(!config.instanceId) {
+        config.instanceId = getid() + getid();
     }
 
     const blockchain = new Blockchain(config);

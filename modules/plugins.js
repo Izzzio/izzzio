@@ -2,13 +2,18 @@
  * Class realises universal functions for external plugins in project
  */
 const logger = new (require('./logger'))();
-const storj = require('./instanceStorage');
-let cryptography = storj.get('cryptography');
+
 let that;
 
 class Plugins {
 
-    constructor() {
+    constructor(config) {
+
+        //Assign named storage
+        this.namedStorage = new (require('./NamedInstanceStorage'))(config.instanceId);
+
+        this.cryptography = this.namedStorage.get('cryptography');
+
         that = this;
         /**
          * object to store registered functions
@@ -29,10 +34,10 @@ class Plugins {
         };
 
         this.crypto = {
-            registerHash: cryptography.registerHash,
-            registerGenerator: cryptography.registerGenerator,
-            registerSign: cryptography.registerSign,
-            registerGeneratorHook: cryptography.registerGeneratorHook,
+            registerHash: this.cryptography.registerHash,
+            registerGenerator: this.cryptography.registerGenerator,
+            registerSign: this.cryptography.registerSign,
+            registerGeneratorHook: this.cryptography.registerGeneratorHook,
         };
 
     }
