@@ -25,6 +25,7 @@ const logger = new (require('./modules/logger'))();
 const version = require('./package.json').version;
 let program;
 
+
 /**
  * Creates Blockchain instance
  * @param {Object} appConfig
@@ -61,6 +62,8 @@ function constructBlockchainObject(appConfig = {}) {
 
     const getid = require('./modules/getid');
 
+    let instanceId = getid() + getid();
+
     let config = {
 
         //Networking
@@ -81,6 +84,7 @@ function constructBlockchainObject(appConfig = {}) {
 
         //System
         ignoreSIGINT: !module.parent ? false : true,                //Ignore sigint signals
+        workDir: module.parent ? instanceId + '_workdir' : '.', //Working dir
 
         //Blockchain
         blockAcceptCount: 20,               //Количеств блоков подтверждения транзакции
@@ -123,7 +127,6 @@ function constructBlockchainObject(appConfig = {}) {
 
         //Wallet
         walletFile: './wallet.json',         //Адрес файла кошелька
-        workDir: '.',
         disableWalletDeploy: true,
 
         //Database
@@ -302,8 +305,9 @@ function constructBlockchainObject(appConfig = {}) {
 
     //Generates instance ID
     if(!config.instanceId) {
-        config.instanceId = getid() + getid();
+        config.instanceId = instanceId;
     }
+    logger.info('Created instance id: ' + config.instanceId);
 
     const blockchain = new Blockchain(config);
 
