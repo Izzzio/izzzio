@@ -17,17 +17,21 @@
  */
 
  class CacheStorage {
+
    constructor(cacheLiveTime) {
      this.cacheLiveTime = cacheLiveTime;
+    //  this.timeouts = {};
    }
+
    add(key, value) {
-     if !(key in this) {
+     if (!(key in this)) {
        this[key] = value;
-       setTimeout((obj, key) => {
-         delete obj[key];
-       }(this, key), this.cacheLiveTime);
+       setTimeout(() => {
+         delete this[key];
+       }, this.cacheLiveTime);
      }
    }
+
    async get(key) {
      let that = this;
      return new Promise(function(resolve, reject) {
@@ -38,7 +42,24 @@
        }
      });
    }
+
+   del(key) {
+    //  if (key in this) {
+    //    this._canselTimeout(key);
+    //    delete this[key];
+    //    return true;
+    //  }
+    //  return false;
+   }
+   
    isInCache(key) {
      return (key in this);
    }
+
+  //  _canselTimeout(key) {
+  //    clearTimeout(this.timeouts[key]);
+  //    delete this.timeouts[key];
+  //  }
  }
+
+ module.exports = CacheStorage; 

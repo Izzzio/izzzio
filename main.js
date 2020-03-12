@@ -147,7 +147,7 @@ let config = {
     "appConfig": {                          //DApp config placement
     },
 
-    "cacheLiveTime": 50
+    cacheLiveTime: 50
 
 };
 
