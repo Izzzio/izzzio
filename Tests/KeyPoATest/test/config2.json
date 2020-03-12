@@ -19,7 +19,7 @@
   "enableMessaging": false,
   "rpcPassword": "",
   "validators": [                       
-    "fsbpoa"                       
+    "keypoa"
   ],
   "blockAcceptCount": 0,
   "maxPeers": 25,

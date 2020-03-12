@@ -15,11 +15,11 @@ let blockchain = null;
 
 const fs = require("fs-extra");
 
-const fsbPoANodesTimeout = 86400 * 1000; //24hours
-const consensusName = "fsbpoa";
-const logger = new (require("../logger"))("fsboa");
+const keyPoANodesTimeout = 86400 * 1000; //24hours
+const consensusName = "keypoa";
+const logger = new (require("../logger"))("KeyPoA");
 
-const keyOperation = {
+const KEY_OPERATION = {
     add: "TYPE-KEY-ISSUE",
     delete: "KEY-DELETE"
 };
@@ -46,7 +46,7 @@ let fsbPoAAwait = [];
  * keystorageObject
  */
 const keyStorageFile = "keyStorage.json";
-let keyStorage = { Admin: "", System: [] };
+let keyStorage = {Admin: "", System: []};
 
 const Wallet = require("../wallet");
 /**
@@ -65,48 +65,43 @@ const moment = require("moment");
  * @param {Block} previousBlock
  */
 function isValidNewBlock(newBlock, previousBlock) {
-    if (
-        typeof newBlock === "undefined" ||
-        typeof previousBlock === "undefined"
-    ) {
+    if(typeof newBlock === "undefined" || typeof previousBlock === "undefined") {
         return false;
     }
 
-    if (newBlock.previousHash !== previousBlock.hash) {
+    if(newBlock.previousHash !== previousBlock.hash) {
         console.log("Error: fsbPoA Nodes: Invalid block previous hash");
         return false;
     }
 
     //blocks is bad if time is equal. it's a problem of multiple adding
-    if (newBlock.timestamp <= previousBlock.timestamp) {
+    if(newBlock.timestamp <= previousBlock.timestamp) {
         return false;
     }
 
-    if (
-        newBlock.timestamp - previousBlock.timestamp < fsbPoANodesTimeout &&
-        newBlock.sign.length === 0 &&
-        newBlock.index > 5
-    ) {
+    if(newBlock.timestamp - previousBlock.timestamp < keyPoANodesTimeout && newBlock.sign.length === 0 && newBlock.index > 5) {
         throw "Error: fsbPoA Nodes: Adding other consensus block disabled due security configuration.";
     }
 
-    if (previousBlock.index + 1 !== newBlock.index) {
+    if(previousBlock.index + 1 !== newBlock.index) {
         console.log("Error: fsbPoA Nodes: Invalid block index");
         return false;
     }
 
-    if (typeof newBlock.sign === "undefined") {
+    if(typeof newBlock.sign === "undefined") {
         console.log(
             "Error: fsbPoA Nodes: Block format incompatible with fsbPoA nodes consensus"
         );
         return false;
     }
 
-    if (newBlock.sign.length === 0) {
+    if(newBlock.sign.length === 0) {
         //block has no signature. it is bad for us
         return false;
     }
-    if (checkBlockSign(newBlock)) return true;
+    if(checkBlockSign(newBlock)) {
+        return true;
+    }
 
     console.log("Error: Fake signed block");
 
@@ -120,8 +115,8 @@ function isValidNewBlock(newBlock, previousBlock) {
  */
 function getfsbPoAAwait(timestamp) {
     for (let a in fsbPoAAwait) {
-        if (fsbPoAAwait.hasOwnProperty(a)) {
-            if (Number(fsbPoAAwait[a].timestamp) === Number(timestamp)) {
+        if(fsbPoAAwait.hasOwnProperty(a)) {
+            if(Number(fsbPoAAwait[a].timestamp) === Number(timestamp)) {
                 return fsbPoAAwait[a];
             }
         }
@@ -138,48 +133,28 @@ function getfsbPoAAwait(timestamp) {
  * @param {int} timestamp
  */
 function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
-    if (typeof blockData === "object") {
+    if(typeof blockData === "object") {
         blockData = JSON.stringify(blockData);
     }
 
-    blockchain.getLatestBlock(function(previousBlock) {
-        if (!previousBlock) {
+    blockchain.getLatestBlock(function (previousBlock) {
+        if(!previousBlock) {
             return;
         }
 
-        let startTimestamp = moment()
-                .utc()
-                .valueOf(),
-            nextTimestamp = moment()
-                .utc()
-                .valueOf();
-        if (typeof timestamp !== "undefined") {
+        let startTimestamp = moment().utc().valueOf(),
+            nextTimestamp = moment().utc().valueOf();
+        if(typeof timestamp !== "undefined") {
             startTimestamp = timestamp;
             nextTimestamp = timestamp;
         }
         const nextIndex = previousBlock.index + 1;
 
-        let hash = blockchain.calculateHash(
-            nextIndex,
-            previousBlock.hash,
-            nextTimestamp,
-            blockData,
-            startTimestamp,
-            ""
-        );
+        let hash = blockchain.calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, startTimestamp, "");
 
         let sign = blockchain.wallet.signData(hash).sign;
 
-        let newBlock = new Block(
-            nextIndex,
-            previousBlock.hash,
-            nextTimestamp,
-            blockData,
-            hash,
-            startTimestamp,
-            sign
-        );
-
+        let newBlock = new Block(nextIndex, previousBlock.hash, nextTimestamp, blockData, hash, startTimestamp, sign);
         cb(newBlock);
     });
 }
@@ -189,8 +164,8 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
  */
 function generateEmptyBlock() {
     let empty = new Signable();
-    if (isReady()) {
-        generateNextBlock(empty, function(generatedBlock) {
+    if(isReady()) {
+        generateNextBlock(empty, function (generatedBlock) {
             blockchain.addBlock(generatedBlock);
             blockchain.broadcastLastBlock();
         });
@@ -202,24 +177,18 @@ function generateEmptyBlock() {
  * @return {boolean}
  */
 function generateEmptyBlockCheck() {
-    if (blockchain !== "null" && generateEmptyBlocks) {
+    if(blockchain !== null && generateEmptyBlocks) {
         //Мы не выпускали ключи
-        if (!isKeyFromKeyStorage(blockchain.wallet.keysPair.public)) {
+        if(!isKeyFromKeyStorage(blockchain.wallet.keysPair.public)) {
             console.log("Info: We can't generate empty fsbPoA blocks");
             generateEmptyBlocks = false;
             return false;
         }
-        blockchain.getLatestBlock(function(previousBlock) {
-            if (!previousBlock) {
+        blockchain.getLatestBlock(function (previousBlock) {
+            if(!previousBlock) {
                 return;
             }
-            if (
-                moment()
-                    .utc()
-                    .valueOf() -
-                    previousBlock.timestamp >
-                blockchain.config.generateEmptyBlockDelay
-            ) {
+            if(moment().utc().valueOf() - previousBlock.timestamp > blockchain.config.generateEmptyBlockDelay) {
                 console.log("Info: Create empty block");
                 generateEmptyBlock();
             }
@@ -232,17 +201,12 @@ function generateEmptyBlockCheck() {
  * @return {boolean}
  */
 function isReady() {
-    if (isKeyFromKeyStorage(blockchain.wallet.keysPair.public)) {
+    if(isKeyFromKeyStorage(blockchain.wallet.keysPair.public)) {
         //Если мы готовы работать, то выключаем генерацию пустых блоков остальных консенсусов
         for (let a in blockchain.config.validators) {
-            if (
-                blockchain.config.validators.hasOwnProperty(a) &&
-                blockchain.config.validators[a].consensusName !== consensusName
-            ) {
+            if(blockchain.config.validators.hasOwnProperty(a) && blockchain.config.validators[a].consensusName !== consensusName) {
                 try {
-                    blockchain.config.validators[a].setGenerateEmptyBlocks(
-                        false
-                    );
+                    blockchain.config.validators[a].setGenerateEmptyBlocks(false);
                 } catch (e) {
                     console.log(e);
                 }
@@ -252,39 +216,26 @@ function isReady() {
     }
 
     //check do we have keys or not
-    if (keyStorageToArray().length !== 0 && isReadyNow) {
+    if(keyStorageToArray().length !== 0 && isReadyNow) {
         isReadyNow = true;
     } else {
         isReadyNow = false;
     }
 
-    blockchain.getLatestBlock(function(previousBlock) {
-        if (!previousBlock) {
+    blockchain.getLatestBlock(function (previousBlock) {
+        if(!previousBlock) {
             isReadyNow = false;
         }
 
-        if (typeof previousBlock.sign === "undefined") {
+        if(typeof previousBlock.sign === "undefined") {
             isReadyNow = false;
             return isReadyNow;
         }
 
-        if (
-            previousBlock.sign.length !== 0 &&
-            moment()
-                .utc()
-                .valueOf() -
-                previousBlock.timestamp >
-                fsbPoANodesTimeout
-        ) {
+        if(previousBlock.sign.length !== 0 && moment().utc().valueOf() - previousBlock.timestamp > keyPoANodesTimeout) {
             isReadyNow = false;
         } else {
-            if (
-                moment()
-                    .utc()
-                    .valueOf() -
-                    previousBlock.timestamp >
-                fsbPoANodesTimeout
-            ) {
+            if(moment().utc().valueOf() - previousBlock.timestamp > keyPoANodesTimeout) {
                 isReadyNow = false;
             } else {
                 isReadyNow = true;
@@ -318,10 +269,7 @@ function setGenerateEmptyBlocks(generate) {
  */
 function isKeyFromKeyStorage(publicKey) {
     keyStorage = adminKeyPersistenseCheck();
-    return (
-        keyStorage.Admin === publicKey ||
-        keyStorage.System.indexOf(publicKey) !== -1
-    );
+    return (keyStorage.Admin === publicKey || keyStorage.System.indexOf(publicKey) !== -1);
 }
 
 /**
@@ -346,11 +294,7 @@ function isAdminKey(publicKey) {
  * @param {string} dir
  * @param {string} file
  */
-function rewriteKeyFile(
-    object = keyStorage,
-    dir = blockchain.config.workDir,
-    file = keyStorageFile
-) {
+function rewriteKeyFile(object = keyStorage, dir = blockchain.config.workDir, file = keyStorageFile) {
     fs.writeFileSync(dir + "/" + file, JSON.stringify(object));
 }
 
@@ -361,19 +305,19 @@ function rewriteKeyFile(
  */
 function saveKeyToKeyStorage(publicKey, type = "System") {
     let changed = false;
-    if (type === "System") {
-        if (!keyStorage.System.find(x => x === publicKey)) {
+    if(type === "System") {
+        if(!keyStorage.System.find(x => x === publicKey)) {
             keyStorage.System.push(publicKey);
             changed = true;
         }
     } else {
         //there could be only one admin key so we rewrite it
-        if (keyStorage.Admin !== publicKey) {
+        if(keyStorage.Admin !== publicKey) {
             keyStorage.Admin = publicKey;
             changed = true;
         }
     }
-    if (changed) {
+    if(changed) {
         rewriteKeyFile();
     }
 }
@@ -384,11 +328,11 @@ function saveKeyToKeyStorage(publicKey, type = "System") {
  */
 function deleteKeyFromKeyStorage(publicKey) {
     let changed = false;
-    if (keyStorage.System.find(v => v === publicKey)) {
+    if(keyStorage.System.find(v => v === publicKey)) {
         keyStorage.System = keyStorage.System.filter(v => v !== publicKey);
         changed = true;
     }
-    if (changed) {
+    if(changed) {
         rewriteKeyFile();
     }
 }
@@ -398,11 +342,8 @@ function deleteKeyFromKeyStorage(publicKey) {
  */
 function adminKeyPersistenseCheck() {
     let keyStorageFromFile = "";
-    if (!keyStorage.Admin) {
-        keyStorageFromFile = loadKeyStorage(
-            blockchain.config.workDir,
-            keyStorageFile
-        );
+    if(!keyStorage.Admin) {
+        keyStorageFromFile = loadKeyStorage(blockchain.config.workDir, keyStorageFile);
     }
     return keyStorageFromFile ? keyStorageFromFile : keyStorage;
 }
@@ -416,12 +357,11 @@ function checkBlockSign(newBlock) {
     const keyStorageArr = keyStorageToArray();
     for (let key of keyStorageArr) {
         try {
-            if (
-                blockchain.wallet.verifyData(newBlock.hash, newBlock.sign, key)
-            ) {
+            if(blockchain.wallet.verifyData(newBlock.hash, newBlock.sign, key)) {
                 return isAdminKey(key) ? "Admin" : "System";
             }
-        } catch {}
+        } catch {
+        }
     }
     return false;
 }
@@ -431,14 +371,9 @@ function checkBlockSign(newBlock) {
  * @param {string} dir
  * @param {string} file
  */
-function loadKeyStorage(
-    dir = blockchain.config.workDir,
-    file = keyStorageFile
-) {
+function loadKeyStorage(dir = blockchain.config.workDir, file = keyStorageFile) {
     try {
-        return JSON.parse(
-            Buffer.from(fs.readFileSync(dir + "/" + file)).toString()
-        );
+        return JSON.parse(Buffer.from(fs.readFileSync(dir + "/" + file)).toString());
     } catch (e) {
         return;
     }
@@ -453,15 +388,15 @@ function loadKeyStorage(
 function handleKeyBlock(blockData, block, cb) {
     const keyType = checkBlockSign(block);
     //do nothing if type not 'Admin'
-    if (keyType !== "Admin") {
+    if(keyType !== "Admin") {
         return false;
     }
 
-    if (!blockData) {
+    if(!blockData) {
         return false;
     }
 
-    if (typeof blockData === "string") {
+    if(typeof blockData === "string") {
         try {
             blockData = JSON.parse(blockData);
         } catch (e) {
@@ -469,15 +404,12 @@ function handleKeyBlock(blockData, block, cb) {
         }
     }
     //data for keys operations should be: blockData.data={keyType, publicKey}
-    if (blockData.type === keyOperation.add) {
-        saveKeyToKeyStorage(
-            blockData.data.publicKey,
-            blockData.data.keyType //'Admin' | 'System'
-        );
+    if(blockData.type === KEY_OPERATION.add) {
+        saveKeyToKeyStorage(blockData.data.publicKey, blockData.data.keyType); //'Admin' | 'System'         );
         return true;
     }
 
-    if (blockData.type === keyOperation.delete) {
+    if(blockData.type === KEY_OPERATION.delete) {
         deleteKeyFromKeyStorage(blockData.data.publicKey);
         return true;
     }
@@ -485,22 +417,16 @@ function handleKeyBlock(blockData, block, cb) {
     return false;
 }
 
-module.exports = function(blockchainVar) {
+module.exports = function (blockchainVar) {
     blockchain = blockchainVar;
     console.log("Info: fsbPoA Nodes validator loaded");
     setInterval(generateEmptyBlockCheck, blockchain.config.emptyBlockInterval);
-    setTimeout(function() {
+    setTimeout(function () {
         isReady();
     }, 5000);
 
-    blockchain.blockHandler.registerBlockHandler(
-        keyOperation.add,
-        handleKeyBlock
-    );
-    blockchain.blockHandler.registerBlockHandler(
-        keyOperation.delete,
-        handleKeyBlock
-    );
+    blockchain.blockHandler.registerBlockHandler(KEY_OPERATION.add, handleKeyBlock);
+    blockchain.blockHandler.registerBlockHandler(KEY_OPERATION.delete, handleKeyBlock);
 
     //load keystorage
     keyStorage = adminKeyPersistenseCheck();
