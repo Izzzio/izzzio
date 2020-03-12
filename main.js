@@ -151,6 +151,7 @@ let config = {
 };
 
 //*********************************************************************
+const _ = require('lodash');
 const fs = require('fs-extra');
 const Blockchain = require('./Blockchain');
 const path = require('path');
@@ -163,13 +164,19 @@ Array.prototype.remove = function (from, to) {
 
 global.PATH = {}; //object for saving paths
 global.PATH.configDir = path.dirname(program.config);
+let loadedConfig;
 
 try {
-     config = _.defaultsDeep(JSON.parse(fs.readFileSync(program.config)), config);
+
+    config = _.defaultsDeep(JSON.parse(fs.readFileSync(program.config)), config);
+
+     
+
 
 } catch (e) {
     logger.warning('No configure found. Using standard configuration.');
 }
+
 
 
 if(program.writeConfig) {
