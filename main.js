@@ -23,6 +23,7 @@
 
 const logger = new (require('./modules/logger'))();
 const version = require('./package.json').version;
+const _ = require('lodash');
 let program = require('commander');
 
 program
@@ -170,7 +171,11 @@ try {
 
     config = _.defaultsDeep(JSON.parse(fs.readFileSync(program.config)), config);
 
+
+    
+
      
+
 
 
 } catch (e) {
