@@ -1,6 +1,6 @@
 {
   "name": "iz3-nodejs-api",
-  "version": "1.0.1",
+  "version": "1.1.508",
   "description": "Node.js API for IZZZIO blockchain",
   "main": "EcmaSmartRPC.js",
   "repository": {

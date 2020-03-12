@@ -64,9 +64,9 @@ class App extends DApp {
         //Preparing environment
         logger.info('Deploying contract...');
         if(this.config.recieverAddress === "nodeOne") {
-            that.contracts.ecmaContract.deployContract(mainTokenContract, 0, function (deployedContract) {
-                that.run(deployedContract);
-            });
+            // that.contracts.ecmaContract.deployContract(mainTokenContract, 0, function (deployedContract) {
+            that.run();
+            // });
         } else {
             that.testLeech();
         }
@@ -81,6 +81,8 @@ class App extends DApp {
     async testLeech() {
         logger.info('Test leech');
         await wait(20000); //Wait for test end
+        let block = await this.blocks.getBlockAsync(7);
+        assert.true(block.hash === '5b02811ab9b551f6953d56cc074211acc9932cf2cb7a829780f7e572a3ff0565', 'Invalid last block hash');
         logger.info('Tests passed');
         process.exit();
     }

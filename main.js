@@ -23,6 +23,7 @@
 
 const logger = new (require('./modules/logger'))();
 const version = require('./package.json').version;
+const _ = require('lodash');
 let program = require('commander');
 
 program
@@ -32,16 +33,17 @@ program
     .option('--clear', 'Clear all saved chain and deletes wallet. WARNING: You can lose important data')
     .option('--clear-db', 'Clear all saved chain and calculated wallets.')
     .option('-c, --config [path]', 'Core config path', 'config.json')
+    .option('--write-config [path]', 'Save config in [path] file', false)
     .option('--work-dir [path]', 'Working directory', false)
     .option('--keyring-emission', 'Generate and deploy keyring', false)
     .option('--generate-wallets [keyring path]', 'Generate wallets from keyring file', false)
-    .option('--new-chain', 'Generates keyring and token emission if possible', false)
-    .option('--fall-on-errors', 'Allow stop node on uncaught exceptions', false)
+    .option('--new-chain', 'Starts new chain', false)
+    .option('--fall-on-errors', 'Stops node with error code on uncaught exceptions', false)
     .option('--block-accept-count [count]', 'Number of blocks to confirm transaction')
     .option('--http-port [port]', 'Interface and RPC binding port')
     .option('--disable-rpc-password', 'Disable RPC password', false)
     .option('--disable-mining', 'Completely disables mining', false)
-    .option('--fast-load', 'Don\'t checking databased on startup', false)
+    .option('--fast-load', 'Don\'t checking saved blocks database on startup', false)
     .option('--verbose', 'More logging info', false)
     .option('--enable-address-rotation', 'Activates the rotation of the addresses', false)
     .option('--no-splash', 'Disable splash screen', false)
@@ -50,7 +52,7 @@ program
 
 const getid = require('./modules/getid');
 
-const config = {
+let config = {
 
     //Networking
     httpPort: 3001,                     //Порт биндинга RPC и интерфейса
@@ -88,19 +90,15 @@ const config = {
     newNetwork: false,                   //Если будет обнаружен запуск новой сети блокчейн, будет произведена автоматическая эмиссия ключей и денег
     lcpoaVariantTime: 1,                //Количество милилсекунд, требуемое на генерацию одного хеша блока
     validators: [                       //"Валидаторы" - дополнительные проверяющие блоков, для введения дополнительных консенсусов, кроме LCPoA
-        'lcpoa',                        //БЕЗ КОНСЕНСУСА БЕЗ КЛЮЧЕЙ АВТОМАТИЧЕСКАЯ ЭМИССИЯ НЕВОЗМОЖНА
-        'thrusted'
+        'dlcpoa',
+        //'lcpoa',                        //БЕЗ КОНСЕНСУСА БЕЗ КЛЮЧЕЙ АВТОМАТИЧЕСКАЯ ЭМИССИЯ НЕВОЗМОЖНА
+        //'thrusted'
     ],
     emptyBlockInterval: 10000,          //Интервал проверки необходимости выпуска пустого блока
     blacklisting: false,
     maxTransactionAtempts: 5,           //Сколько попыток добавить блок мы предпренимаем
     keyringKeysCount: 5,                //Сколько генерировать ключей в связку при старте сети. Используется в Trusted консенсусе и  других
     checkExternalConnectionData: false, //Проверять внешние данные на соответствие
-    disableInternalToken: false,        //выключить выпуск старых денег(false - разрешено выпускать старые деньги, true - запрет на выпуск)
-
-    //Tokens
-    precision: 10000000000,                  //Точность вычислений для кошелька
-    initialEmission: 100000000,         //Сумма первоначальной эмиссии (нужна только при эмиссии)
 
     //Messaging Bus
     enableMessaging: false,              //Разрешить использование шины сообщений (необходима для некоторых консенсусов)
@@ -137,8 +135,9 @@ const config = {
 
     //Cryptography
     hashFunction: 'SHA256',                 //функция вычисления хэша
-    signFunction: '',                       //Функция вычисления цифровой подписи и генерации паролей(пустая-значит, по умолчанию используется), 'GOST' 'GOST256' 'NEWRSA'
+    signFunction: 'NEWRSA',                       //Функция вычисления цифровой подписи и генерации паролей(пустая-значит, по умолчанию используется), 'GOST' 'GOST256' 'NEWRSA'
     keyLength: 2048,                        //Key length for some algorithms
+    generatorFunction: 'NEWRSA',            //Key generator function
 
 
     //Enabled plugins
@@ -146,6 +145,8 @@ const config = {
     plugins: [                          //Crypto and other plugins
         "iz3-basic-crypto"
     ],
+    "appConfig": {                          //DApp config placement
+    }
 
 
 };
@@ -162,23 +163,24 @@ Array.prototype.remove = function (from, to) {
 
 global.PATH = {}; //object for saving paths
 global.PATH.configDir = path.dirname(program.config);
+let loadedConfig;
 
 try {
-    let loadedConfig = JSON.parse(fs.readFileSync(program.config));
-    for (let i in config) {
-        if(typeof loadedConfig[i] !== 'undefined') {
-            config[i] = loadedConfig[i];
-        }
-    }
+
+    config = _.defaultsDeep(JSON.parse(fs.readFileSync(program.config)), config);
 
 
-    /*   try {
-           fs.writeFileSync('config.json', JSON.stringify(config));
-       } catch (e) {
-           console.log('Info: Can\'t save config');
-       }*/
 } catch (e) {
-    logger.info('No configure found. Using standard configuration.');
+    logger.warning('No configure found. Using standard configuration.');
+}
+
+
+if(program.writeConfig) {
+    try {
+        fs.writeFileSync(program.writeConfig, JSON.stringify(config));
+    } catch (e) {
+        logger.warning('Can\'t save config');
+    }
 }
 
 config.program = program;
@@ -280,4 +282,3 @@ if(!program.fallOnErrors) {
         logger.error('Uncaught exception: ' + err);
     });
 }
-

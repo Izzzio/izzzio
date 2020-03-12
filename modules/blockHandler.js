@@ -41,7 +41,7 @@ class BlockHandler {
         this.keyring = [];
 
         try {
-            this.keyring = JSON.parse(fs.readFileSync(config.workDir + "/keyring.json"));
+            this.keyring = JSON.parse(fs.readFileSync(config.workDir + '/keyring.json'));
         } catch (e) {
         }
 
@@ -58,11 +58,12 @@ class BlockHandler {
      * @param {function} handler
      */
     registerBlockHandler(type, handler) {
-        if(typeof handler !== "function") {
+
+        if(typeof handler !== 'function') {
             return false;
         }
 
-        if(typeof this._blocksHandlers[type] === "undefined") {
+        if(typeof this._blocksHandlers[type] === 'undefined') {
             this._blocksHandlers[type] = [];
         }
 
@@ -80,7 +81,7 @@ class BlockHandler {
 
     log(string) {
         if(this.enableLogging) {
-            console.log(new Date().toUTCString() + ": " + string);
+            console.log((new Date()).toUTCString() + ': ' + string);
         }
     }
 
@@ -105,12 +106,12 @@ class BlockHandler {
             return;
         }
         that.syncInProgress = true;
-        storj.put("syncInProgress", true);
+        storj.put('syncInProgress', true);
 
-        logger.info("Blockchain resynchronization started");
+        logger.info('Blockchain resynchronization started');
         that.clearDb(function () {
             that.playBlockchain(0, function () {
-                logger.info("Blockchain resynchronization finished");
+                logger.info('Blockchain resynchronization finished');
                 if(cb) {
                     cb();
                 }
@@ -153,7 +154,7 @@ class BlockHandler {
     playBlockchain(fromBlock, cb) {
         let that = this;
         that.syncInProgress = true;
-        storj.put("syncInProgress", true);
+        storj.put('syncInProgress', true);
         if(!that.config.program.verbose) {
             that.enableLogging = false;
             logger.disable = true;
@@ -168,14 +169,14 @@ class BlockHandler {
                     if(prevBlock !== null) {
                         if(JSON.parse(prevBlock).hash !== JSON.parse(result).previousHash) {
                             if(that.config.program.autofix) {
-                                logger.info("Autofix: Delete chain data after " + i + " block");
+                                logger.info('Autofix: Delete chain data after ' + i + ' block');
 
                                 for (let a = i; a < that.maxBlock + 1; a++) {
                                     await that.blockchain.delAsync(a);
                                 }
 
-                                logger.info("Info: Autofix: Set new blockchain height " + i);
-                                await that.blockchain.putAsync("maxBlock", i - 1);
+                                logger.info('Info: Autofix: Set new blockchain height ' + i);
+                                await that.blockchain.putAsync('maxBlock', i - 1);
                                 that.syncInProgress = false;
                                 storj.put("syncInProgress", false);
                                 that.enableLogging = true;
@@ -190,20 +191,20 @@ class BlockHandler {
                                 break;
                             } else {
                                 logger.disable = false;
-                                console.log("PREV", JSON.parse(prevBlock));
-                                console.log("CURR", JSON.parse(result));
-                                logger.fatalFall("Saved chain corrupted in block " + i + ". Remove wallets and blocks dirs for resync. Also you can use --autofix");
+                                console.log('PREV', JSON.parse(prevBlock));
+                                console.log('CURR', JSON.parse(result));
+                                logger.fatalFall('Saved chain corrupted in block ' + i + '. Remove wallets and blocks dirs for resync. Also you can use --autofix');
                             }
                         }
                     }
                     prevBlock = result;
                 } catch (e) {
                     if(that.config.program.autofix) {
-                        console.log("Info: Autofix: Set new blockchain height " + (i - 1));
-                        await that.blockchain.putAsync("maxBlock", i - 1);
+                        console.log('Info: Autofix: Set new blockchain height ' + (i - 1));
+                        await that.blockchain.putAsync('maxBlock', i - 1);
                     } else {
                         console.log(e);
-                        logger.fatalFall("Saved chain corrupted. Remove wallets and blocks dirs for resync. Also you can use --autofix");
+                        logger.fatalFall('Saved chain corrupted. Remove wallets and blocks dirs for resync. Also you can use --autofix');
                     }
                     //continue;
                 } //No important error. Ignore
@@ -211,12 +212,12 @@ class BlockHandler {
             }
 
             that.syncInProgress = false;
-            storj.put("syncInProgress", false);
+            storj.put('syncInProgress', false);
             that.enableLogging = true;
             logger.disable = false;
             that.wallet.enableLogging = true;
 
-            if(typeof cb !== "undefined") {
+            if(typeof cb !== 'undefined') {
                 cb();
             }
         })();
@@ -230,20 +231,24 @@ class BlockHandler {
      */
     handleBlock(block, callback) {
         let that = this;
-        if(typeof callback === "undefined") {
+        if(typeof callback === 'undefined') {
             callback = function () {
                 //Dumb
-            };
+            }
         }
 
         try {
             let blockData;
-            try {
-                blockData = JSON.parse(block.data);
-            } catch (e) {
-                logger.info("Not JSON block " + block.index);
-                return callback();
-            }
+           // if(typeof block.data !== 'object') {
+                try {
+                    blockData = JSON.parse(block.data);
+                } catch (e) {
+                    logger.info('Not JSON block ' + block.index);
+                    return callback();
+                }
+           /* } else {
+                blockData = block.data;
+            }*/
 
             if(block.index === keyEmissionMaxBlock) {
                 if(that.keyring.length === 0) {

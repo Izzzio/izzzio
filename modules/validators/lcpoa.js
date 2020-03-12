@@ -84,9 +84,10 @@ function generateNextBlock(blockData, cb, cancelCondition) {
     /*if(miningNow) {
      return;
      }*/
-    if(typeof blockData === 'object') {
+
+   /* if(typeof blockData === 'object') {
         blockData = JSON.stringify(blockData);
-    }
+    }*/
 
     /*if(blockchain.config.program.disableMining){
         throw('Error: Mining disabled');
@@ -134,6 +135,7 @@ function generateNextBlock(blockData, cb, cancelCondition) {
                 console.log('Mining: New block found ' + nextHash);
                 blockchain.miningNow--;
                 blockchain.setMiningForce(blockchain.miningNow, blockchain.miningForce);
+
                 cb(new Block(nextIndex, previousBlock.hash, nextTimestamp, blockData, nextHash, startTimestamp, ''));
             } else {
                 setTimeout(tryMine, blockchain.config.lcpoaVariantTime);
@@ -196,7 +198,7 @@ function generateEmptyBlockCheck() {
  * @return {boolean}
  */
 function isReady() {
-    if(blockchain.config.program.disableMining){
+    if(blockchain.config.program.disableMining) {
         return false;
     }
     return true;
