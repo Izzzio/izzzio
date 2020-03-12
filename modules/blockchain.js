@@ -33,7 +33,7 @@ class Blockchain {
     constructor() {
         this.config = storj.get('config');
         this.db = new KeyValue(this.config.blocksDB);
-        this.cache = new CacheStorage(this.config.cacheLiveTime);
+        this.cache = new CacheStorage(this.config.cacheLifeTime);
     }
 
     getLevelup() {

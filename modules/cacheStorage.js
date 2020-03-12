@@ -18,8 +18,8 @@
 
  class CacheStorage {
 
-   constructor(cacheLiveTime) {
-     this.cacheLiveTime = cacheLiveTime;
+   constructor(cacheLifeTime) {
+     this.cacheLifeTime = cacheLifeTime;
    }
 
    add(key, value) {
@@ -27,7 +27,7 @@
        this[key] = value;
        setTimeout(() => {
          delete this[key];
-       }, this.cacheLiveTime);
+       }, this.cacheLifeTime);
      }
    }
 
