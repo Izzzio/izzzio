@@ -179,7 +179,7 @@ class mainToken extends TokenContract {
      */
     checkContractAddress(address) {
         let addr = parseFloat(address);
-        return !isNaN(addr) && isFinite(address) && (~~addr) === addr;
+        return !isNaN(addr) && isFinite(address) && addr % 1 === 0;
     }
 
     /**
