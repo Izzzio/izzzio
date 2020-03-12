@@ -19,6 +19,7 @@
 const logger = new (require('./logger'))();
 const storj = require('./instanceStorage');
 const KeyValue = require('./keyvalue');
+const CacheStorage = require('./cacheStorage')
 const levelup = require('levelup');
 const memdown = require('memdown');
 const leveldown = require('leveldown');
@@ -34,6 +35,7 @@ class Blockchain {
         //this.levelup = levelup(leveldown(this.config.workDir + '/blocks'));
         //this.levelup = levelup(memdown());//levelup(this.config.workDir + '/blocks');
         this.db = new KeyValue(this.config.blocksDB);
+        this.cache = CacheStorage(this.config['cacheLiveTime']);
     }
 
     getLevelup() {
@@ -54,8 +56,24 @@ class Blockchain {
         that.db.put(key, value, callback);
     }
 
-    getAsync(key) {
-        return this.db.getAsync(key);
+    async getAsync(key) {
+      if (this.cache.isInCache(key)) {
+        return this.cache.get(key);
+      }
+      let value = await this.db.getAsync(key);
+      this.cache.add(key, value);
+      return value;
+
+      // return this.db.getAsync(key).then(
+      //   function(value) {
+      //     cache.add(value);
+      //     return value;
+      //   }
+      // ).catch(
+      //   function(error) {
+      //     throwError();
+      //   }
+      // );
     }
 
     putAsync(key, data) {

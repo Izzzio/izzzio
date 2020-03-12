@@ -145,8 +145,9 @@ let config = {
         "iz3-basic-crypto"
     ],
     "appConfig": {                          //DApp config placement
-    }
+    },
 
+    "cacheLiveTime": 50
 
 };
 
