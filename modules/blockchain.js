@@ -64,8 +64,6 @@ class Blockchain {
                 callback(err);
             })
         }
-        // let that = this;
-        // that.db.put(key, data, callback);
     }
 
     async getAsync(key) {
