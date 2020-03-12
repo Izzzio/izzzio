@@ -1962,6 +1962,7 @@ function Blockchain(config) {
      */
     function loadPlugin(plugin, blockchainObject, config, storj) {
         let pluginMod;
+        let compareVersions = new compareVersions();
         try {
             //Direct module loading attempt
             try {
@@ -1970,6 +1971,26 @@ function Blockchain(config) {
 
                 //Plugins path
                 try {
+
+
+
+
+                    try {
+                        let pluginInfo = require('./plugins/' + plugin+'/package.json');
+                        let izzzioVersionNeedMin = ((pluginInfo || {}).engines || {}).izzzio;
+                        if(izzzioVersionNeedMin){
+                            izzzioVersionNeedMin = semver.minVersion(izzzioVersionNeedMin).version;
+                            if(semver.lte(izzzioVersionNeedMin, config.program.version())){
+                                return {'from': plugin, 'msg': 'need min version izzzio: '+izzzioVersionNeedMin};
+                            }
+                        }
+                    } catch (e) {
+                        return e;
+                    }
+
+
+
+
                     pluginMod = require('./plugins/' + plugin)(blockchainObject, config, storj);
                 } catch (e) {
 
