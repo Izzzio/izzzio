@@ -155,6 +155,7 @@ const _ = require('lodash');
 const fs = require('fs-extra');
 const Blockchain = require('./Blockchain');
 const path = require('path');
+const _ = require ('lodash');
 Array.prototype.remove = function (from, to) {
     let rest = this.slice((to || from) + 1 || this.length);
     this.length = from < 0 ? this.length + from : from;
@@ -166,12 +167,17 @@ global.PATH.configDir = path.dirname(program.config);
 let loadedConfig;
 
 try {
-    loadedConfig = JSON.parse(fs.readFileSync(program.config));
+
+    config = _.defaultsDeep(JSON.parse(fs.readFileSync(program.config)), config);
+
+     
+
+
 } catch (e) {
     logger.warning('No configure found. Using standard configuration.');
 }
 
-config = _.defaultsDeep(loadedConfig, config);
+
 
 if(program.writeConfig) {
     try {
@@ -280,4 +286,3 @@ if(!program.fallOnErrors) {
         logger.error('Uncaught exception: ' + err);
     });
 }
-
