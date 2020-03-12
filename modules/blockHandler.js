@@ -239,16 +239,16 @@ class BlockHandler {
 
         try {
             let blockData;
-           // if(typeof block.data !== 'object') {
-                try {
-                    blockData = JSON.parse(block.data);
-                } catch (e) {
-                    logger.info('Not JSON block ' + block.index);
-                    return callback();
-                }
-           /* } else {
-                blockData = block.data;
-            }*/
+            // if(typeof block.data !== 'object') {
+            try {
+                blockData = JSON.parse(block.data);
+            } catch (e) {
+                logger.info('Not JSON block ' + block.index);
+                return callback();
+            }
+            /* } else {
+                 blockData = block.data;
+             }*/
 
             if(block.index === keyEmissionMaxBlock) {
                 if(that.keyring.length === 0) {
