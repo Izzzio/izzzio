@@ -178,7 +178,8 @@ class mainToken extends TokenContract {
      * @param {string} address contract address
      */
     checkContractAddress(address) {
-        return !isNaN(parseFloat(address)) && isFinite(address);
+        let addr = parseFloat(address);
+        return !isNaN(addr) && isFinite(address) && addr % 1 === 0;
     }
 
     /**
