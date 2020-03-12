@@ -152,11 +152,9 @@ let config = {
 };
 
 //*********************************************************************
-const _ = require('lodash');
 const fs = require('fs-extra');
 const Blockchain = require('./Blockchain');
 const path = require('path');
-const _ = require ('lodash');
 Array.prototype.remove = function (from, to) {
     let rest = this.slice((to || from) + 1 || this.length);
     this.length = from < 0 ? this.length + from : from;
@@ -172,16 +170,9 @@ try {
     config = _.defaultsDeep(JSON.parse(fs.readFileSync(program.config)), config);
 
 
-    
-
-     
-
-
-
 } catch (e) {
     logger.warning('No configure found. Using standard configuration.');
 }
-
 
 
 if(program.writeConfig) {
