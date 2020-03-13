@@ -80,6 +80,10 @@ jobs:
           cd /home/runner/work/izzzio/
           zip -r izzzio.zip izzio/*
 
+      - name: check directory
+        shell: bash
+        run: ls
+
       - name: Upload Windows Distro
         uses: actions/upload-artifact@v1
         with: 
