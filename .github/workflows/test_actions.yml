@@ -1,4 +1,4 @@
-name: Zip
+name: Zips
 
 on: 
   push:
@@ -17,12 +17,11 @@ jobs:
       - name: create zip distro
         shell: bash
         run: |
-          cd ~/work/izzzio
-          cp $(which node) ~/work/izzzio/izzzio/. 
-          zip -r izzzio.zip ~/work/izzzio/izzzio/*
+          cp $(which node) /home/runner/work/izzzio/izzzio/. 
+          zip -r izzzio.zip /home/runner/work/izzzio/izzzio/*
       - name: Test upload 
         uses: actions/upload-artifact@v1
         with:
           name: test_file
-          path: ~/izzzio.zip
+          path: izzzio.zip
       
