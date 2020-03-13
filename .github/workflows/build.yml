@@ -34,7 +34,7 @@ jobs:
           name: iz3node-linux-x64.zip
           path: /home/runner/work/izzzio/izzzio.zip
           
-  Get-Windows-Node-Exe:
+  Get-Windows-Node-Files:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
@@ -58,3 +58,30 @@ jobs:
         with: 
           name: win-node-modules
           path: node_modules
+
+  Build-Windows-Distro:
+    needs: Get-Windows-Node-Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: action/checkout@v1
+      - name: Get Windows Node exe
+        uses: actions/download-artifact@v1
+        with: 
+          name: win-node-exe
+      
+      - name: Get Windows Node modules
+        uses: Get Windows modules
+        with: 
+          name: win-node-modules
+
+      - name: ZIP IT
+        shell: bash
+        run: |
+          cd /home/runner/work/izzzio/
+          zip -r izzzio.zip izzio/*
+
+      - name: Upload Windows Distro
+        uses: actions/upload-artifact@v1
+        with: 
+          name: iz3node-linux-x64.zip
+          path: /home/runner/work/izzzio/izzzio.zip
