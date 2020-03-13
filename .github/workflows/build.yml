@@ -1,9 +1,7 @@
 name: Create Distro
 
 on: 
-  push:
-    branches:
-    - test_actions
+  push
 
 jobs:
   Linux-Distro:
@@ -73,6 +71,10 @@ jobs:
         uses: actions/download-artifact@v1
         with: 
           name: win-node-modules
+        
+      - name: check dir
+        shell: bash
+        run: ls
 
       - name: UNZIP it
         shell: bash
@@ -81,10 +83,6 @@ jobs:
           unzip win-node-modules
           [ -f win-node-exe] && rm win-node-exe
           [ -f win-node-modules ] && rm win-node-modules
-
-      - name: check dir
-        shell: bash
-        run: ls
 
       - name: ZIP it
         shell: bash
