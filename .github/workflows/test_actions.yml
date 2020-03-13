@@ -15,17 +15,20 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
+
       - name: create zip distro
         shell: bash
         run: |
           cp $(which node) /home/runner/work/izzzio/izzzio/.
           cd /home/runner/work/izzzio/
           zip -r izzzio.zip izzzio/*
+
       - name: Upload Linux distro
         uses: actions/upload-artifact@v1
         with:
           name: iz3node-linux-x64.zip
           path: /home/runner/work/izzzio/izzzio.zip
+          
   Windows-Distro:
     runs-on: windows-latest
     steps:
@@ -33,13 +36,16 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
+
       - name: Copy nodejs exe
         uses: cmd
         run: cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
+
       - name: Zip achive
         uses: montudor/action-zip@v0.1.0
         with:
           args: zip -qq "d:\a\izzzio.zip" -d "d:\a\izzzio\izzzio\"
+
       - name: Upload windows distro
         uses: actions/upload-artifact@v1
         with: 
