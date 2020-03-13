@@ -29,7 +29,7 @@
 
 
    /**
-    * 
+    * Add block value to cache with timeout expiration
     * @param {string} key 
     * @param {any} value 
     */
@@ -41,7 +41,7 @@
    }
 
   /**
-   * 
+   * Get block value from cache if it exists in cache, else - undefined
    * @param {String} key 
    * @returns {any}
    */
@@ -56,7 +56,7 @@
    }
 
    /**
-    * 
+    * Delete block value from cache if it exists, else - nothing
     * @param {string} key 
     */
    del(key) {
@@ -67,7 +67,7 @@
    }
    
    /**
-    * 
+    * Check if key exists in cache
     * @param {string} key
     * @returns {boolean} 
     */
@@ -76,7 +76,7 @@
    }
 
    /**
-    * 
+    * Generate timeout for data cache
     * @param {string} key
     * @returns {object} 
     */
