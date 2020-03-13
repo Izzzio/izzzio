@@ -51,7 +51,7 @@ jobs:
         
       - name: check dir
         shell: cmd
-        run: dir > test.txt
+        run: dir .. > test.txt
 
       - name: Upload test file
         uses: actions/upload-artifact@v1
