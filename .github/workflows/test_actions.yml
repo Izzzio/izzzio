@@ -42,14 +42,9 @@ jobs:
         run: |
           cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
 
-      - name: Zip achive
-        uses: montudor/action-zip@v0.1.0
-        with:
-          args: zip -qq "d:\a\izzzio.zip" -d "d:\a\izzzio\izzzio\"
-
       - name: Upload windows distro
         uses: actions/upload-artifact@v1
         with: 
           name: windows-test
-          path: test.txt
+          path: "d:\a\izzzio\izzzio\"
       
