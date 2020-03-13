@@ -48,13 +48,13 @@ jobs:
       - name: Upload Windows Node exe
         uses: actions/upload-artifact@v1
         with:
-          name: win-node-exe.zip
+          name: win-node-exe
           path: "c:\\Program Files\\nodejs\\node.exe"
 
       - name: Upload Node Modules for Windows
         uses: actions/upload-artifact@v1
         with: 
-          name: win-node-modules.zip
+          name: win-node-modules
           path: node_modules
 
   Build-Windows-Distro:
@@ -65,12 +65,12 @@ jobs:
       - name: Get Windows Node exe
         uses: actions/download-artifact@v1
         with: 
-          name: win-node-exe.zip
+          name: win-node-exe
       
       - name: Get Windows Node modules
         uses: actions/download-artifact@v1
         with: 
-          name: win-node-modules.zip
+          name: win-node-modules
         
       - name: check dir
         shell: bash
@@ -82,10 +82,11 @@ jobs:
         run: |
           echo $(pwd)
           WORK_DIR=/home/runner/work/izzzio/izzzio
-          unzip $WORK_DIR/win-node-exe.zip/win-node-exe.zip -d $WORK_DIR
-          unzip $WORK_DIR/win-node-modules.zip/win-node-modules.zip -d $WORK_DIR
-          [ -f $WORK_DIR/win-node-exe.zip ] && rm -r $WORK_DIR/win-node-exe.zip
-          [ -f $WORK_DIR/win-node-modules.zip ] && rm -r $WORK_DIR/win-node-modules.zip
+          mkdir $WORK_DIR/node_modules
+          mv $WORK_DIR/win-node-modules/* $WORK_DIR/node_modules/
+          mv $WORK_DIR/win-node-exe/* $WORK_DIR/.
+          [ -d $WORK_DIR/win-node-exe ] && rm -r $WORK_DIR/win-node-exe
+          [ -d $WORK_DIR/win-node-modules ] && rm -r $WORK_DIR/win-node-modules
 
       - name: ZIP it
         shell: bash
