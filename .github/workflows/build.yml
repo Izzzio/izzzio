@@ -70,7 +70,7 @@ jobs:
           name: win-node-exe
       
       - name: Get Windows Node modules
-        uses: Get Windows modules
+        uses: actions/download-artifact@v1
         with: 
           name: win-node-modules
 
