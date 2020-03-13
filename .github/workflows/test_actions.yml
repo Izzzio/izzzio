@@ -54,10 +54,6 @@ jobs:
           name: win-node-exe
           path: "c:\\Program Files\\nodejs\\node.exe"
 
-      - name: Check izzzio dir
-        shell: cmd
-        run: dir "d:\a\izzzio\izzzio\" > test_dir.txt
-
       - name: Upload test file
         uses: actions/upload-artifact@v1
         with:
@@ -68,4 +64,4 @@ jobs:
         uses: actions/upload-artifact@v1
         with: 
           name: win-node-modules
-          path: "d:\\a\\izzzio\\izzzio\\node_modules"
+          path: node_modules
