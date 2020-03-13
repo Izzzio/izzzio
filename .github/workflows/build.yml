@@ -45,16 +45,16 @@ jobs:
         shell: cmd
         run: npm install "d:\a\izzzio\izzzio"
           
-      - name: Upload windows distro
+      - name: Upload Windows Node exe
         uses: actions/upload-artifact@v1
         with:
-          name: win-node-exe
+          name: win-node-exe.zip
           path: "c:\\Program Files\\nodejs\\node.exe"
 
       - name: Upload Node Modules for Windows
         uses: actions/upload-artifact@v1
         with: 
-          name: win-node-modules
+          name: win-node-modules.zip
           path: node_modules
 
   Build-Windows-Distro:
@@ -79,10 +79,10 @@ jobs:
       - name: UNZIP it
         shell: bash
         run: |
-          unzip win-node-exe
-          unzip win-node-modules
-          [ -f win-node-exe] && rm win-node-exe
-          [ -f win-node-modules ] && rm win-node-modules
+          unzip win-node-exe.zip
+          unzip win-node-modules.zip
+          [ -f win-node-exe.zip ] && rm win-node-exe.zip
+          [ -f win-node-modules.zip ] && rm win-node-modules.zip
 
       - name: ZIP it
         shell: bash
