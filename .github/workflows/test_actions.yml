@@ -39,7 +39,8 @@ jobs:
 
       - name: Copy nodejs exe
         uses: cmd
-        run: cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe";
+        run: |
+          cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
 
       - name: Zip achive
         uses: montudor/action-zip@v0.1.0
