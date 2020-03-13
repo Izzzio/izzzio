@@ -82,7 +82,11 @@ jobs:
           [ -f win-node-exe] && rm win-node-exe
           [ -f win-node-modules ] && rm win-node-modules
 
-      - name: ZIP IT
+      - name: check dir
+        shell: bash
+        run: ls
+
+      - name: ZIP it
         shell: bash
         run: |
           cd /home/runner/work/izzzio/
