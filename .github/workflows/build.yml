@@ -75,8 +75,7 @@ jobs:
       - name: check dir
         shell: bash
         run: |
-          echo $(pwd)
-          echo `ls`
+          echo `ls -R`
 
       - name: UNZIP it
         shell: bash
