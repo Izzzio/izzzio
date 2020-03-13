@@ -54,12 +54,6 @@ jobs:
           name: win-node-exe
           path: "c:\\Program Files\\nodejs\\node.exe"
 
-      - name: Upload test file
-        uses: actions/upload-artifact@v1
-        with:
-          name: test-file
-          path: test_dir.txt
-
       - name: Upload Node Modules for Windows
         uses: actions/upload-artifact@v1
         with: 
