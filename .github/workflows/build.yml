@@ -43,7 +43,7 @@ jobs:
         with:
           node-version: '10.x'
 
-      - name: npm install
+      - name: NPM install
         shell: cmd
         run: npm install "d:\a\izzzio\izzzio"
           
@@ -63,7 +63,7 @@ jobs:
     needs: Get-Windows-Node-Files
     runs-on: ubuntu-latest
     steps:
-      - uses: action/checkout@v1
+      - uses: actions/checkout@v1
       - name: Get Windows Node exe
         uses: actions/download-artifact@v1
         with: 
