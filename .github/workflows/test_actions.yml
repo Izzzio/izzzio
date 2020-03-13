@@ -33,15 +33,12 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-      - name: Test Shell
-        shell: cmd
-        run: dir d:\ > test.txt
-      - name: T1
-        shell: cmd
-        run: dir c:\ >> test.txt
-      - name: T2
-        shell: cmd
-        run: dir "c:\Program Files" >> test.txt
+      - name: Copy nodejs exe
+        uses: cmd
+        run: cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
+      - uses: montudor/action-zip@v0.1.0
+        with:
+          args: zip -qq "d:\a\izzzio.zip" -d "d:\a\izzzio\izzzio\"
       - name: Upload windows distro
         uses: actions/upload-artifact@v1
         with: 
