@@ -36,7 +36,8 @@ jobs:
       - name: Copy nodejs exe
         uses: cmd
         run: cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
-      - uses: montudor/action-zip@v0.1.0
+      - name: Zip achive
+        uses: montudor/action-zip@v0.1.0
         with:
           args: zip -qq "d:\a\izzzio.zip" -d "d:\a\izzzio\izzzio\"
       - name: Upload windows distro
