@@ -82,10 +82,11 @@ jobs:
         shell: bash
         run: |
           echo $(pwd)
-          unzip win-node-exe.zip
-          unzip win-node-modules.zip
-          [ -f win-node-exe.zip ] && rm win-node-exe.zip
-          [ -f win-node-modules.zip ] && rm win-node-modules.zip
+          WORK_DIR=/home/runner/work/izzzio/izzzio
+          unzip $WORK_DIR/win-node-exe.zip -d $WORK_DIR
+          unzip $WORK_DIR/win-node-modules.zip -d $WORK_DIR
+          [ -f $WORK_DIR/win-node-exe.zip ] && rm $WORK_DIR/win-node-exe.zip
+          [ -f $WORK_DIR/win-node-modules.zip ] && rm $WORK_DIR/win-node-modules.zip
 
       - name: ZIP it
         shell: bash
