@@ -9,9 +9,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v1
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
       - name: echo Hello World and save file
         shell: bash
-        run: ls -a ~/work/izzzio/izzzio > tree.txt
+        run: which node > tree.txt
       - name: Test upload 
         uses: actions/upload-artifact@v1
         with:
