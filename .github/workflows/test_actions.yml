@@ -1,4 +1,4 @@
-name: Test
+name: Zip
 
 on: 
   push:
@@ -14,12 +14,15 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-      - name: echo Hello World and save file
+      - name: create zip distro
         shell: bash
-        run: which node > tree.txt
+        run: |
+          cd ~/work/izzzio
+          cp $(which node) ~/work/izzzio/izzzio/. 
+          zip -r izzzio.zip ~/work/izzzio/izzzio/*
       - name: Test upload 
         uses: actions/upload-artifact@v1
         with:
           name: test_file
-          path: tree.txt
+          path: ~/izzzio.zip
       
