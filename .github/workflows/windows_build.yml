@@ -16,7 +16,7 @@ jobs:
 
       - name: npm install
         shell: cmd
-        run: npm install
+        run: npm install "d:\a\izzzio\izzzio"
           
       - name: Upload windows distro
         uses: actions/upload-artifact@v1
