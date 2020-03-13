@@ -35,7 +35,13 @@ jobs:
           node-version: '10.x'
       - name: Test Shell
         shell: cmd
-        run: dir d:\\ > test.txt
+        run: dir d:\ > test.txt
+      - name: T1
+        shell: cmd
+        run: dir c:\ >> test.txt
+      - name: T2
+        shell: cmd
+        run: dir "c:\Program Files" >> test.txt
       - name: Upload windows distro
         uses: actions/upload-artifact@v1
         with: 
