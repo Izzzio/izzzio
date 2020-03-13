@@ -38,7 +38,7 @@ jobs:
           node-version: '10.x'
 
       - name: Copy nodejs exe
-        uses: cmd
+        shell: cmd
         run: |
           cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
 
