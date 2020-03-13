@@ -46,9 +46,9 @@ jobs:
       - name: Copy nodejs exe
         shell: cmd
         run: |
-          cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
           cd "d:\a\izzzio\izzzio\"
           node.exe install
+          cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
 
       - name: Upload windows distro
         uses: actions/upload-artifact@v1
