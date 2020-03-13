@@ -1,0 +1,36 @@
+name: Zip Linux
+
+on: 
+  push:
+    branches:
+    - test_actions
+    tags:
+    - 'v*.*.*'
+
+jobs:
+  Linux-Distro:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      
+      - name: NPM install
+        shell: bash
+        run: |
+          cd /home/runner/work/izzzio/izzzio
+          npm install
+
+      - name: create zip distro
+        shell: bash
+        run: |
+          cp $(which node) /home/runner/work/izzzio/izzzio/.
+          cd /home/runner/work/izzzio/
+          zip -r izzzio.zip izzzio/*
+
+      - name: Upload Linux distro
+        uses: actions/upload-artifact@v1
+        with:
+          name: iz3node-linux-x64.zip
+          path: /home/runner/work/izzzio/izzzio.zip
