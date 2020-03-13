@@ -28,7 +28,7 @@ jobs:
         with:
           name: iz3node-linux-x64.zip
           path: /home/runner/work/izzzio/izzzio.zip
-          
+
   Windows-Distro:
     runs-on: windows-latest
     steps:
@@ -39,7 +39,7 @@ jobs:
 
       - name: Copy nodejs exe
         uses: cmd
-        run: cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
+        run: cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe";
 
       - name: Zip achive
         uses: montudor/action-zip@v0.1.0
