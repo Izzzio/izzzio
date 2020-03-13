@@ -74,6 +74,14 @@ jobs:
         with: 
           name: win-node-modules
 
+      - name: UNZIP it
+        shell: bash
+        run: |
+          unzip win-node-exe
+          unzip win-node-modules
+          [ -f win-node-exe] && rm win-node-exe
+          [ -f win-node-modules ] && rm win-node-modules
+
       - name: ZIP IT
         shell: bash
         run: |
@@ -87,5 +95,5 @@ jobs:
       - name: Upload Windows Distro
         uses: actions/upload-artifact@v1
         with: 
-          name: iz3node-linux-x64.zip
+          name: iz3node-windows-x64.zip
           path: /home/runner/work/izzzio/izzzio.zip
