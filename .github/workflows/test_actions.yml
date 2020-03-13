@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: echo Hello World and save file
         shell: bash
-        run: ls -a ~/work > tree.txt
+        run: ls -a ~/work/izzzio > tree.txt
       - name: Test upload 
         uses: actions/upload-artifact@v1
         with:
