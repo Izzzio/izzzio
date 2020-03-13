@@ -9,6 +9,7 @@ jobs:
   Get-Windows-Node-Exe:
     runs-on: windows-2019
     steps:
+      - uses: actions/checkout@v1
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
