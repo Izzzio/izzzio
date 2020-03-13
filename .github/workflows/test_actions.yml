@@ -16,5 +16,5 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: test_file
-          path: test_test/test_test_test_test.test
+          path: test_test
       
