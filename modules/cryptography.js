@@ -274,17 +274,10 @@ class Cryptography {
         //External hash function
         if(this._hashFunctions[this.config.hashFunction]) {
             return this._hashFunctions[this.config.hashFunction](data);
-        }
-
-        let bData = this.data2Buffer(data);
-        let hashBuffer;
-        if(this.gostDigest) {
-            hashBuffer = this.gostDigest.digest(bData);
         } else {
             logger.fatalFall('No hash functions found');
             return '';
         }
-        return this.coding.Hex.encode(hashBuffer).replace('\r\n', '');
     }
 }
 
