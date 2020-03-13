@@ -45,13 +45,7 @@ jobs:
 
       - name: npm install
         shell: cmd
-        run: |
-          cd "d:\a\izzzio\izzzio\"
-          npm install
-        
-      - name: check dir
-        shell: cmd
-        run: dir .. > test.txt
+        run: npm install
 
       - name: Upload test file
         uses: actions/upload-artifact@v1
