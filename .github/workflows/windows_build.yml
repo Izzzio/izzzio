@@ -19,12 +19,6 @@ jobs:
       - name: npm install
         shell: cmd
         run: npm install
-
-      - name: Upload test file
-        uses: actions/upload-artifact@v1
-        with:
-          name: test-file
-          path: test.txt
           
       - name: Upload windows distro
         uses: actions/upload-artifact@v1
