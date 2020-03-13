@@ -4,12 +4,13 @@ on:
   push:
     branches:
     - test_actions
+    tags:
+    - 'v*.*.*'
 
 jobs:
-  build:
+  Linux-Distro:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
@@ -20,9 +21,24 @@ jobs:
           cp $(which node) /home/runner/work/izzzio/izzzio/.
           cd /home/runner/work/izzzio/
           zip -r izzzio.zip izzzio/*
-      - name: Test upload 
+      - name: Upload Linux distro
         uses: actions/upload-artifact@v1
         with:
-          name: test_file
+          name: iz3node-linux-x64.zip
           path: /home/runner/work/izzzio/izzzio.zip
+  Windows-Distro:
+    runs-on: windows-latest
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: Test Shell
+        shell: cmd
+        run: dir > test.txt
+      - name: Upload windows distro
+        uses: actions/upload-artifact@v1
+        with: 
+          name: windows-test
+          path: test.txt
       
