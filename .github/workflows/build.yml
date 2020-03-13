@@ -74,11 +74,12 @@ jobs:
         
       - name: check dir
         shell: bash
-        run: ls
+        run: 
 
       - name: UNZIP it
         shell: bash
         run: |
+          echo $(pwd)
           unzip win-node-exe.zip
           unzip win-node-modules.zip
           [ -f win-node-exe.zip ] && rm win-node-exe.zip
