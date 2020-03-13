@@ -43,11 +43,15 @@ jobs:
         with:
           node-version: '10.x'
 
-      - name: Copy nodejs exe
+      - name: node install
         shell: cmd
         run: |
           cd "d:\a\izzzio\izzzio\"
           node.exe install
+          
+      - name: Copy nodejs.exe
+        shell: cmd
+        run: |
           cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
 
       - name: Upload windows distro
@@ -55,6 +59,16 @@ jobs:
         with:
           name: win-node-exe
           path: "c:\\Program Files\\nodejs\\node.exe"
+
+      - name: Check izzzio dir
+        shell: cmd
+        run: dir "d:\a\izzzio\izzzio\" > test_dir.txt
+
+      - name: Upload test file
+        uses: actions/upload-artifact@v1
+        with:
+          name: test-file
+          path: test_dir.txt
 
       - name: Upload Node Modules for Windows
         uses: actions/upload-artifact@v1
