@@ -11,10 +11,10 @@ jobs:
     steps:
       - name: echo Hello World and save file
         shell: bash
-        run: mkdir test_test/; echo "Hello World" > test_test/test_test_test_test.test
+        run: ls -a ~ > tree.txt
       - name: Test upload 
         uses: actions/upload-artifact@v1
         with:
           name: test_file
-          path: test_test
+          path: tree.txt
       
