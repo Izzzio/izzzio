@@ -46,7 +46,6 @@ jobs:
       - name: node install
         shell: cmd
         run: |
-          cd "d:\a\izzzio\izzzio\"
           node.exe install
           
       - name: Copy nodejs.exe
