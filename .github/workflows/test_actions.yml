@@ -46,7 +46,7 @@ jobs:
       - name: node install
         shell: cmd
         run: |
-          node install
+          npm install
           
       - name: Upload windows distro
         uses: actions/upload-artifact@v1
