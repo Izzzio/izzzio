@@ -17,11 +17,12 @@ jobs:
       - name: create zip distro
         shell: bash
         run: |
-          cp $(which node) /home/runner/work/izzzio/izzzio/. 
-          zip -r izzzio.zip /home/runner/work/izzzio/izzzio/*
+          cp $(which node) /home/runner/work/izzzio/izzzio/.
+          cd /home/runner/work/izzzio/
+          zip -r izzzio.zip izzzio/*
       - name: Test upload 
         uses: actions/upload-artifact@v1
         with:
           name: test_file
-          path: izzzio.zip
+          path: /home/runner/work/izzzio/izzzio.zip
       
