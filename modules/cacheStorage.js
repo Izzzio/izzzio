@@ -18,33 +18,73 @@
 
  class CacheStorage {
 
+  /**
+   * 
+   * @param {number} cacheLifeTime 
+   */
    constructor(cacheLifeTime) {
      this.cacheLifeTime = cacheLifeTime;
+     this._cache = {};
    }
 
+
+   /**
+    * 
+    * @param {string} key 
+    * @param {any} value 
+    */
    add(key, value) {
-     if (!(key in this)) {
-       this[key] = value;
-       setTimeout(() => {
-         delete this[key];
-       }, this.cacheLifeTime);
+     if (! this._isInCache) {
+       this._cache[key]['value'] = value;
+       this._cache[key]['expire'] = this._generateTimeout(key);
      }
    }
 
-   async get(key) {
-     let that = this;
-     return new Promise(function(resolve, reject) {
-       if (key in that) {
-         resolve(that[key]);
-       } else {
-         reject("key not found");
-       }
-     });
+  /**
+   * 
+   * @param {String} key 
+   * @returns {any}
+   */
+   get(key) {
+     if (this._isInCache(key)) {
+       clearTimeout(this._cache[key]['expire']);
+       this._cache[key]['expire'] = this._generateTimeout(key);
+       return this._cache[key]['value'];
+     } else {
+       return undefined;
+     }
+   }
+
+   /**
+    * 
+    * @param {string} key 
+    */
+   del(key) {
+     if (this._isInCache(key)) {
+       clearTimeout(this._cache[key]['expire']);
+       delete this._cache[key];
+     }
    }
    
-   isInCache(key) {
-     return (key in this);
+   /**
+    * 
+    * @param {string} key
+    * @returns {boolean} 
+    */
+   _isInCache(key) {
+     return (key in this._cache);
    }
+
+   /**
+    * 
+    * @param {string} key
+    * @returns {object} 
+    */
+   _generateTimeout(key) {
+     return setTimeout(() => {
+       delete this._cache[key];
+     }, this.cacheLifeTime);
+   } 
  }
 
  module.exports = CacheStorage; 

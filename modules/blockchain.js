@@ -33,9 +33,9 @@ class Blockchain {
     constructor() {
         this.config = storj.get('config');
         this.db = new KeyValue(this.config.blocksDB);
-        this.cache = new CacheStorage(this.config.cacheLifeTime);
+        this.cache = new CacheStorage(this.config.blockCacheLifeTime);
     }
-
+    
     getLevelup() {
         return this.db.getLevelup();
     }
@@ -67,11 +67,11 @@ class Blockchain {
     }
 
     async getAsync(key) {
-      if (this.cache.isInCache(key)) {
-        return this.cache.get(key);
+      let value = await this.cache.get(key);
+      if (value === undefined) {
+        value = await this.db.getAsync(key);
+        this.cache.add(key, value);
       }
-      let value = await this.db.getAsync(key);
-      this.cache.add(key, value);
       return value;
     }
 
@@ -91,7 +91,8 @@ class Blockchain {
         }
     }
 
-    async delAsync(key) {
+    delAsync(key) {
+        this.cache.del(key);
         return this.db.delAsync(key);
     }
 

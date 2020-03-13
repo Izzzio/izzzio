@@ -147,7 +147,7 @@ let config = {
     "appConfig": {                          //DApp config placement
     },
 
-    cacheLifeTime: 50
+    blockCacheLifeTime: 50
 
 };
 
