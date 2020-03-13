@@ -7,7 +7,7 @@ on:
 
 jobs:
   Get-Windows-Node-Exe:
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - name: Setup Node
         uses: actions/setup-node@v1
