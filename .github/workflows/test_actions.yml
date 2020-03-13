@@ -46,13 +46,8 @@ jobs:
       - name: node install
         shell: cmd
         run: |
-          node.exe install
+          node install
           
-      - name: Copy nodejs.exe
-        shell: cmd
-        run: |
-          cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
-
       - name: Upload windows distro
         uses: actions/upload-artifact@v1
         with:
