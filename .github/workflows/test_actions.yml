@@ -15,6 +15,12 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
+      
+      - name: NPM install
+        shell: bash
+        run: |
+          cd /home/runner/work/izzzio/izzzio
+          npm install
 
       - name: create zip distro
         shell: bash
@@ -29,7 +35,7 @@ jobs:
           name: iz3node-linux-x64.zip
           path: /home/runner/work/izzzio/izzzio.zip
 
-  Windows-Distro:
+  Get-Windows-Node-Exe:
     runs-on: windows-latest
     steps:
       - name: Setup Node
@@ -41,10 +47,17 @@ jobs:
         shell: cmd
         run: |
           cp "c:\Program Files\nodejs\node.exe" "d:\a\izzzio\izzzio\node.exe"
+          cd "d:\a\izzzio\izzzio\"
+          node.exe install
 
       - name: Upload windows distro
         uses: actions/upload-artifact@v1
+        with:
+          name: win-node-exe
+          path: "c:\\Program Files\\nodejs\\node.exe"
+
+      - name: Upload Node Modules for Windows
+        uses: actions/upload-artifact@v1
         with: 
-          name: windows-test
-          path: "d:\\a\\izzzio\\izzzio\\"
-      
+          name: win-node-modules
+          path: "d:\\a\\izzzio\\izzzio\\node_modules"
