@@ -65,12 +65,12 @@ jobs:
       - name: Get Windows Node exe
         uses: actions/download-artifact@v1
         with: 
-          name: win-node-exe
+          name: win-node-exe.zip
       
       - name: Get Windows Node modules
         uses: actions/download-artifact@v1
         with: 
-          name: win-node-modules
+          name: win-node-modules.zip
         
       - name: check dir
         shell: bash
