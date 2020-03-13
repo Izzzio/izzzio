@@ -46,6 +46,7 @@ jobs:
       - name: npm install
         shell: cmd
         run: |
+          cd "d:\a\izzzio\izzzio\"
           npm install
         
       - name: check dir
