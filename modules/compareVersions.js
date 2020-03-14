@@ -8,14 +8,15 @@
 const semver = require('semver');
 
 class CompareVersions {
-    constructor() {
+    constructor(isPathFull) {
+        this.prePath = isPathFull ? '' : __dirname;
         this.keys = {
             izzzio: ['engines', 'izzzio'],
         };
     }
 
     readIzzzioMinVersionNeeded(path) {
-        let pluginInfo = require(__dirname + '/.' + path + '/package.json');
+        let pluginInfo = require(this.prePath + path + '/package.json');
 
         return ((pluginInfo || {})[this.keys.izzzio[0]] || {})[this.keys.izzzio[1]];
     }

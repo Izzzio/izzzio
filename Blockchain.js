@@ -1964,47 +1964,76 @@ function Blockchain(config) {
     function loadPlugin(plugin, blockchainObject, config, storj) {
         let pluginMod;
         let path = '';
-        let compareVersions = new CompareVersions();
         try {
             //Direct module loading attempt
             try {
-                pluginMod = require(plugin)(blockchainObject, config, storj);
+                path = plugin;
+                let checked = checkEngineIZZZIOOfPlugin('/' + path, false);
+                if(true !== checked){
+                    return checked;
+                }
+                pluginMod = require(path)(blockchainObject, config, storj);
             } catch (e) {
+
                 //Plugins path
                 try {
                     path = './plugins/' + plugin;
-                    try {
-                        let izzzioMinVersionNeed = compareVersions.readIzzzioMinVersionNeeded(path);
-                        if(izzzioMinVersionNeed){
-                            if(!compareVersions.isMinimumVersionMatch(izzzioMinVersionNeed, config.program.version())){
-                                return {'from': plugin, 'msg': 'need min version node: ' + izzzioMinVersionNeed};
-                            }
-                        }
-                    } catch (e) {
-                        return e;
+                    let checked = checkEngineIZZZIOOfPlugin('/.' + path, false);
+                    if(true !== checked){
+                        return checked;
                     }
                     pluginMod = require(path)(blockchainObject, config, storj);
                 } catch (e) {
 
                     //Starting dir search
                     try {
-                        pluginMod = require(process.cwd() + '/' + plugin)(blockchainObject, config, storj);
+                        path = process.cwd() + '/' + plugin;
+                        let checked = checkEngineIZZZIOOfPlugin(path, true);
+                        if(true !== checked){
+                            return checked;
+                        }
+                        pluginMod = require(path)(blockchainObject, config, storj);
                     } catch (e) {
 
                         //Working dir search
                         try {
-                            pluginMod = require(config.workDir + '/' + plugin)(blockchainObject, config, storj);
+                            path = config.workDir + '/' + plugin;
+                            let checked = checkEngineIZZZIOOfPlugin(path, false);
+                            if(true !== checked){
+                                return checked;
+                            }
+                            pluginMod = require(path)(blockchainObject, config, storj);
                         } catch (e) {
 
                             //Node modules in starting dir search
-                            pluginMod = require(process.cwd() + '/node_modules/' + plugin)(blockchainObject, config, storj);
+                            path = process.cwd() + '/node_modules/' + plugin;
+                            let checked = checkEngineIZZZIOOfPlugin(path, true);
+                            if(true !== checked){
+                                return checked;
+                            }
+                            pluginMod = require(path)(blockchainObject, config, storj);
                         }
                     }
                 }
-
             }
         } catch (e) {
             return e;
+        }
+        return true;
+    }
+
+    function checkEngineIZZZIOOfPlugin(path, isPathFull) {
+        try {
+            let compareVersions = new CompareVersions(isPathFull);
+            let izzzioMinVersionNeed = compareVersions.readIzzzioMinVersionNeeded(path);
+            if (!izzzioMinVersionNeed) {
+            } else {
+                if (!compareVersions.isMinimumVersionMatch(izzzioMinVersionNeed, config.program.version())) {
+                    return {'from': path, 'msg': 'need min version node: ' + izzzioMinVersionNeed};
+                }
+            }
+        } catch (e) {
+            //return e;
         }
         return true;
     }
