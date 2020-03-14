@@ -59,6 +59,7 @@ function Blockchain(config) {
     const url = require('url');
     const path = require('path');
     const stableStringify = require('json-stable-stringify');
+    const CompareVersions = require('./modules/CompareVersions');
 
     //Blockchain
     const Block = require('./modules/block');
@@ -1962,36 +1963,27 @@ function Blockchain(config) {
      */
     function loadPlugin(plugin, blockchainObject, config, storj) {
         let pluginMod;
-        let compareVersions = new compareVersions();
+        let path = '';
+        let compareVersions = new CompareVersions();
         try {
             //Direct module loading attempt
             try {
                 pluginMod = require(plugin)(blockchainObject, config, storj);
             } catch (e) {
-
                 //Plugins path
                 try {
-
-
-
-
+                    path = './plugins/' + plugin;
                     try {
-                        let pluginInfo = require('./plugins/' + plugin+'/package.json');
-                        let izzzioVersionNeedMin = ((pluginInfo || {}).engines || {}).izzzio;
-                        if(izzzioVersionNeedMin){
-                            izzzioVersionNeedMin = semver.minVersion(izzzioVersionNeedMin).version;
-                            if(semver.lte(izzzioVersionNeedMin, config.program.version())){
-                                return {'from': plugin, 'msg': 'need min version izzzio: '+izzzioVersionNeedMin};
+                        let izzzioMinVersionNeed = compareVersions.readIzzzioMinVersionNeeded(path);
+                        if(izzzioMinVersionNeed){
+                            if(!compareVersions.isMinimumVersionMatch(izzzioMinVersionNeed, config.program.version())){
+                                return {'from': plugin, 'msg': 'need min version node: ' + izzzioMinVersionNeed};
                             }
                         }
                     } catch (e) {
                         return e;
                     }
-
-
-
-
-                    pluginMod = require('./plugins/' + plugin)(blockchainObject, config, storj);
+                    pluginMod = require(path)(blockchainObject, config, storj);
                 } catch (e) {
 
                     //Starting dir search
