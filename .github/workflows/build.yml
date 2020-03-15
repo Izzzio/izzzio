@@ -1,7 +1,7 @@
 name: Create Distro
 
 on: 
-  push
+  release
 
 jobs:
   Linux-Distro:
@@ -19,7 +19,7 @@ jobs:
           cd /home/runner/work/izzzio/izzzio
           npm install
 
-      - name: create zip distro
+      - name: Create ZIP distro for Linux
         shell: bash
         run: |
           cp $(which node) /home/runner/work/izzzio/izzzio/.
@@ -83,13 +83,13 @@ jobs:
           [ -d $WORK_DIR/win-node-exe ] && rm -r $WORK_DIR/win-node-exe
           [ -d $WORK_DIR/win-node-modules ] && rm -r $WORK_DIR/win-node-modules
 
-      - name: ZIP it
+      - name: Create ZIP distro for Windows
         shell: bash
         run: |
           cd /home/runner/work/izzzio/
           zip -r izzzio.zip izzzio/*
 
-      - name: Upload Windows Distro
+      - name: Upload Windows distro
         uses: actions/upload-artifact@v1
         with: 
           name: iz3node-windows-x64.zip
