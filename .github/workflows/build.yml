@@ -1,6 +1,6 @@
 name: Create Distro
 
-on: 
+on:
   release:
     types: [created]
 
