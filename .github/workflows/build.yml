@@ -71,13 +71,8 @@ jobs:
         uses: actions/download-artifact@v1
         with: 
           name: win-node-modules
-        
-      - name: check dir
-        shell: bash
-        run: |
-          echo `ls -R`
 
-      - name: UNZIP it
+      - name: extract files
         shell: bash
         run: |
           echo $(pwd)
@@ -93,10 +88,6 @@ jobs:
         run: |
           cd /home/runner/work/izzzio/
           zip -r izzzio.zip izzzio/*
-
-      - name: check directory
-        shell: bash
-        run: ls
 
       - name: Upload Windows Distro
         uses: actions/upload-artifact@v1
