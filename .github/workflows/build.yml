@@ -1,0 +1,110 @@
+name: Create Distro
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  Linux-Distro:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      
+      - name: NPM install
+        shell: bash
+        run: |
+          cd /home/runner/work/izzzio/izzzio
+          npm install
+
+      - name: Create ZIP distro for Linux
+        shell: bash
+        run: |
+          cp $(which node) /home/runner/work/izzzio/izzzio/.
+          cd /home/runner/work/izzzio/
+          zip -r izzzio.zip izzzio/*
+
+      - name: Upload Linux distro
+        uses: actions/upload-artifact@v1
+        with:
+          name: iz3node-linux-x64.zip
+          path: /home/runner/work/izzzio/izzzio.zip
+          
+  Get-Windows-Node-Files:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+
+      - name: NPM install
+        shell: cmd
+        run: npm install "d:\a\izzzio\izzzio"
+          
+      - name: Upload Windows Node exe
+        uses: actions/upload-artifact@v1
+        with:
+          name: win-node-exe
+          path: "c:\\Program Files\\nodejs\\node.exe"
+
+      - name: Upload Node Modules for Windows
+        uses: actions/upload-artifact@v1
+        with: 
+          name: win-node-modules
+          path: node_modules
+
+  Build-Windows-Distro:
+    needs: Get-Windows-Node-Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Get Windows Node exe
+        uses: actions/download-artifact@v1
+        with: 
+          name: win-node-exe
+      
+      - name: Get Windows Node modules
+        uses: actions/download-artifact@v1
+        with: 
+          name: win-node-modules
+
+      - name: extract files
+        shell: bash
+        run: |
+          echo $(pwd)
+          WORK_DIR=/home/runner/work/izzzio/izzzio
+          mkdir $WORK_DIR/node_modules
+          mv $WORK_DIR/win-node-modules/* $WORK_DIR/node_modules/
+          mv $WORK_DIR/win-node-exe/* $WORK_DIR/.
+          [ -d $WORK_DIR/win-node-exe ] && rm -r $WORK_DIR/win-node-exe
+          [ -d $WORK_DIR/win-node-modules ] && rm -r $WORK_DIR/win-node-modules
+
+      - name: Create ZIP distro for Windows
+        shell: bash
+        run: |
+          cd /home/runner/work/izzzio/
+          zip -r izzzio.zip izzzio/*
+
+      - name: Upload Windows distro
+        uses: actions/upload-artifact@v1
+        with: 
+          name: iz3node-windows-x64.zip
+          path: /home/runner/work/izzzio/izzzio.zip
+
+  Publish-Binaries:
+    needs: [Build-Windows-Distro, Linux-Distro]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish binaries
+        uses: Roang-zero1/github-upload-release-artifacts-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: 'iz3node-windows-x64.zip iz3node-linux-x64.zip'
+
