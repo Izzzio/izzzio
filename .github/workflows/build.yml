@@ -1,7 +1,8 @@
 name: Create Distro
 
 on: 
-  release
+  release:
+    types: [created]
 
 jobs:
   Linux-Distro:
@@ -62,6 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+
       - name: Get Windows Node exe
         uses: actions/download-artifact@v1
         with: 
@@ -94,3 +96,15 @@ jobs:
         with: 
           name: iz3node-windows-x64.zip
           path: /home/runner/work/izzzio/izzzio.zip
+
+  Publish-Binaries:
+    needs: [Build-Windows-Distro, Linux-Distro]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish binaries
+        uses: Roang-zero1/github-upload-release-artifacts-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: 'iz3node-*-x64.zip'
+
