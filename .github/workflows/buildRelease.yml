@@ -77,7 +77,6 @@ jobs:
       - name: Extract files
         shell: bash
         run: |
-          echo $(pwd)
           WORK_DIR=/home/runner/work/izzzio/izzzio
           mkdir $WORK_DIR/node_modules
           mv $WORK_DIR/win-node-modules/* $WORK_DIR/node_modules/
