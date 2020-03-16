@@ -54,17 +54,6 @@ class Cryptography {
 
         this.repairKey = repairKey;
 
-        let GostSign, GostDigest;
-        //If GOST cryptography enabled, require libraries
-        if(this.config.hashFunction === 'STRIBOG' || this.config.hashFunction === 'STRIBOG512' || this.config.signFunction === 'GOST' || this.config.signFunction === 'GOST512') {
-            try {
-                GostSign = require('../plugins/GOSTModules/gostSign');
-                GostDigest = require('../plugins/GOSTModules/gostDigest');
-            } catch (e) {
-                logger.fatalFall('GOST plugin not found');
-            }
-        }
-
         this.coding = new CodingFunctions();
 
         let hashOptions, signOptions;
@@ -88,15 +77,6 @@ class Cryptography {
                     break;
             }
         }
-        //Create digest
-        if(hashOptions) {
-            this.gostDigest = new GostDigest(hashOptions);
-        }
-        //Create signer
-        if(signOptions) {
-            this.gostSign = new GostSign(signOptions);
-        }
-
     }
 
     /**
@@ -233,19 +213,14 @@ class Cryptography {
         }
 
         let keyPair;
-        if(this.gostSign) {
-            keyPair = this.gostSign.generateKey();
-            keyPair.public = this.coding.Hex.encode(keyPair.publicKey).replace(new RegExp(/\r\n/, 'g'), "");
-            keyPair.private = this.coding.Hex.encode(keyPair.privateKey);
-        } else {
-            logger.fatalFall('No generation functions found');
-            return {private: '', public: ''};
-        }
         if(this.config.signFunction === 'NEWRSA') {
             //get old rsa key in PEM format and convert to utf-16
             keyPair.public = this.PEMToHex(keyPair.public);
+            return {private: keyPair.private, public: keyPair.public};
         }
-        return {private: keyPair.private, public: keyPair.public};
+        
+        logger.fatalFall('No generation functions found');
+        return {private: '', public: ''};
     }
 
     /**
@@ -261,19 +236,8 @@ class Cryptography {
         if(this._signFunctions[this.config.signFunction]) {
             signedData = this._signFunctions[this.config.signFunction].sign(data, key);
         } else {
-            if(this.gostSign) {
-                let bData, bKey;
-                //prepare data for processing
-                bData = this.data2Buffer(data);
-                bKey = this.coding.Hex.decode(key);
-
-                signedData = this.gostSign.sign(bKey, bData);
-                signedData = this.coding.Hex.encode(signedData);
-            } else {
-                logger.fatalFall('No sign functions found');
-                return {data: data, sign: ''};
-            }
-            signedData = signedData.replace('\r\n', ''); //delete wrong symbols
+            logger.fatalFall('No sign functions found');
+            return {data: data, sign: ''};
         }
         return {data: data, sign: signedData};
     }
@@ -294,20 +258,10 @@ class Cryptography {
         //External sign function
         if(this._signFunctions[this.config.signFunction]) {
             return this._signFunctions[this.config.signFunction].validate(data, sign, key);
-        }
-
-        let result;
-        if(this.gostSign) {
-            let bData, bKey, bSign;
-            bData = this.data2Buffer(data);
-            bKey = this.coding.Hex.decode(key);
-            bSign = this.coding.Hex.decode(sign);
-            result = this.gostSign.verify(bKey, bSign, bData);
         } else {
             logger.fatalFall('No verify functions found');
             return false;
         }
-        return result;
     }
 
     /**
@@ -320,17 +274,10 @@ class Cryptography {
         //External hash function
         if(this._hashFunctions[this.config.hashFunction]) {
             return this._hashFunctions[this.config.hashFunction](data);
-        }
-
-        let bData = this.data2Buffer(data);
-        let hashBuffer;
-        if(this.gostDigest) {
-            hashBuffer = this.gostDigest.digest(bData);
         } else {
             logger.fatalFall('No hash functions found');
             return '';
         }
-        return this.coding.Hex.encode(hashBuffer).replace('\r\n', '');
     }
 }
 
