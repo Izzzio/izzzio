@@ -25,7 +25,8 @@ const logger = new (require('./modules/logger'))();
 const version = require('./package.json').version;
 const _ = require('lodash');
 let program = require('commander');
-
+const { state } = require('./modules/globalState');
+global.STATE = state;
 program
     .version(version)
     .description(' iZ3 - IZZZIO blockchain core.')
@@ -130,7 +131,8 @@ let config = {
         contractInstanceCacheLifetime: 10000,   //Время жизни экземпляра виртуальной машины контракта
         //ramLimit: 32,                           //Макс. ограничение ОЗУ для контрактов. Может быть заменено @deprecated
         masterContract: 5,                       //Главный контракт в системе. Реализует функционал токена
-        maxContractLength: 10 * 1024 * 1024      // Макс. размер добавляемого контракта
+        maxContractLength: 10 * 1024 * 1024,      // Макс. размер добавляемого контракта
+        cacheTime : 3                          // Время (в секундах) кеширования контрактах в global.STATE
     },
 
     //Cryptography
