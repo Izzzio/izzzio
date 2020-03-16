@@ -148,8 +148,9 @@ let config = {
         "iz3-basic-crypto"
     ],
     "appConfig": {                          //DApp config placement
-    }
+    },
 
+    blockCacheLifeTime: 50
 
 };
 
@@ -165,10 +166,13 @@ Array.prototype.remove = function (from, to) {
 
 global.PATH = {}; //object for saving paths
 global.PATH.configDir = path.dirname(program.config);
+let loadedConfig;
 
 try {
-    const loadedConfig = JSON.parse(fs.readFileSync(program.config));
-    config = _.defaultsDeep(loadedConfig,config);
+
+    config = _.defaultsDeep(JSON.parse(fs.readFileSync(program.config)), config);
+
+
 } catch (e) {
     logger.warning('No configure found. Using standard configuration.');
 }
@@ -281,4 +285,3 @@ if(!program.fallOnErrors) {
         logger.error('Uncaught exception: ' + err);
     });
 }
-
