@@ -12,9 +12,7 @@ const setItem = (state, data) => {
         console.log(state);
         return false;
     }
-    state.push(data);
-    //Return index of array
-    return state.length - 1;
+    return state.push(data) - 1;
 }
 
 /**
@@ -48,12 +46,27 @@ const getItem = (state, key, value) => {
 
 /**
  * 
+ * @param {*} state
+ * @param {*} index
+ * @param {*} time in second
+ */
+const setClearTimeOut = (state, index, time) => {
+    setTimeout(() => {
+        state.splice(index, 1);
+        console.log('\n\n\n\n removed');
+        console.log(global.STATE);
+    }, time * 1000);
+}
+
+/**
+ * 
  */
 module.exports = {
     setItem,
     state,
     removeItem,
-    getItem
+    getItem,
+    setClearTimeOut
 }
 
 
