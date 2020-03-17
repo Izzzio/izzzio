@@ -1964,54 +1964,42 @@ function Blockchain(config) {
     function loadPlugin(plugin, blockchainObject, config, storj) {
         let pluginMod;
         let path = '';
+        let isPathFull;
         try {
             //Direct module loading attempt
             try {
                 path = plugin;
-                let checked = checkEngineIZZZIOOfPlugin('/' + path, false);
-                if(true !== checked){
-                    return checked;
-                }
                 pluginMod = require(path)(blockchainObject, config, storj);
+                path = '/' + path;
+                isPathFull = false;
             } catch (e) {
 
                 //Plugins path
                 try {
                     path = './plugins/' + plugin;
-                    let checked = checkEngineIZZZIOOfPlugin('/.' + path, false);
-                    if(true !== checked){
-                        return checked;
-                    }
                     pluginMod = require(path)(blockchainObject, config, storj);
+                    path = '/.' + path;
+                    isPathFull = false;
                 } catch (e) {
 
                     //Starting dir search
                     try {
                         path = process.cwd() + '/' + plugin;
-                        let checked = checkEngineIZZZIOOfPlugin(path, true);
-                        if(true !== checked){
-                            return checked;
-                        }
                         pluginMod = require(path)(blockchainObject, config, storj);
+                        isPathFull = true;
                     } catch (e) {
 
                         //Working dir search
                         try {
                             path = config.workDir + '/' + plugin;
-                            let checked = checkEngineIZZZIOOfPlugin(path, false);
-                            if(true !== checked){
-                                return checked;
-                            }
                             pluginMod = require(path)(blockchainObject, config, storj);
+                            isPathFull = false;
                         } catch (e) {
 
                             //Node modules in starting dir search
                             path = process.cwd() + '/node_modules/' + plugin;
-                            let checked = checkEngineIZZZIOOfPlugin(path, true);
-                            if(true !== checked){
-                                return checked;
-                            }
                             pluginMod = require(path)(blockchainObject, config, storj);
+                            isPathFull = true;
                         }
                     }
                 }
@@ -2019,17 +2007,23 @@ function Blockchain(config) {
         } catch (e) {
             return e;
         }
+
+        let checked = checkPluginEnginesVersion(path, isPathFull);
+        if(true !== checked){
+            return new Error (checked);
+        }
+
         return true;
     }
 
-    function checkEngineIZZZIOOfPlugin(path, isPathFull) {
+    function checkPluginEnginesVersion(path, isPathFull) {
         try {
             let compareVersions = new CompareVersions(isPathFull);
             let izzzioMinVersionNeed = compareVersions.readIzzzioMinVersionNeeded(path);
             if (!izzzioMinVersionNeed) {
             } else {
                 if (!compareVersions.isMinimumVersionMatch(izzzioMinVersionNeed, config.program.version())) {
-                    return {'from': path, 'msg': 'need min version node: ' + izzzioMinVersionNeed};
+                    return 'need min version node: ' + izzzioMinVersionNeed + ' for plugin ' + path;
                 }
             }
         } catch (e) {

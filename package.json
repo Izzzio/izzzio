@@ -26,7 +26,6 @@
     "fs-extra": "^4.0.3",
     "http-auth": "^3.2.3",
     "isolated-vm": "^3.1.4",
-    "iz3-bitcore-crypto": "^1.0.3",
     "json-stable-stringify": "^1.0.1",
     "keypair": "^1.0.1",
     "level": "^6.0.0",
