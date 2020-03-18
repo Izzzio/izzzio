@@ -16,7 +16,7 @@ const moment = require('moment');
 const path = require('path');
 const fs = require('fs');
 
-const { getItem: getItemState, setItem: setItemState, setClearTimeOut : clearExpiredItem } = require('../globalState');
+const LocalState = require('../localState');
 
 const EcmaContractDeployBlock = require('./blocksModels/EcmaContractDeployBlock');
 const EcmaContractCallBlock = require('./blocksModels/EcmaContractCallBlock');
@@ -29,7 +29,6 @@ const MAXIMUM_VM_RAM = 256;
 const DEFAULT_LIMITS = {ram: MAXIMUM_VM_RAM, timeLimit: MAXIMUM_TIME_LIMIT, callLimit: 10000};
 
 const DEFAULT_CACHE_TIME = 2; //Время по умолчанию, если не задано config.ecmaContract.cacheTime
-const ADDRESS_STATE_KEY = 'address';
 
 
 /**
@@ -155,7 +154,8 @@ class EcmaContract {
             });
         });
 
-
+        this.localState = new LocalState();
+        
         storj.put('ecmaContract', this);
         logger.info('Loading environment...');
 
@@ -168,14 +168,7 @@ class EcmaContract {
      * @param {*} address
      */
     getAddressOfState(address) {
-        const currentTime = (new Date()).getTime();
-        const { addresses } = global.STATE;
-
-        const item = getItemState(addresses, ADDRESS_STATE_KEY, address);
-        if (item && item.expired >= currentTime) {
-            return item;
-        }
-        return false;
+        return this.localState.findBy('address', address);;
     }
 
     /**
@@ -184,17 +177,16 @@ class EcmaContract {
      * @param {*} data 
      */
     setAddressInState(address, data) {
-        const { addresses } = global.STATE;
         const { cacheTime = DEFAULT_CACHE_TIME } = this.config.ecmaContract;
-        const currentDate =  (new Date()).getTime();
+        const currentDate = (new Date()).getTime();
         const expiredDate = currentDate + (cacheTime * 1000);
-        const index = setItemState(addresses, {
+        const index = this.localState.add({
             address,
             created: currentDate,
             expired: expiredDate,
             data
         });
-        clearExpiredItem(addresses,index,cacheTime);
+        this.localState.clearAfterTIme(index, cacheTime);
         return data;
 
     }
