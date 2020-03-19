@@ -168,7 +168,10 @@ class EcmaContract {
      * @param {*} address
      */
     getAddressOfState(address) {
-        return this.localState.findBy('address', address);;
+        const { cacheTime = DEFAULT_CACHE_TIME } = this.config.ecmaContract;
+        const res = this.localState.find(address);
+        this.localState.setOrRefreshTimer(address, cacheTime);
+        return res;
     }
 
     /**
@@ -180,13 +183,13 @@ class EcmaContract {
         const { cacheTime = DEFAULT_CACHE_TIME } = this.config.ecmaContract;
         const currentDate = (new Date()).getTime();
         const expiredDate = currentDate + (cacheTime * 1000);
-        const index = this.localState.add({
+        const createdKeyState = this.localState.add(address, {
             address,
             created: currentDate,
             expired: expiredDate,
             data
         });
-        this.localState.clearAfterTIme(index, cacheTime);
+        this.localState.setOrRefreshTimer(createdKeyState, cacheTime);
         return data;
 
     }

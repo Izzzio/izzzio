@@ -1,15 +1,27 @@
 class LocalState {
 
     constructor() {
-        this._state = [];
+        this._state = {};
+        this._timers = {}
     }
 
     get state() {
         return this._state;
     }
 
+    get timers() {
+        return this._timers;
+    }
+
     /**
-     * @param {Array} data
+     * @param {Object} timers
+     */
+    set timers(timers) {
+        this._timers = timers;
+    }
+
+    /**
+     * @param {Object} data
      */
     set state(data) {
         this._state = data;
@@ -17,44 +29,47 @@ class LocalState {
 
     /**
      * 
-     * @param {number|string} key
      * @param {number|string} value
      */
-    findBy(key, value) {
-        return this.state.find(el => el[key] === value);
+    find(key) {
+        return this.state[key] || false;
     }
 
     /**
      * 
      * @param {number|string} key
-     * @param {number|string} value
      */
-    removeBy(key, value) {
-        const index = this.state.findIndex(el => el[key] === value);
-        if (index !== -1) {
-            this.state.splice(index, 1);
-        }
+    remove(key) {
+        delete this.state[key];
     }
 
     /**
-     * 
+     * @param {string} key
      * @param {*} data 
      */
-    add(data) {
-        return this.state.push(data) - 1;
+    add(key, data) {
+        this.state[key] = data;
+        return key;
     }
 
     /**
      * 
-     * @param {number} index 
-     * @param {number} time - in second
+     * @param {*} key 
+     * @param {number} time  - in second
      */
-    clearAfterTIme(index, time) {
-        setTimeout(() => {
-            this.state.splice(index, 1);
-        }, time * 1000);
-    }
+    setOrRefreshTimer(key, time) {
+        if (this.timers[key] && this.timers[key].hasRef()) {
+            return this.timers[key].refresh();
+        }
+        if (this.state[key]) {
+            return this.timers[key] = setTimeout(() => {
+                this.remove(key);
+                delete this.timers[key];
+            }, time * 1000);
+        }
+        return false;
 
+    }
 
 }
 
