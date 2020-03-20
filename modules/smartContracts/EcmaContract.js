@@ -22,9 +22,6 @@ const uglifyJs = require("uglify-es");
 const ContractConnector = require('./connectors/ContractConnector');
 
 const CALLS_LIMITER_THRESHOLD = 60000;
-const MAXIMUM_TIME_LIMIT = 30000;
-const MAXIMUM_VM_RAM = 256;
-const DEFAULT_LIMITS = {ram: MAXIMUM_VM_RAM, timeLimit: MAXIMUM_TIME_LIMIT, callLimit: 10000};
 
 
 /**
@@ -212,19 +209,21 @@ class EcmaContract {
     getContractLimits(address, cb) {
         let that = this;
 
-        if(!this.config.ecmaContract.masterContract) {
-            cb(DEFAULT_LIMITS);
+        const defaultLimits = this.config.ecmaContract.defaultLimits;
+
+        if (!this.config.ecmaContract.masterContract) {
+            cb(defaultLimits);
             return;
         }
 
-        if(Number(address) <= that.config.ecmaContract.masterContract) {
-            cb(DEFAULT_LIMITS);
+        if (Number(address) <= that.config.ecmaContract.masterContract) {
+            cb(defaultLimits);
             return;
         }
 
         that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'checkContractLimits', {}, function (err, result) {
-            if(err || !result) {
-                cb(DEFAULT_LIMITS);
+            if (err || !result) {
+                cb(defaultLimits);
                 return;
             }
             cb(JSON.parse(result));
