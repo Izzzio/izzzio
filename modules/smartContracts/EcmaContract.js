@@ -16,6 +16,8 @@ const moment = require('moment');
 const path = require('path');
 const fs = require('fs');
 
+const LocalState = require('../localState');
+
 const EcmaContractDeployBlock = require('./blocksModels/EcmaContractDeployBlock');
 const EcmaContractCallBlock = require('./blocksModels/EcmaContractCallBlock');
 const uglifyJs = require("uglify-es");
@@ -25,6 +27,8 @@ const CALLS_LIMITER_THRESHOLD = 60000;
 const MAXIMUM_TIME_LIMIT = 30000;
 const MAXIMUM_VM_RAM = 256;
 const DEFAULT_LIMITS = {ram: MAXIMUM_VM_RAM, timeLimit: MAXIMUM_TIME_LIMIT, callLimit: 10000};
+
+const DEFAULT_CACHE_TIME = 2; //Время по умолчанию, если не задано config.ecmaContract.cacheTime
 
 
 /**
@@ -150,11 +154,46 @@ class EcmaContract {
             });
         });
 
-
+        this.localState = new LocalState();
+        
         storj.put('ecmaContract', this);
         logger.info('Loading environment...');
 
         this._registerRPCMethods();
+
+    }
+
+    /**
+     * Get data from LocalState
+     * @param {string} address
+     * @return {object|boolean}  
+     */
+    getAddressOfState(address) {
+        const { cacheTime = DEFAULT_CACHE_TIME } = this.config.ecmaContract;
+        const res = this.localState.find(address);
+        this.localState.setOrRefreshTimer(address, cacheTime);
+        return res;
+    }
+
+    /**
+     * Set Address data in LocalState
+     * @param {string} address 
+     * @param {object} data 
+     * @return {object|boolean}
+     */
+    setAddressInState(address, data) {
+        const { cacheTime = DEFAULT_CACHE_TIME } = this.config.ecmaContract;
+        const currentDate = (new Date()).getTime();
+        const expiredDate = currentDate + (cacheTime * 1000);
+        const createdKeyState = this.localState.add(address, {
+            address,
+            created: currentDate,
+            expired: expiredDate,
+            data
+        });
+        this.localState.setOrRefreshTimer(createdKeyState, cacheTime);
+        return data;
+
     }
 
     /**
@@ -1343,23 +1382,32 @@ class EcmaContract {
      */
     getContractInstanceByAddress(address, cb) {
         let that = this;
-        if(typeof this._contractInstanceCache[address] !== 'undefined') {
+        if (typeof this._contractInstanceCache[address] !== 'undefined') {
             that.getOrCreateContractInstance(address, '', {}, function (instance) {
                 cb(null, instance);
             });
             // cb(null, this._contractInstanceCache[address].instance);
         } else {
-            this.contracts.get(address, function (err, contract) {
-                if(err) {
-                    cb(err);
-                } else {
-                    contract = JSON.parse(contract);
-                    that.getOrCreateContractInstance(address, contract.code, contract.state, function (instance) {
-                        cb(null, instance);
-                    });
+            const stateContract = that.getAddressOfState(address);
+            if (!stateContract) {
+                this.contracts.get(address, function (err, contract) {
+                    if (err) {
+                        cb(err);
+                    } else {
+                        contract = JSON.parse(contract);
+                        that.setAddressInState(address,contract);
+                        that.getOrCreateContractInstance(address, contract.code, contract.state, function (instance) {
+                            cb(null, instance);
+                        });
 
-                }
-            })
+                    }
+                })
+            } else {
+                const { data: { code, state } } = stateContract;
+                that.getOrCreateContractInstance(address, code, state, function (instance) {
+                    cb(null, instance);
+                });
+            }
         }
 
     }
