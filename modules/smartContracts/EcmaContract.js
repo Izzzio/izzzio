@@ -164,8 +164,9 @@ class EcmaContract {
     }
 
     /**
-     * Get item of global.STATE
-     * @param {*} address
+     * Get data from LocalState
+     * @param {string} address
+     * @return {object|boolean}  
      */
     getAddressOfState(address) {
         const { cacheTime = DEFAULT_CACHE_TIME } = this.config.ecmaContract;
@@ -175,9 +176,10 @@ class EcmaContract {
     }
 
     /**
-     * 
-     * @param {*} address 
-     * @param {*} data 
+     * Set Address data in LocalState
+     * @param {string} address 
+     * @param {object} data 
+     * @return {object|boolean}
      */
     setAddressInState(address, data) {
         const { cacheTime = DEFAULT_CACHE_TIME } = this.config.ecmaContract;
