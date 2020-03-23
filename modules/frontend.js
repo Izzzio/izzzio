@@ -180,7 +180,7 @@ class Frontend {
     async restoreWallet(req, res) {
         let that = this;
 
-        utils.waitForSync(function() {
+        utils.waitForSync(async function() {
             that.wallet.keysPair.public = req.body.public;
             that.wallet.keysPair.private = req.body.private;
             that.wallet.id = req.body.id;
