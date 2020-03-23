@@ -16,10 +16,10 @@
  limitations under the License.
  */
 
-const logger = new (require('./logger'))('Accounts');
-const KeyValue = require('./keyvalue');
-const Wallet = require('./wallet');
-const storj = require('./instanceStorage');
+const logger = new (require("./logger"))("Accounts");
+const KeyValue = require("./keyvalue");
+const Wallet = require("./wallet");
+const storj = require("./instanceStorage");
 
 class AccountManager {
     constructor(config = {}) {
@@ -27,7 +27,7 @@ class AccountManager {
         this._config = config;
         this._registerRPCMethods();
 
-        logger.info('Account manager loaded');
+        logger.info("Account manager loaded");
     }
 
     /**
@@ -43,8 +43,8 @@ class AccountManager {
         wallet.keysPair.public = publicKey;
         wallet.keysPair.private = privateKey;
         wallet.id = id;
-        if(!wallet.selfValidate()) {
-            throw new Error('Invalid wallet data');
+        if (!(await wallet.selfValidate())) {
+            throw new Error("Invalid wallet data");
         }
 
         await this._accounts.putAsync(accountName, {
@@ -73,13 +73,13 @@ class AccountManager {
      * @return {Promise<{id, block, keysPair: {public, private}, data, balance, addressBook, generate, signData, verifyData, getAddress, setBlock, setWalletFile, save, init, transactions, transact}>}
      */
     async getAccountAsync(accountName = false) {
-        if(!accountName) {
-            accountName = 'default';
+        if (!accountName) {
+            accountName = "default";
         }
 
         try {
             let account = await this._accounts.getAsync(accountName);
-            if(!account) {
+            if (!account) {
                 logger.error('Account "' + accountName + '" not found 1');
                 return false;
             }
@@ -88,7 +88,7 @@ class AccountManager {
             wallet.keysPair.private = account.private;
             wallet.keysPair.public = account.public;
             wallet.id = account.id;
-            if(!wallet.id) {
+            if (!wallet.id) {
                 wallet.createId();
             }
             wallet.init();
@@ -106,9 +106,9 @@ class AccountManager {
      * @param callback
      */
     getAccount(accountName, callback) {
-        this.getAccountAsync(accountName).then(function (account) {
-            if(!account) {
-                return callback(new Error('Account not found'));
+        this.getAccountAsync(accountName).then(function(account) {
+            if (!account) {
+                return callback(new Error("Account not found"));
             }
 
             return callback(null, account);
@@ -121,49 +121,57 @@ class AccountManager {
      */
     _registerRPCMethods() {
         const that = this;
-        let app = storj.get('httpServer');
-        if(!app) {
+        let app = storj.get("httpServer");
+        if (!app) {
             logger.error("Can't register RPC methods for AccountManager");
             return;
         }
 
-        app.get('/accounts/:accountName', async function (req, res) {
+        app.get("/accounts/:accountName", async function(req, res) {
             try {
                 let wallet = await that.getAccountAsync(req.params.accountName);
-                res.send({id: wallet.id, public: wallet.keysPair.public});
+                res.send({ id: wallet.id, public: wallet.keysPair.public });
             } catch (e) {
-                res.send({error: true, message: 'Account ' + req.params.accountName + ' not found'});
+                res.send({
+                    error: true,
+                    message: "Account " + req.params.accountName + " not found"
+                });
             }
         });
 
-        app.post('/accounts/add', async function (req, res) {
-
+        app.post("/accounts/add", async function(req, res) {
             let accountName = req.body.accountName;
             let id = req.body.id;
             let publicKey = req.body.public;
             let privateKey = req.body.private;
 
-            if(!accountName || !publicKey || !privateKey) {
-                res.send({error: true, message: 'accountName, public or private not found'});
+            if (!accountName || !publicKey || !privateKey) {
+                res.send({
+                    error: true,
+                    message: "accountName, public or private not found"
+                });
                 return;
             }
 
-            if(!id) {
+            if (!id) {
                 id = false;
             }
 
             try {
-                await that.addAccountKeys(accountName, publicKey, privateKey, id);
+                await that.addAccountKeys(
+                    accountName,
+                    publicKey,
+                    privateKey,
+                    id
+                );
             } catch (e) {
-                res.send({error: true, message: e.message});
+                res.send({ error: true, message: e.message });
                 return;
             }
 
-            res.send({accountName: accountName});
+            res.send({ accountName: accountName });
         });
     }
-
-
 }
 
 module.exports = AccountManager;

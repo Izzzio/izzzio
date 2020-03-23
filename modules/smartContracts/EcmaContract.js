@@ -1418,7 +1418,7 @@ class EcmaContract {
                 from: wallet.id,
                 resourceRent: String(resourceRent)
             });
-            deployBlock = wallet.signBlock(deployBlock);
+            deployBlock = await wallet.signBlock(deployBlock);
         } else {
             deployBlock = code
         }
@@ -1527,7 +1527,7 @@ class EcmaContract {
                 state.masterContractAddress = that.config.ecmaContract.masterContract ? that.config.ecmaContract.masterContract : false;
 
                 callBlock = new EcmaContractCallBlock(address, method, args, state);
-                callBlock = wallet.signBlock(callBlock);
+                callBlock = await wallet.signBlock(callBlock);
             } else {
                 callBlock = args;
                 state.from = callBlock.state.from;

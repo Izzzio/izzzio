@@ -3,13 +3,13 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-const fs = require('fs');
-const moment = require('moment');
-const formatToken = require('./formatToken');
-const storj = require('./instanceStorage');
-const cryptography = storj.get('cryptography');
+const fs = require("fs");
+const moment = require("moment");
+const formatToken = require("./formatToken");
+const storj = require("./instanceStorage");
+const cryptography = storj.get("cryptography");
 
-const logger = new (require('./logger'))();
+const logger = new (require("./logger"))();
 
 /**
  * Wallet object
@@ -18,22 +18,20 @@ const logger = new (require('./logger'))();
  * @returns {{id, block, keysPair: {public,private}, data, balance, addressBook, generate, signData, verifyData, getAddress, setBlock, setWalletFile, save, init, transactions, transact}}
  * @constructor
  */
-let Wallet = function (walletFile, config) {
-
+let Wallet = function(walletFile, config) {
     let wallet = {};
 
     wallet.walletFile = walletFile;
 
-    if(typeof config === 'undefined') {
+    if (typeof config === "undefined") {
         config = {
-            precision: 1000000,
+            precision: 1000000
         };
     }
 
-
     wallet.enableLogging = true;
-    wallet.log = function (string) {
-        if(wallet.enableLogging) {
+    wallet.log = function(string) {
+        if (wallet.enableLogging) {
             console.log(string);
         }
     };
@@ -41,7 +39,7 @@ let Wallet = function (walletFile, config) {
     /**
      * Wallet id (address)
      */
-    wallet.id = '';
+    wallet.id = "";
 
     /**
      * Block number, where wallet was defined
@@ -52,7 +50,7 @@ let Wallet = function (walletFile, config) {
     /**
      * Wallet RSA keys
      */
-    wallet.keysPair = {public: '', private: ''};
+    wallet.keysPair = { public: "", private: "" };
 
     /**
      * Another wallet data
@@ -62,13 +60,12 @@ let Wallet = function (walletFile, config) {
     /**
      * Wallet balance (only for cache)
      */
-    wallet.balance = 0.00;
+    wallet.balance = 0.0;
 
     /**
      * Just list of saved addresses
      */
     wallet.addressBook = {};
-
 
     /**
      Кошелёк утверждён блокчейном
@@ -86,7 +83,7 @@ let Wallet = function (walletFile, config) {
      * Register wallet generator
      * @param generator
      */
-    wallet.registerGeneratorHook = function (generator) {
+    wallet.registerGeneratorHook = function(generator) {
         wallet._generatorHooks.push(generator);
     };
 
@@ -96,13 +93,13 @@ let Wallet = function (walletFile, config) {
      * @return {*}
      */
     function repairKey(key) {
-        if(key[key.length - 1] !== "\n") {
+        if (key[key.length - 1] !== "\n") {
             key += "\n";
         }
-        return key.replace(new RegExp("\n\n", 'g'), "\n");
+        return key.replace(new RegExp("\n\n", "g"), "\n");
     }
 
-    if(typeof walletFile !== 'undefined' && walletFile) {
+    if (typeof walletFile !== "undefined" && walletFile) {
         try {
             let walletData = JSON.parse(fs.readFileSync(walletFile));
             wallet.id = walletData.id;
@@ -112,32 +109,30 @@ let Wallet = function (walletFile, config) {
             wallet.addressBook = walletData.addressBook;
             wallet.block = walletData.block;
             wallet.accepted = walletData.accepted;
-
         } catch (e) {
-            wallet.log('Error: Invalid wallet file!');
+            wallet.log("Error: Invalid wallet file!");
         }
     }
 
     /**
      * Generates new data for wallet
      */
-    wallet.generate = function () {
-
+    wallet.generate = function() {
         let generated = false;
         for (let generator of wallet._generatorHooks) {
             let generatorResult = generator(wallet);
-            if(generatorResult) {
+            if (generatorResult) {
                 wallet.keysPair = generatorResult.keysPair;
                 generated = true;
                 break;
             }
         }
 
-        if(!generated) {
+        if (!generated) {
             wallet.keysPair = cryptography.generateKeyPair();
         }
 
-        wallet.log('Info: Generated');
+        wallet.log("Info: Generated");
         this.createId();
         wallet.create();
     };
@@ -145,16 +140,19 @@ let Wallet = function (walletFile, config) {
     /**
      * Generate wallet ID
      */
-    wallet.createId = function (publicKey) {
+    wallet.createId = function(publicKey) {
         publicKey = publicKey || wallet.keysPair.public;
-        if(typeof config.signFunction === "undefined" || 0 === config.signFunction.length) {
+        if (
+            typeof config.signFunction === "undefined" ||
+            0 === config.signFunction.length
+        ) {
             wallet.id = cryptography.hash(String(publicKey)).toString();
         } else {
             wallet.id = publicKey;
         }
     };
 
-    if(typeof walletFile === 'undefined') {
+    if (typeof walletFile === "undefined") {
         //wallet.generate();
     }
 
@@ -162,10 +160,10 @@ let Wallet = function (walletFile, config) {
      * Initialize wallet if not
      * @returns {{}}
      */
-    wallet.init = function () {
-        if(wallet.id.length === 0) {
-           // wallet.generate();
-            logger.info('Empty wallet created');
+    wallet.init = function() {
+        if (wallet.id.length === 0) {
+            // wallet.generate();
+            logger.info("Empty wallet created");
         } /*else if(!wallet.selfValidate()) {
             throw logger.fatal('Wallet self-validation error! Invalid key or sign checking');
 
@@ -174,16 +172,15 @@ let Wallet = function (walletFile, config) {
         return wallet;
     };
 
-
     /**
      * Signs data
      * @param data
      * @param key
      * @returns {{data: *, sign: *}}
      */
-    wallet.signData = function (data, key) {
-        key = typeof key === 'undefined' ? wallet.keysPair.private : key;
-        return cryptography.sign(data, key);
+    wallet.signData = async function(data, key) {
+        key = typeof key === "undefined" ? wallet.keysPair.private : key;
+        return await cryptography.sign(data, key);
     };
 
     /**
@@ -193,8 +190,8 @@ let Wallet = function (walletFile, config) {
      * @param key
      * @returns {boolean}
      */
-    wallet.verifyData = function (data, sign, key) {
-        key = typeof key === 'undefined' ? wallet.keysPair.public : key;
+    wallet.verifyData = function(data, sign, key) {
+        key = typeof key === "undefined" ? wallet.keysPair.public : key;
         return cryptography.verify(data, sign, key);
     };
 
@@ -202,20 +199,20 @@ let Wallet = function (walletFile, config) {
      * Gets wallet address
      * @param allowTiny
      */
-    wallet.getAddress = function (allowTiny) {
-        if(wallet.block !== -1 && allowTiny) {
-            return 'BL_' + wallet.block;
+    wallet.getAddress = function(allowTiny) {
+        if (wallet.block !== -1 && allowTiny) {
+            return "BL_" + wallet.block;
         }
 
-        return wallet.id;// + (wallet.block === -1 ? '' : ('_' + wallet.block))
+        return wallet.id; // + (wallet.block === -1 ? '' : ('_' + wallet.block))
     };
 
     /**
      * Set wallet define block
      * @param blockId
      */
-    wallet.setBlock = function (blockId) {
-        if(blockId > 0) {
+    wallet.setBlock = function(blockId) {
+        if (blockId > 0) {
             wallet.block = Number(blockId);
         }
 
@@ -226,7 +223,7 @@ let Wallet = function (walletFile, config) {
      * Wallet file
      * @param path
      */
-    wallet.setWalletFile = function (path) {
+    wallet.setWalletFile = function(path) {
         wallet.walletFile = path;
 
         return wallet;
@@ -236,9 +233,9 @@ let Wallet = function (walletFile, config) {
      * Write current wallet state to file
      * @returns {boolean}
      */
-    wallet.save = function () {
+    wallet.save = function() {
         try {
-            fs.writeFileSync(wallet.walletFile, JSON.stringify(wallet))
+            fs.writeFileSync(wallet.walletFile, JSON.stringify(wallet));
         } catch (e) {
             return false;
         }
@@ -246,11 +243,15 @@ let Wallet = function (walletFile, config) {
         return true;
     };
 
-    wallet.signBlock = function (unsignedBlock) {
-        if(unsignedBlock.isSigned()) {
+    /**
+     * signs block
+     * return {Promise<Block>}
+     */
+    wallet.signBlock = async function(unsignedBlock) {
+        if (unsignedBlock.isSigned()) {
             return unsignedBlock;
         }
-        unsignedBlock.sign = wallet.signData(unsignedBlock.data).sign;
+        unsignedBlock.sign = await wallet.signData(unsignedBlock.data).sign;
         unsignedBlock.pubkey = wallet.keysPair.public;
         return unsignedBlock;
     };
@@ -259,29 +260,28 @@ let Wallet = function (walletFile, config) {
      * Создает запрос на регистрацию кошелька
      * @returns {{}}
      */
-    wallet.create = function () {
-        if(wallet.id.length === 0) {
-            wallet.log('Error: Can\'t create empty wallet');
+    wallet.create = function() {
+        if (wallet.id.length === 0) {
+            wallet.log("Error: Can't create empty wallet");
             return false;
         }
 
         return true;
     };
 
-
-    wallet.update = function () {
+    wallet.update = function() {
         //wallet.log('Info: Wallet balance: ' + formatToken(wallet.balance, config.precision));
         wallet.save();
     };
 
     /**
      * Self validate signing
-     * @return {boolean}
+     * @return {Promise<boolean>}
      */
-    wallet.selfValidate = function () {
+    wallet.selfValidate = async function() {
         try {
             let data = String(Math.random());
-            data = wallet.signData(data);
+            data = await wallet.signData(data);
             return wallet.verifyData(data.data, data.sign);
         } catch (e) {
             console.log(e);
