@@ -20,10 +20,9 @@
  * Class realises universal functions for cryptography in project
  */
 
-const logger = new (require('./logger'))();
+const logger = new (require("./logger"))();
 
-const CodingFunctions = require('./codingFunctions');
-
+const CodingFunctions = require("./codingFunctions");
 
 /**
  * Repair bad generated key
@@ -31,10 +30,10 @@ const CodingFunctions = require('./codingFunctions');
  * @return {*}
  */
 function repairKey(key) {
-    if(key[key.length - 1] !== "\n") {
+    if (key[key.length - 1] !== "\n") {
         key += "\n";
     }
-    return key.replace(new RegExp("\n\n", 'g'), "\n");
+    return key.replace(new RegExp("\n\n", "g"), "\n");
 }
 
 /**
@@ -42,38 +41,46 @@ function repairKey(key) {
  */
 class Cryptography {
     constructor(config = {}) {
-        this.utils = require('./utils');
+        this.utils = require("./utils");
 
         this._hashFunctions = {};
         this._signFunctions = {};
         this._generatorFunctions = {};
 
         this.config = config;
-        this.config.hashFunction = this.config.hashFunction ? this.config.hashFunction.toUpperCase() : this.config.hashFunction;
-        this.config.signFunction = this.config.signFunction ? this.config.signFunction.toUpperCase() : this.config.signFunction;
+        this.config.hashFunction = this.config.hashFunction
+            ? this.config.hashFunction.toUpperCase()
+            : this.config.hashFunction;
+        this.config.signFunction = this.config.signFunction
+            ? this.config.signFunction.toUpperCase()
+            : this.config.signFunction;
 
         this.repairKey = repairKey;
 
         this.coding = new CodingFunctions();
 
         let hashOptions, signOptions;
-        if(config) {
+        if (config) {
             //Hash config
             switch (this.config.hashFunction) {
-                case 'STRIBOG':
-                    hashOptions = {length: 256};
+                case "STRIBOG":
+                    hashOptions = { length: 256 };
                     break;
-                case 'STRIBOG512':
-                    hashOptions = {length: 512};
+                case "STRIBOG512":
+                    hashOptions = { length: 512 };
                     break;
             }
             //Signature config
             switch (this.config.signFunction) {
-                case 'GOST':
-                    signOptions = {hash: "GOST R 34.11", length: 256};
+                case "GOST":
+                    signOptions = { hash: "GOST R 34.11", length: 256 };
                     break;
-                case 'GOST512':
-                    signOptions = {hash: "GOST R 34.11", length: 512, namedCurve: "T-512-A"};
+                case "GOST512":
+                    signOptions = {
+                        hash: "GOST R 34.11",
+                        length: 512,
+                        namedCurve: "T-512-A"
+                    };
                     break;
             }
         }
@@ -95,7 +102,10 @@ class Cryptography {
      * @param {function} sign
      */
     registerSign(name, validate, sign) {
-        this._signFunctions[name.toUpperCase()] = {validate: validate, sign: sign};
+        this._signFunctions[name.toUpperCase()] = {
+            validate: validate,
+            sign: sign
+        };
     }
 
     /**
@@ -115,10 +125,9 @@ class Cryptography {
     data2Buffer(data) {
         let bData;
         try {
-            bData = this.coding.Chars.decode(data, 'utf8');
-
+            bData = this.coding.Chars.decode(data, "utf8");
         } catch (e) {
-            bData = this.coding.Chars.decode(JSON.stringify(data), 'utf8');
+            bData = this.coding.Chars.decode(JSON.stringify(data), "utf8");
         }
         return bData;
     }
@@ -130,10 +139,10 @@ class Cryptography {
      * @returns {string} base64 encoded key
      * @constructor
      */
-    PEMToHex(key, kind = 'PUBLIC') {
+    PEMToHex(key, kind = "PUBLIC") {
         let k = this.coding.PEM.decode(key, `rsa ${kind} key`);
         let hex = this.coding.Hex.encode(k);
-        hex = hex.replace(new RegExp(/\r\n/, 'g'), "");
+        hex = hex.replace(new RegExp(/\r\n/, "g"), "");
         return hex;
     }
 
@@ -144,8 +153,8 @@ class Cryptography {
      * @returns {*|String|string|CryptoOperationData|Uint8Array}
      * @constructor
      */
-    hexToPem(key, kind = 'PUBLIC') {
-        key = key.replace(new RegExp(/\r\n/, 'g'), "");
+    hexToPem(key, kind = "PUBLIC") {
+        key = key.replace(new RegExp(/\r\n/, "g"), "");
         let k = this.coding.Hex.decode(key);
         let pem = this.coding.PEM.encode(k, `RSA ${kind} KEY`);
         return pem;
@@ -158,10 +167,10 @@ class Cryptography {
      * @returns {string} base64 encoded key
      * @constructor
      */
-    PEMToUtf16(key, kind = 'PUBLIC') {
+    PEMToUtf16(key, kind = "PUBLIC") {
         let k = this.coding.PEM.decode(key, `rsa ${kind} key`);
         let hex = this.coding.Hex.encode(k);
-        hex = hex.replace(new RegExp(/\r\n/, 'g'), "");
+        hex = hex.replace(new RegExp(/\r\n/, "g"), "");
         return this.utils.hexString2Unicode(hex);
     }
 
@@ -172,8 +181,10 @@ class Cryptography {
      * @returns {*|String|string|CryptoOperationData|Uint8Array}
      * @constructor
      */
-    utf16ToPem(key, kind = 'PUBLIC') {
-        key = this.utils.unicode2HexString(key).replace(new RegExp(/\r\n/, 'g'), "");
+    utf16ToPem(key, kind = "PUBLIC") {
+        key = this.utils
+            .unicode2HexString(key)
+            .replace(new RegExp(/\r\n/, "g"), "");
         let k = this.coding.Hex.decode(key);
         let pem = this.coding.PEM.encode(k, `RSA ${kind} KEY`);
         return pem;
@@ -185,7 +196,10 @@ class Cryptography {
      * @returns {*|string}
      */
     bufferToUtf16(key) {
-        let k = this.coding.Hex.encode(key).replace(new RegExp(/\r\n/, 'g'), "");
+        let k = this.coding.Hex.encode(key).replace(
+            new RegExp(/\r\n/, "g"),
+            ""
+        );
         k = this.utils.hexString2Unicode(k);
         return k;
     }
@@ -201,45 +215,52 @@ class Cryptography {
         return k;
     }
 
-
     /**
      * Generates pair of keys
-     * @returns {{private: *, public: *}}
+     * @returns Promise{{private: *, public: *}}
      */
-    generateKeyPair() {
+    async generateKeyPair() {
         //External generator function
-        if(this._generatorFunctions[this.config.generatorFunction.toUpperCase()]) {
-            return this._generatorFunctions[this.config.generatorFunction.toUpperCase()]();
+        if (
+            this._generatorFunctions[
+                this.config.generatorFunction.toUpperCase()
+            ]
+        ) {
+            return await this._generatorFunctions[
+                this.config.generatorFunction.toUpperCase()
+            ]();
         }
 
         let keyPair;
-        if(this.config.signFunction === 'NEWRSA') {
+        if (this.config.signFunction === "NEWRSA") {
             //get old rsa key in PEM format and convert to utf-16
             keyPair.public = this.PEMToHex(keyPair.public);
-            return {private: keyPair.private, public: keyPair.public};
+            return { private: keyPair.private, public: keyPair.public };
         }
-        
-        logger.fatalFall('No generation functions found');
-        return {private: '', public: ''};
+
+        logger.fatalFall("No generation functions found");
+        return { private: "", public: "" };
     }
 
     /**
      * signs data
      * @param data
      * @param key
-     * @returns {{data: *, sign: *}}
+     * @returns Promise{{data: *, sign: *}}
      */
-    sign(data, key) {
+    async sign(data, key) {
         let signedData;
 
         //External sign function
-        if(this._signFunctions[this.config.signFunction]) {
-            signedData = this._signFunctions[this.config.signFunction].sign(data, key);
+        if (this._signFunctions[this.config.signFunction]) {
+            signedData = await this._signFunctions[
+                this.config.signFunction
+            ].sign(data, key);
         } else {
-            logger.fatalFall('No sign functions found');
-            return {data: data, sign: ''};
+            logger.fatalFall("No sign functions found");
+            return { data: data, sign: "" };
         }
-        return {data: data, sign: signedData};
+        return { data: data, sign: signedData };
     }
 
     /**
@@ -249,17 +270,23 @@ class Cryptography {
      * @param key
      * @returns {boolean} true or false
      */
-    verify(data, sign, key) {
-        if(typeof data === 'object') {
+    async verify(data, sign, key) {
+        if (typeof data === "object") {
             sign = data.sign;
             data = data.data;
         }
 
         //External sign function
-        if(this._signFunctions[this.config.signFunction]) {
-            return this._signFunctions[this.config.signFunction].validate(data, sign, key);
+        if (this._signFunctions[this.config.signFunction]) {
+            try {
+                return await this._signFunctions[
+                    this.config.signFunction
+                ].validate(data, sign, key);
+            } catch {
+                return false;
+            }
         } else {
-            logger.fatalFall('No verify functions found');
+            logger.fatalFall("No verify functions found");
             return false;
         }
     }
@@ -269,14 +296,13 @@ class Cryptography {
      * @param {string/ArrayBufferTypes}data
      * @returns {Buffer}
      */
-    hash(data = '') {
-
+    async hash(data = "") {
         //External hash function
-        if(this._hashFunctions[this.config.hashFunction]) {
-            return this._hashFunctions[this.config.hashFunction](data);
+        if (this._hashFunctions[this.config.hashFunction]) {
+            return await this._hashFunctions[this.config.hashFunction](data);
         } else {
-            logger.fatalFall('No hash functions found');
-            return '';
+            logger.fatalFall("No hash functions found");
+            return "";
         }
     }
 }
