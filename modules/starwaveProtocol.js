@@ -20,6 +20,8 @@
 const MESSAGE_MUTEX_TIMEOUT = 1000;
 const LATENCY_TIME = 2 * 1000; //отклонение на устаревание сообщения
 
+const BROADCAST_TYPE = "broadcast";
+
 const storj = require('./instanceStorage');
 const moment = require('moment');
 const getid = require('./getid');
@@ -50,9 +52,10 @@ class starwaveProtocol {
      * @param route
      * @param type
      * @param timestampOfStart
+     * @param {string} broadcastId
      * @returns {{data: *, reciver: *, sender: *, id: *, timestamp: number, TTL: number, index: *, mutex: string, relevancyTime: Array, route: Array, type: number, timestampOfStart: number}}
      */
-    createMessage(data, reciver, sender, id, timestamp, TTL, relevancyTime, route, type, timestampOfStart) {
+    createMessage(data, reciver, sender, id, timestamp, TTL, relevancyTime, route, type, timestampOfStart, broadcastId = '') {
         return {
             data: data,
             reciver: reciver,
@@ -64,26 +67,40 @@ class starwaveProtocol {
             relevancyTime: relevancyTime !== undefined ? relevancyTime : LATENCY_TIME, // время актуальности сообщений
             route: route !== undefined ? route : [],     //маршрут сообщения
             type: type !== undefined ? type : this.blockchain.MessageType.SW_BROADCAST,
-            timestampOfStart: timestampOfStart !== undefined ? timestampOfStart : moment().utc().valueOf()
+            timestampOfStart: timestampOfStart !== undefined ? timestampOfStart : moment().utc().valueOf(),
+            broadcastId
         };
     };
 
     /**
      * Register message handler
      * @param {string} message
+     * @param {function|string} broadcastId
      * @param {function} handler
      * @return {boolean}
      */
-    registerMessageHandler(message, handler) {
+    registerMessageHandler(message, broadcastId = '', handler = null) {
         let that = this;
-        if(typeof that.blockchain !== 'undefined') {
+
+        //for legacy methods
+        if (typeof broadcastId === 'function' && !handler) {
+            handler = broadcastId;
+        }
+
+        if (typeof that.blockchain !== 'undefined') {
             this.blockchain.registerMessageHandler(message, function (messageBody) {
-                if(messageBody.id === message || message.length === 0) {
-                    if(typeof  messageBody.mutex !== 'undefined' && typeof that._messageMutex[messageBody.mutex] === 'undefined') {
-                        if(handler(messageBody)){
+                if (
+                    messageBody.id === message
+                    || (typeof broadcastId === 'string' && message === BROADCAST_TYPE && messageBody.broadcastId === broadcastId)
+                ) {
+                    if (typeof messageBody.mutex !== 'undefined' && typeof that._messageMutex[messageBody.mutex] === 'undefined') {
+                        if (handler(messageBody)) {
                             that.handleMessageMutex(messageBody);
+                            if (messageBody.broadcastId === broadcastId) {
+                                return false;
+                            }
                             return true;
-                        }else{
+                        } else {
                             return false;
                         }
                     }
