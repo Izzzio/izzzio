@@ -124,7 +124,7 @@ class ShardedDB {
 
     //Public methods
 
-    get(key, options, callback) { //DONE
+    get(key, options, callback) {
         let i = 0;
         let that = this;
         function getRecursive(err, res) {
@@ -135,15 +135,18 @@ class ShardedDB {
                 } else {
                     return callback(err);
                 }
+            } else if (res) {
+                if(res.toString().includes('JSON:')) {
+                    res = JSON.parse(res.toString().replace('JSON:', ''));
+                }
+                return callback(null, res);
             }
-
-            return callback(null, res);
         }
 
         return that.storages[i].level.get(key, options, getRecursive);
     }
 
-    async getAsync(key, options) { //DONE
+    async getAsync(key, options) {
         let result;
         try {
             result = await this._storageOperation(key, options, 'get');
@@ -156,7 +159,7 @@ class ShardedDB {
         return result;
     }
 
-    put(key, value, options, callback) {//DONE????
+    put(key, value, options, callback) {
         if(typeof value === 'object') {
             value = 'JSON:' + JSON.stringify(value);
         }
@@ -187,7 +190,7 @@ class ShardedDB {
         })
     }
 
-    async putAsync(key, value, options) { //DONE
+    async putAsync(key, value, options) {
         if(typeof value === 'object') {
             value = 'JSON:' + JSON.stringify(value);
         }
@@ -220,7 +223,7 @@ class ShardedDB {
         return this.storages[currentStorage].level.put(key, value, options);
     }
 
-    del(key, options, callback) { // DONE
+    del(key, options, callback) {
         this.storages.forEach((stor) => {
             stor.level.get(key, {}, (err, res) => {
                 if (res) {
@@ -230,11 +233,11 @@ class ShardedDB {
         })
     }
 
-    async delAsync(key, options) { //DONE
+    async delAsync(key, options) {
         return this._storageOperationAsync(key, options, 'del');
     }
 
-    close(callback) { //DONE
+    close(callback) {
         let i = 0;
         let that = this;
         function closeRecursive(err) {
@@ -250,7 +253,7 @@ class ShardedDB {
         return that.storages[i].level.close(closeRecursive);
     }
 
-    async closeAsync() { //DONE
+    async closeAsync() {
         let queries = this.storages.map((stor) => {
             return stor.level.close();
         });
@@ -263,7 +266,7 @@ class ShardedDB {
         return Promise.resolve();
     }
 
-    clear(callback) { ///DONE
+    clear(callback) {
         this.clearAsync()
         .then(() => {
             if (typeof(callback) === 'function') {
@@ -277,7 +280,7 @@ class ShardedDB {
         })
     }
 
-    async clearAsync() { //DONE
+    async clearAsync() {
         let dbstring = this.name;
         return this.closeAsync()
         .then(() => {
@@ -286,13 +289,13 @@ class ShardedDB {
         })
     }
 
-    save(callback) { //DONE
+    save(callback) {
         if(typeof callback === 'function') {
             callback();
         }
     }
 
-    async saveAsync() { //DONE
+    async saveAsync() {
         return Promise.resolve();
     }
 }
