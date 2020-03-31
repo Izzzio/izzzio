@@ -135,9 +135,12 @@ class ShardedDB {
                 } else {
                     return callback(err);
                 }
+            } else if (res) {
+                if(res.toString().includes('JSON:')) {
+                    res = JSON.parse(res.toString().replace('JSON:', ''));
+                }
+                return callback(null, res);
             }
-
-            return callback(null, res);
         }
 
         return that.storages[i].level.get(key, options, getRecursive);
