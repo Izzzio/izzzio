@@ -21,6 +21,7 @@
     "cli-color": "^2.0.0",
     "commander": "^2.19.0",
     "crypto-js": "^3.1.6",
+    "deasync": "^0.1.19",
     "dnssd": "^0.4.1",
     "express": "^4.16.4",
     "fs-extra": "^4.0.3",
