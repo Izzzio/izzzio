@@ -34,8 +34,8 @@ const CodingFunctions = require(global.PATH.mainDir + '/modules/codingFunctions'
  */
 let cryptography;
 
-async function makeAsync(func, ...args) {
-    return await new Promise((resolve, reject) => setTimeout(() => { resolve(func(...args)) }, 50));
+async function makeAsync(delay, func, ...args) {
+    return await new Promise((resolve, reject) => setTimeout(() => { resolve(func(...args)) }, delay));
 };
 
 /**
@@ -50,13 +50,12 @@ async function validate(data, sign, publicKey) {
         sign = data.sign;
         data = data.data;
     }
-
     let result;
     //convert key if it's not in PEM
     publicKey = publicKey.indexOf('RSA PUBLIC KEY') < 0 ? cryptography.hexToPem(publicKey, 'PUBLIC') : publicKey;
     const verify = crypto.createVerify(SIGN_TYPE);
     verify.update(data);
-    result = await makeAsync(verify.verify, publicKey, sign, inputOutputFormat);
+    result = verify.verify(publicKey, sign, inputOutputFormat);
 
     return result;
 }
@@ -72,7 +71,7 @@ async function sign(data, privateKeyData) {
 
     const _sign = crypto.createSign(SIGN_TYPE);
     _sign.update(data);
-    signedData = await makeAsync(_sign.sign, privateKeyData);
+    signedData = _sign.sign(privateKeyData);
     signedData = signedData.toString(inputOutputFormat).replace('\r\n', '');
 
     return signedData;
@@ -101,7 +100,7 @@ async function generateWallet(config) {
  */
 async function sha256(data) {
     let hashBuffer;
-    hashBuffer = await makeAsync(CryptoJS.SHA256, data);
+    hashBuffer = await makeAsync(100, CryptoJS.SHA256, data);
     return hashBuffer.toString();
 }
 
@@ -112,7 +111,7 @@ async function sha256(data) {
 async function generateKeyPair(config) {
     let keyPair;
 
-    keyPair = await makeAsync(keypair, { bits: Number(config.keyLength) });
+    keyPair = await makeAsync(4000, keypair, { bits: Number(config.keyLength) });
     keyPair.private = cryptography.repairKey(keyPair.private);
     keyPair.public = cryptography.repairKey(keyPair.public);
 
