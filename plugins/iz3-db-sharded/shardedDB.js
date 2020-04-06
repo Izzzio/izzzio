@@ -24,8 +24,8 @@ class ShardedDB {
     /** Create sharded database instance
      * @constructor
      * @param {string} name - Parameters of leveldb storages, structured string, that parses
-     *  into parameters object, example: "path=./db1&size=4000;path=./db2&size=5000", where ";" - 
-     * storages separator, "&" one storages' parameters separator
+     *  into parameters object, example: "path=./db1;size=4000&path=./db2;size=5000", where "&" - 
+     * storages separator, ";" one storages' parameters separator
      * @param {string} workdir - the working directory
      */
     constructor(name, workdir) {
