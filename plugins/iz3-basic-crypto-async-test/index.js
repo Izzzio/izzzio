@@ -35,7 +35,7 @@ const CodingFunctions = require(global.PATH.mainDir + '/modules/codingFunctions'
 let cryptography;
 
 async function makeAsync(func, ...args) {
-    await new Promise((resolve, reject) => setTimeout(() => { resolve(func(...args)) }, 50));
+    return await new Promise((resolve, reject) => setTimeout(() => { resolve(func(...args)) }, 50));
 };
 
 /**
