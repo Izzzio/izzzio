@@ -19,14 +19,27 @@ const level = require('level');
 const path = require('path');
 const fs = require('fs-extra');
 
+/** Class wrapper of leveldb, managing multiple instances of leveldb */
 class ShardedDB {
+    /** Create sharded database instance
+     * @constructor
+     * @param {string} name - Parameters of leveldb storages, structured string, that parses
+     *  into parameters object, example: "path=./db1&size=4000;path=./db2&size=5000", where ";" - 
+     * storages separator, "&" one storages' parameters separator
+     * @param {string} workdir - the working directory
+     */
     constructor(name, workdir) {
         this.workDir = workdir;
         this.name = name;
         this.storages = this._initializeStorages(name);
     }
+
     // Private methods
 
+    /** Parser of database parameters into object
+     * @param {string} params - Parameters string
+     * @returns {Object}
+     */
     _initializeDbParams(params) {
         params = params.split(';');
         let storage, size;
@@ -46,6 +59,10 @@ class ShardedDB {
         return { storage, size };
     }
 
+    /**Creates storages objects from parameters
+     * @param {string} name - Parameters string
+     * @returns {Array<Object>}
+     */
     _initializeStorages(name) {
         let storages = new Array();
         let shards = name.split('&');
@@ -65,10 +82,16 @@ class ShardedDB {
         return storages;
     }
 
+    /** Wrapper for get, del operations, that
+     * starts chain of promises and wait all of them to resolve/reject
+     * returns resolved promise or rejected with NotFound error
+     * @async
+     * @param {string} key
+     * @param {Object} options
+     * @param {string} operation - "get" or "del"
+     * @returns {Promise}
+    */
     async _storageOperationAsync(key, options, operation) {
-        // wrapper for get, del operations, that
-        // starts chain of promises and wait all of them to resolve/reject
-        // returns only one correct promise
         let queries = new Array();
         for (let stor of this.storages) {
             queries.push(stor.level[operation](key, options));
@@ -76,15 +99,20 @@ class ShardedDB {
 
         queries = await Promise.allSettled(queries);
 
-        let resultPromise;
+        let result;
         queries.forEach((promise) => {
-            if (promise.status === "fulfilled") {
-                resultPromise = promise;
+            if (promise.value) {
+                result = promise.value;
             }
         })
-        return resultPromise ? resultPromise.value : new Error('Not found');
+        return result ? Promise.resolve(result) : Promise.reject(new Error('Not found'));
     }
 
+    /** Returns size of folder
+     * @async
+     * @param {string} stor - path of storage
+     * @returns {Promise}
+     */
     async _sizeOfStorageAsync(stor) {
         const dir = this.storages[stor].path;
         let sizes;
@@ -103,19 +131,7 @@ class ShardedDB {
         return sizes;
     }
 
-    _sizeOfStorage(stor) {
-        const dir = this.storages[stor].path;
-        let sizes;
-        const files = fs.readdirSync(dir);
-        sizes = files.map((file) => fs.statSync(dir + path.sep + file));
-        sizes = sizes
-        .map((stat) => {
-            return stat.size;
-        })
-        .reduce((acc, size) => acc + size);
-        return sizes;
-    }
-
+    /** Deletes all files from directory */
     _clearDirectories() {
         this.storages
         .map((stor) => stor.path)
@@ -124,72 +140,63 @@ class ShardedDB {
 
     //Public methods
 
+    /** Callback wrapper for get method */
     get(key, options, callback) {
-        let i = 0;
-        let that = this;
-        function getRecursive(err, res) {
-            if (err) {
-                if(i < that.storages.length - 1) {
-                    i++;
-                    that.storages[i].level.get(key, options, getRecursive);
-                } else {
-                    return callback(err);
-                }
-            } else if (res) {
-                if(res.toString().includes('JSON:')) {
-                    res = JSON.parse(res.toString().replace('JSON:', ''));
-                }
-                return callback(null, res);
+        this.getAsync(key, options)
+        .then((res) => {
+            if (typeof(callback) === 'function') {
+                callback(null, res);
             }
-        }
-
-        return that.storages[i].level.get(key, options, getRecursive);
+        })
+        .catch((err) => {
+            if (typeof(callback) === 'function') {
+                callback(err);
+            }
+        });
     }
 
+    /** Get value from db
+     * @async
+     * @param {string} key
+     * @param {options} options
+     * @returns {Promise}
+     */
     async getAsync(key, options) {
         let result;
         try {
-            result = await this._storageOperation(key, options, 'get');
+            result = await this._storageOperationAsync(key, options, 'get');
         } catch (e) {
             return Promise.reject(e);
         }
-        if(result.toString().includes('JSON:')) {
+        if(result && result.toString().includes('JSON:')) {
             result = JSON.parse(result.toString().replace('JSON:', ''));
         }
+
         return result;
     }
 
+    /** Callback wrapper for put method
+     * @param {string} key
+     * @param {string} value
+     * @param {object} options
+     * @param {function} callback
+     */
     put(key, value, options, callback) {
-        if(typeof value === 'object') {
-            value = 'JSON:' + JSON.stringify(value);
-        }
-
-        let currentStorage = 0;
-        while(this._sizeOfStorage(currentStorage) >= this.storages[currentStorage].size) {
-            // we need to select storage with a free space
-            if (currentStorage < this.storages.length - 1) {
-                ++currentStorage;
-            } else {
-                if (typeof(callback) === 'function') {
-                    return callback(new Error('ShardedDBError: Max size limit was reached by all of the storages'));
-                }
+        this.putAsync(key, value, options)
+        .catch((err) => {
+            if (typeof(callback) === 'function') {
+                callback(err);
             }
-        }
-        
-            // try to find that key in the storages. To overwrite this key
-            // we need to delete old value to guarant uniqueness of key
-            // if key not found, just put a new one
-        this.get(key, {}, (err, res) => {
-            if (res) {
-                this.del(key, {}, () => {
-                    return this.storages[currentStorage].level.put(key, value, options, callback);
-                });
-            }
-
-            return this.storages[currentStorage].level.put(key, value, options, callback);
-        })
+        });
     }
 
+    /** Put key-value to database
+     * @async
+     * @param {string} key
+     * @param {string} value
+     * @param {object} options
+     * @returns {Promise}
+     */
     async putAsync(key, value, options) {
         if(typeof value === 'object') {
             value = 'JSON:' + JSON.stringify(value);
@@ -223,36 +230,54 @@ class ShardedDB {
         return this.storages[currentStorage].level.put(key, value, options);
     }
 
+    /** Callback wrapper for del method 
+     * @param {string} key
+     * @param {string} options
+     * @param {function} callback
+    */
     del(key, options, callback) {
-        this.storages.forEach((stor) => {
-            stor.level.get(key, {}, (err, res) => {
-                if (res) {
-                    stor.level.del(key, options, callback);
-                }
-            })
+        this.delAsync(key, options)
+        .then(() => {
+            if (typeof(callback) === 'function') {
+                callback();
+            }
+        })
+        .catch((err) => {
+            if (typeof(callback) === 'function') {
+                callback(err);
+            }
         })
     }
 
+    /** Deletes key from database
+     * @param {string} key
+     * @param {object} options
+     * @returns {Promise}
+     */
     async delAsync(key, options) {
         return this._storageOperationAsync(key, options, 'del');
     }
 
+    /** Callback wrapper for close method
+     * @param {function} callback
+     */
     close(callback) {
-        let i = 0;
-        let that = this;
-        function closeRecursive(err) {
-            i++
-            if (err) {
-                return callback(err);
-            } else if (i < that.storages.length - 1) {
-                return that.storages[i].level.close(closeRecursive);
+        this.closeAsync()
+        .then(() => {
+            if (typeof(callback) === 'function') {
+                callback();
             }
-            return callback();
-        }
-
-        return that.storages[i].level.close(closeRecursive);
+        })
+        .catch((err) => {
+            if (typeof(callback) === 'function') {
+                callback(err);
+            }
+        })
     }
 
+    /** Closes all of the storages
+     * @returns {Promise}
+     */
     async closeAsync() {
         let queries = this.storages.map((stor) => {
             return stor.level.close();
@@ -266,6 +291,9 @@ class ShardedDB {
         return Promise.resolve();
     }
 
+    /** Callback wrapper for clear method
+     * @param {function} callback
+     */
     clear(callback) {
         this.clearAsync()
         .then(() => {
@@ -280,6 +308,9 @@ class ShardedDB {
         })
     }
 
+    /** Clear all storages
+     * @returns {Promise}
+     */
     async clearAsync() {
         let dbstring = this.name;
         return this.closeAsync()
@@ -289,14 +320,11 @@ class ShardedDB {
         })
     }
 
+    /** Save method */
     save(callback) {
         if(typeof callback === 'function') {
             callback();
         }
-    }
-
-    async saveAsync() {
-        return Promise.resolve();
     }
 }
 
