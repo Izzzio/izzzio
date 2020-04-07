@@ -72,6 +72,9 @@ function Blockchain(config) {
     const Frontend = require('./modules/frontend');
     const app = express();
 
+    //For plugins
+    const _newBlockSubscribers = [];
+
 
     storj.put('app', app);
     storj.put('config', config);
@@ -358,6 +361,15 @@ function Blockchain(config) {
         }
 
         addBlockToChainIndex(maxBlock, block, noHandle, cb);
+
+        _notifyNewBlockSubscribers(maxBlock);
+    }
+
+
+    function _notifyNewBlockSubscribers(blockIndex) {
+        this._newBlockSubscribers.forEach((subscriber) => {
+            subscriber(null, blockIndex);
+        })
     }
 
     /**
@@ -1852,13 +1864,25 @@ function Blockchain(config) {
     }
 
     blockchainObject = {
+        _newBlockSubscribers = [],
         config: config,
         validators: nodeMetaInfo,
         start: start,
         getid: getid,
         write: write,
         getGenesisBlock: getGenesisBlock,
-        addBlockToChainIndex: addBlockToChainIndex,
+        /**
+         * Using decorator for addBlockToChainIndex to call subscribers callbacks
+         */
+        addBlockToChainIndex: (...args) => {
+            let callResult = addBlockToChainIndex.apply(args);
+            if (this._newBlockSubscribers.length > 0) {
+                this._newBlockSubscribers.forEach( (cb) => {
+                    cb();
+                });
+            }
+            return callResult;
+        },
         addBlockToChain: addBlockToChain,
         startNode: startNode,
         initHttpServer: initHttpServer,
@@ -1926,7 +1950,31 @@ function Blockchain(config) {
          * @param {Number} id
          * @param {Function} cb
          */
-        getBlockById: getBlockById
+        getBlockById: getBlockById,
+        /**
+         * Subscribe for new block addition
+         * @param {Function} cb
+         * @returns {boolean}
+         */
+        subscribeForNewBlocks: (cb) => {
+            if (typeof cb === 'function' && this._newBlockSubscribers.indexOf(cb) === -1) {
+                this._newBlockSubscribers.push(cb);
+                return true;
+            }
+            return false;
+        },
+        /**
+         * Unsubscribe from new block addition
+         * @param {Function} cb
+         * @returns {boolean}
+         */
+        unsubscribeFromNewBlocks: (cb) => {
+            if (typeof cb === 'function' && this._newBlockSubscribers.indexOf(cb) !== -1) {
+                this._newBlockSubscribers.splice(this._newBlockSubscribers.indexOf(cb), 1);
+                return true;
+            }
+            return false;
+        }
     };
 
     //Init2

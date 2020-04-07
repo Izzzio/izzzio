@@ -35,6 +35,12 @@ class Plugins {
             registerGeneratorHook: cryptography.registerGeneratorHook,
         };
 
+        this.blockchain = {
+            subscribeForNewBlocks: that._subscribeForNewBlocks,
+            unsubscribeFromNewBlocks: that._unsubscribeFromNewBlocks,
+            addBlocks: that._addBlocksToBlockchain,
+        }
+
     }
 
     /**
@@ -83,6 +89,33 @@ class Plugins {
 
     _injectScript(script) {
         that._injectedScripts.push("" + script);
+    }
+
+    /**
+     * Add onNewBlock as subscriber for new block occurance
+     * @param {object} bc 
+     * @param {function} onNewBlock 
+     */
+    _subscribeForNewBlocks(bc, onNewBlock) {
+        return bc.subscribeForNewBlocks(onNewBlock);
+    }
+
+    /**
+     * Removes onNewBlock from subscribers for new block occurance
+     * @param {object} bc 
+     * @param {function} onNewBlock 
+     */
+    _unsubscribeFromNewBlocks(bc, onNewBlock) {
+        return bc.unsubscribeFromNewBlocks(onNewBlock);
+    }
+
+    /**
+     * Add blocks to blockchain from external source
+     * @param {object} bc 
+     * @param {object} blocks 
+     */
+    _addBlocksToBlockchain(bc, blocks) {
+        bc.handleBlockchainResponse(blocks);
     }
 }
 
