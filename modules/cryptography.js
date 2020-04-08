@@ -24,6 +24,8 @@ const logger = new (require('./logger'))();
 
 const CodingFunctions = require('./codingFunctions');
 
+const deasync = require("deasync");
+
 
 /**
  * Repair bad generated key
@@ -206,7 +208,7 @@ class Cryptography {
         (async () => {
             res = await asyncFunc.call(this, ...args);
         })();
-        require("deasync").loopWhile(function () {
+        deasync.loopWhile(function () {
             return typeof res === 'undefined';
         });
         return res;
