@@ -105,7 +105,12 @@ class ShardedDB {
                 result = promise.value;
             }
         })
-        return result ? Promise.resolve(result) : Promise.reject(new Error('Not found'));
+        if (operation === 'get') {
+            return result ? Promise.resolve(result) : Promise.reject(new Error('Not found'));
+        } else if (operation === 'del') {
+            return Promise.resolve();
+        }
+        
     }
 
     /** Returns size of folder
