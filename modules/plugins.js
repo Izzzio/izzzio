@@ -91,22 +91,39 @@ class Plugins {
         that._injectedScripts.push("" + script);
     }
 
-    /**
-     * Add onNewBlock as subscriber for new block occurance
-     * @param {object} bc 
-     * @param {function} onNewBlock 
-     */
-    _subscribeForNewBlocks(bc, onNewBlock) {
-        return bc.subscribeForNewBlocks(onNewBlock);
-    }
 
     /**
-     * Removes onNewBlock from subscribers for new block occurance
-     * @param {object} bc 
-     * @param {function} onNewBlock 
+     * Subscribe for new block addition
+     * @param {Function} cb
+     * @returns {boolean}
      */
-    _unsubscribeFromNewBlocks(bc, onNewBlock) {
-        return bc.unsubscribeFromNewBlocks(onNewBlock);
+    _subscribeForNewBlocks(cb) {
+        let newSubs = storj.get('newBlockSubscribers');
+        if (! newSubs ) {
+            newSubs = [];
+        }
+        if (typeof cb === 'function' && newSubs.indexOf(cb) === -1) {
+            newSubs.push(cb);
+            storj.put('newBlockSubscribers', newSubs);
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
+     * Unsubscribe from new block addition
+     * @param {Function} cb
+     * @returns {boolean}
+     */
+    _unsubscribeFromNewBlocks(cb) {
+        let subs = storj.get('newBlockSubscribers');
+        if (subs  !== null && typeof cb === 'function' && subs.indexOf(cb) !== -1) {
+            subs.splice(this._newBlockSubscribers.indexOf(cb), 1);
+            storj.put(subs);
+            return true;
+        }
+        return false;
     }
 
     /**

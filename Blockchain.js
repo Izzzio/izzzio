@@ -357,16 +357,8 @@ function Blockchain(config) {
         }
 
         addBlockToChainIndex(maxBlock, block, noHandle, cb);
-
-        _notifyNewBlockSubscribers(maxBlock);
     }
-
-
-    function _notifyNewBlockSubscribers(blockIndex) {
-        this._newBlockSubscribers.forEach((subscriber) => {
-            subscriber(null, blockIndex);
-        })
-    }
+    
 
     /**
      * Async verstion of blockchain.get
@@ -1859,8 +1851,8 @@ function Blockchain(config) {
         })
     }
 
+
     blockchainObject = {
-        _newBlockSubscribers = [],
         config: config,
         validators: nodeMetaInfo,
         start: start,
@@ -1871,9 +1863,10 @@ function Blockchain(config) {
          * Using decorator for addBlockToChainIndex to call subscribers callbacks
          */
         addBlockToChainIndex: (...args) => {
-            let callResult = addBlockToChainIndex.apply(args);
-            if (this._newBlockSubscribers.length > 0) {
-                this._newBlockSubscribers.forEach( (cb) => {
+            let result = addBlockToChainIndex.apply(args);
+            let subs = storj.get('newBlockSubscribers');
+            if (subs !== null && subs.length > 0) {
+                subs.forEach( (cb) => {
                     cb();
                 });
             }
@@ -1947,30 +1940,6 @@ function Blockchain(config) {
          * @param {Function} cb
          */
         getBlockById: getBlockById,
-        /**
-         * Subscribe for new block addition
-         * @param {Function} cb
-         * @returns {boolean}
-         */
-        subscribeForNewBlocks: (cb) => {
-            if (typeof cb === 'function' && this._newBlockSubscribers.indexOf(cb) === -1) {
-                this._newBlockSubscribers.push(cb);
-                return true;
-            }
-            return false;
-        },
-        /**
-         * Unsubscribe from new block addition
-         * @param {Function} cb
-         * @returns {boolean}
-         */
-        unsubscribeFromNewBlocks: (cb) => {
-            if (typeof cb === 'function' && this._newBlockSubscribers.indexOf(cb) !== -1) {
-                this._newBlockSubscribers.splice(this._newBlockSubscribers.indexOf(cb), 1);
-                return true;
-            }
-            return false;
-        }
     };
 
     //Init2
