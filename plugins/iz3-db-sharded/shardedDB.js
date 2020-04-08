@@ -24,8 +24,8 @@ class ShardedDB {
     /** Create sharded database instance
      * @constructor
      * @param {string} name - Parameters of leveldb storages, structured string, that parses
-     *  into parameters object, example: "path=./db1&size=4000;path=./db2&size=5000", where ";" - 
-     * storages separator, "&" one storages' parameters separator
+     *  into parameters object, example: "path=./db1;size=4000&path=./db2;size=5000", where "&" - 
+     * storages separator, ";" one storages' parameters separator
      * @param {string} workdir - the working directory
      */
     constructor(name, workdir) {
@@ -105,7 +105,12 @@ class ShardedDB {
                 result = promise.value;
             }
         })
-        return result ? Promise.resolve(result) : Promise.reject(new Error('Not found'));
+        if (operation === 'get') {
+            return result ? Promise.resolve(result) : Promise.reject(new Error('Not found'));
+        } else if (operation === 'del') {
+            return Promise.resolve();
+        }
+        
     }
 
     /** Returns size of folder
