@@ -72,10 +72,6 @@ function Blockchain(config) {
     const Frontend = require('./modules/frontend');
     const app = express();
 
-    //For plugins
-    const _newBlockSubscribers = [];
-
-
     storj.put('app', app);
     storj.put('config', config);
 
