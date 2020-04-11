@@ -42,13 +42,13 @@ class Keyring extends Signable {
      * @param {Number} keyCount
      * @param {Wallet} wallet
      */
-    generateKeys(keyfile, keyCount, wallet) {
+    async generateKeys(keyfile, keyCount, wallet) {
         let generatedKeys = [];
         console.log('Keyring: Generating keys for emission');
         generatedKeys.push(wallet.keysPair);
         this.keys.push(wallet.keysPair.public);
         for (let i = 1; i < keyCount; i++) {
-            let key = cryptography.generateKeyPair();
+            let key = await cryptography.generateKeyPair();
             this.keys.push(key.public);
             generatedKeys.push(key);
         }

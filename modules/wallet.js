@@ -121,7 +121,7 @@ let Wallet = function (walletFile, config) {
     /**
      * Generates new data for wallet
      */
-    wallet.generate = function () {
+    wallet.generate = async function () {
 
         let generated = false;
         for (let generator of wallet._generatorHooks) {
@@ -134,7 +134,7 @@ let Wallet = function (walletFile, config) {
         }
 
         if(!generated) {
-            wallet.keysPair = cryptography.generateKeyPair();
+            wallet.keysPair = await cryptography.generateKeyPair();
         }
 
         wallet.log('Info: Generated');
@@ -181,9 +181,9 @@ let Wallet = function (walletFile, config) {
      * @param key
      * @returns {{data: *, sign: *}}
      */
-    wallet.signData = function (data, key) {
+    wallet.signData = async function (data, key) {
         key = typeof key === 'undefined' ? wallet.keysPair.private : key;
-        return cryptography.sign(data, key);
+        return await cryptography.sign(data, key);
     };
 
     /**
@@ -193,9 +193,9 @@ let Wallet = function (walletFile, config) {
      * @param key
      * @returns {boolean}
      */
-    wallet.verifyData = function (data, sign, key) {
+    wallet.verifyData = async function (data, sign, key) {
         key = typeof key === 'undefined' ? wallet.keysPair.public : key;
-        return cryptography.verify(data, sign, key);
+        return await cryptography.verify(data, sign, key);
     };
 
     /**
@@ -246,11 +246,11 @@ let Wallet = function (walletFile, config) {
         return true;
     };
 
-    wallet.signBlock = function (unsignedBlock) {
+    wallet.signBlock = async function (unsignedBlock) {
         if(unsignedBlock.isSigned()) {
             return unsignedBlock;
         }
-        unsignedBlock.sign = wallet.signData(unsignedBlock.data).sign;
+        unsignedBlock.sign = await wallet.signData(unsignedBlock.data).sign;
         unsignedBlock.pubkey = wallet.keysPair.public;
         return unsignedBlock;
     };
@@ -278,11 +278,11 @@ let Wallet = function (walletFile, config) {
      * Self validate signing
      * @return {boolean}
      */
-    wallet.selfValidate = function () {
+    wallet.selfValidate = async function () {
         try {
             let data = String(Math.random());
-            data = wallet.signData(data);
-            return wallet.verifyData(data.data, data.sign);
+            data = await wallet.signData(data);
+            return await wallet.verifyData(data.data, data.sign);
         } catch (e) {
             console.log(e);
             return false;

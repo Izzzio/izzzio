@@ -68,7 +68,7 @@ const moment = require('moment');
  * @param {Block} newBlock
  * @param {Block} previousBlock
  */
-function isValidNewBlock(newBlock, previousBlock) {
+async function isValidNewBlock(newBlock, previousBlock) {
 
     if(typeof newBlock === 'undefined' || typeof previousBlock === 'undefined') {
         return false;
@@ -106,7 +106,7 @@ function isValidNewBlock(newBlock, previousBlock) {
 
     for (let a in keyring) {
         if(keyring.hasOwnProperty(a)) {
-            if(testWallet.verifyData(newBlock.hash, newBlock.sign, keyring[a])) {
+            if(await testWallet.verifyData(newBlock.hash, newBlock.sign, keyring[a])) {
                 return true;
             }
         }
@@ -142,7 +142,7 @@ function getThrustedAwait(timestamp) {
  * @param {Function} cancelCondition
  * @param {int} timestamp
  */
-function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
+async function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
 
     /**
      * Если у нас нет ключей для немедленного добавления блока в сеть,
@@ -187,7 +187,7 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
         blockData = JSON.stringify(blockData);
     }*/
 
-    blockchain.getLatestBlock(function (previousBlock) {
+    blockchain.getLatestBlock(async function (previousBlock) {
         if(!previousBlock) {
             return;
         }
@@ -202,7 +202,7 @@ function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
 
         let hash = blockchain.calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, startTimestamp, '');
 
-        let sign = blockchain.wallet.signData(hash).sign;
+        let sign = await blockchain.wallet.signData(hash).sign;
 
         let newBlock = new Block(nextIndex, previousBlock.hash, nextTimestamp, blockData, hash, startTimestamp, sign);
 

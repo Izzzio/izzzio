@@ -43,7 +43,7 @@ class AccountManager {
         wallet.keysPair.public = publicKey;
         wallet.keysPair.private = privateKey;
         wallet.id = id;
-        if(!wallet.selfValidate()) {
+        if(! await wallet.selfValidate()) {
             throw new Error('Invalid wallet data');
         }
 

@@ -206,10 +206,10 @@ class Cryptography {
      * Generates pair of keys
      * @returns {{private: *, public: *}}
      */
-    generateKeyPair() {
+    async generateKeyPair() {
         //External generator function
         if(this._generatorFunctions[this.config.generatorFunction.toUpperCase()]) {
-            return this._generatorFunctions[this.config.generatorFunction.toUpperCase()]();
+            return await this._generatorFunctions[this.config.generatorFunction.toUpperCase()]();
         }
 
         let keyPair;
@@ -229,12 +229,12 @@ class Cryptography {
      * @param key
      * @returns {{data: *, sign: *}}
      */
-    sign(data, key) {
+    async sign(data, key) {
         let signedData;
 
         //External sign function
         if(this._signFunctions[this.config.signFunction]) {
-            signedData = this._signFunctions[this.config.signFunction].sign(data, key);
+            signedData = await  this._signFunctions[this.config.signFunction].sign(data, key);
         } else {
             logger.fatalFall('No sign functions found');
             return {data: data, sign: ''};
@@ -249,7 +249,7 @@ class Cryptography {
      * @param key
      * @returns {boolean} true or false
      */
-    verify(data, sign, key) {
+    async verify(data, sign, key) {
         if(typeof data === 'object') {
             sign = data.sign;
             data = data.data;
@@ -257,7 +257,7 @@ class Cryptography {
 
         //External sign function
         if(this._signFunctions[this.config.signFunction]) {
-            return this._signFunctions[this.config.signFunction].validate(data, sign, key);
+            return await this._signFunctions[this.config.signFunction].validate(data, sign, key);
         } else {
             logger.fatalFall('No verify functions found');
             return false;
@@ -269,11 +269,11 @@ class Cryptography {
      * @param {string/ArrayBufferTypes}data
      * @returns {Buffer}
      */
-    hash(data = '') {
+    async hash(data = '') {
 
         //External hash function
         if(this._hashFunctions[this.config.hashFunction]) {
-            return this._hashFunctions[this.config.hashFunction](data);
+            return await this._hashFunctions[this.config.hashFunction](data);
         } else {
             logger.fatalFall('No hash functions found');
             return '';

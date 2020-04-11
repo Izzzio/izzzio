@@ -10,7 +10,7 @@
  * @param {object} config
  * @constructor
  */
-function Blockchain(config) {
+async function Blockchain(config) {
 
 
     /**
@@ -962,8 +962,8 @@ function Blockchain(config) {
      * @param cb
      */
     function addBlock(newBlock, cb) {
-        getLatestBlock(function (lastestBlock) {
-            if(isValidNewBlock(newBlock, lastestBlock)) {
+        getLatestBlock(async function (lastestBlock) {
+            if(await isValidNewBlock(newBlock, lastestBlock)) {
                 addBlockToChain(newBlock, false, cb);
             } else {
                 logger.error("Trying add invalid block");
@@ -982,7 +982,7 @@ function Blockchain(config) {
      * @param {Block} previousBlock
      * @returns {boolean}
      */
-    function isValidNewBlock(newBlock, previousBlock) {
+    async function isValidNewBlock(newBlock, previousBlock) {
 
         let validatorReversed = config.validators;
         /**
@@ -994,7 +994,7 @@ function Blockchain(config) {
         try {
             for (let a in validatorReversed) {
                 if(validatorReversed.hasOwnProperty(a)) {
-                    if(validatorReversed[a].isValidNewBlock(newBlock, previousBlock)) {
+                    if(await validatorReversed[a].isValidNewBlock(newBlock, previousBlock)) {
                         validatorReversed.reverse();
                         return true;
                     }
@@ -1083,7 +1083,7 @@ function Blockchain(config) {
          */
         const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
 
-        getLatestBlock(function (latestBlockHeld) {
+        getLatestBlock(async function (latestBlockHeld) {
             if(!latestBlockHeld) {
                 if(config.program.autofix) {
                     maxBlock--;
@@ -1119,7 +1119,7 @@ function Blockchain(config) {
                     }
                     if(latestBlockHeld.hash === latestBlockReceived.previousHash && latestBlockHeld.index > 5) { //когда получен один блок от того который у нас есть
 
-                        if(isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
+                        if(await isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
                             addBlockToChain(latestBlockReceived, true);
                             responseLatestMsg(function (msg) {
                                 storj.put('chainResponseMutex', false);
@@ -1195,7 +1195,7 @@ function Blockchain(config) {
         }
 
         //Получаем блок, с которого выполняется проверка
-        getBlockById(fromBlock, function (err, lBlock) {
+        getBlockById(fromBlock, async function (err, lBlock) {
             if(err) {
                 let error = new Error('Can\'t get block no ' + newBlocks[0].index + ' ' + err);
 
@@ -1212,7 +1212,7 @@ function Blockchain(config) {
                 maxIndex = 0;
             }
 
-            const validChain = isValidChain([lBlock].concat(newBlocks));
+            const validChain = await isValidChain([lBlock].concat(newBlocks));
 
             //Проверяем, что индекс первого блока в процеряемой цепочке не выходит за пределы Limited Confidence
             if(!(newBlocks[0].index >= maxIndex)) {
@@ -1278,14 +1278,14 @@ function Blockchain(config) {
      * @param {Array} blockchainToValidate
      * @returns {boolean}
      */
-    function isValidChain(blockchainToValidate) {
+    async function isValidChain(blockchainToValidate) {
         /*if(JSON.stringify(blockchainToValidate[0]) !== JSON.stringify(getGenesisBlock())) {
          return false;
          }*/
         try {
             const tempBlocks = [blockchainToValidate[0]];
             for (let i = 1; i < blockchainToValidate.length; i++) {
-                if(isValidNewBlock(blockchainToValidate[i], tempBlocks[i - 1])) {
+                if(await isValidNewBlock(blockchainToValidate[i], tempBlocks[i - 1])) {
                     try {
                         tempBlocks.push(blockchainToValidate[i]);
                     } catch (e) {
@@ -1690,7 +1690,7 @@ function Blockchain(config) {
      * Запускается всего один раз при старте цепочки, при условии, что кошелек утверждён
      */
 
-    function keyringEmission() {
+    async function keyringEmission() {
         if(
             maxBlock <= 5 &&
             maxBlock !== -1 &&
@@ -1700,7 +1700,7 @@ function Blockchain(config) {
             logger.info('Starting keyring emission');
 
             let keyring = new (require('./modules/blocksModels/keyring'))([], wallet.id);
-            keyring.generateKeys(config.workDir + '/keyringKeys.json', config.keyringKeysCount, wallet);
+            await keyring.generateKeys(config.workDir + '/keyringKeys.json', config.keyringKeysCount, wallet);
             transactor.transact(keyring, function (blockData, cb) {
                 config.validators[0].generateNextBlock(blockData, function (generatedBlock) {
                     addBlock(generatedBlock);
@@ -1719,7 +1719,7 @@ function Blockchain(config) {
     /**
      * Starts node with config
      */
-    function start() {
+    async function start() {
 
         if(config.validators.length === 0) {
             throw ('Error: No consensus validators loaded!');
@@ -2034,12 +2034,12 @@ function Blockchain(config) {
 
     //Wallet create
     if(wallet.id.length === 0) {
-        wallet.generate();
+       await wallet.generate();
     }
 
     //Account manager
     let accountManager = new AccountManager(config);
-    accountManager.addAccountWallet('default', wallet);
+    await accountManager.addAccountWallet('default', wallet);
     storj.put('accountManager', accountManager);
 
     //EcmaContract Smartcontracts
