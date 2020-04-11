@@ -358,7 +358,7 @@ function Blockchain(config) {
 
         addBlockToChainIndex(maxBlock, block, noHandle, cb);
     }
-    
+
 
     /**
      * Async verstion of blockchain.get
@@ -1863,7 +1863,7 @@ function Blockchain(config) {
          * Using decorator for addBlockToChainIndex to call subscribers callbacks
          */
         addBlockToChainIndex: (...args) => {
-            let result = addBlockToChainIndex.apply(args);
+            let callResult = addBlockToChainIndex.apply(args);
             let subs = storj.get('newBlockSubscribers');
             if (subs !== null && subs.length > 0) {
                 subs.forEach( (cb) => {

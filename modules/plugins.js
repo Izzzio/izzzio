@@ -38,7 +38,7 @@ class Plugins {
         this.blockchain = {
             subscribeForNewBlocks: that._subscribeForNewBlocks,
             unsubscribeFromNewBlocks: that._unsubscribeFromNewBlocks,
-            addBlocks: that._addBlocksToBlockchain,
+            addBlocksToBlockchain: that._addBlocksToBlockchain,
         }
 
     }
@@ -131,8 +131,8 @@ class Plugins {
      * @param {object} bc 
      * @param {object} blocks 
      */
-    _addBlocksToBlockchain(bc, blocks) {
-        bc.handleBlockchainResponse(blocks);
+    _addBlocksToBlockchain(blockchainObject, blocks) {
+        return blockchainObject.handleBlockchainResponse(blocks);
     }
 }
 
