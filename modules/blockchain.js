@@ -19,6 +19,7 @@
 const logger = new (require('./logger'))();
 const storj = require('./instanceStorage');
 const KeyValue = require('./keyvalue');
+const CacheStorage = require('./cacheStorage')
 const levelup = require('levelup');
 const memdown = require('memdown');
 const leveldown = require('leveldown');
@@ -31,11 +32,10 @@ const leveldown = require('leveldown');
 class Blockchain {
     constructor() {
         this.config = storj.get('config');
-        //this.levelup = levelup(leveldown(this.config.workDir + '/blocks'));
-        //this.levelup = levelup(memdown());//levelup(this.config.workDir + '/blocks');
         this.db = new KeyValue(this.config.blocksDB);
+        this.cache = new CacheStorage(this.config.blockCacheLifeTime);
     }
-
+    
     getLevelup() {
         return this.db.getLevelup();
     }
@@ -45,29 +45,54 @@ class Blockchain {
     }
 
     get(key, callback) {
-        let that = this;
-        that.db.get(key, callback);
+        let result = this.getAsync(key);
+        if (typeof callback === 'function') {
+            result.then( function(value) {
+                callback(null, value)
+            }).catch( function(err) {
+                callback(err)
+            });
+        }
     }
 
-    put(key, value, callback) {
-        let that = this;
-        that.db.put(key, value, callback);
+    put(key, data, callback) {
+        let result = this.putAsync(key, data);
+        if (typeof callback === 'function') {
+            result.then( function(value) {
+                callback(null, value);
+            }).catch( function(err) {
+                callback(err);
+            })
+        }
     }
 
-    getAsync(key) {
-        return this.db.getAsync(key);
+    async getAsync(key) {
+      let value = await this.cache.get(key);
+      if (value === undefined) {
+        value = await this.db.getAsync(key);
+        this.cache.add(key, value);
+      }
+      return value;
     }
 
-    putAsync(key, data) {
+    async putAsync(key, data) {
+        this.cache.add(key, data);
         return this.db.putAsync(key, data);
     }
 
     del(key, callback) {
-        let that = this;
-        that.db.del(key, callback);
+        let result = this.delAsync(key, data);
+        if (typeof callback === 'function') {
+            result.then( function (value) {
+                callback(null, value);
+            }).catch( function(err) {
+                callback(err);
+            });
+        }
     }
 
     delAsync(key) {
+        this.cache.del(key);
         return this.db.delAsync(key);
     }
 

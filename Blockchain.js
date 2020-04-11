@@ -59,6 +59,7 @@ function Blockchain(config) {
     const url = require('url');
     const path = require('path');
     const stableStringify = require('json-stable-stringify');
+    const CompareVersions = require('./modules/CompareVersions');
 
     //Blockchain
     const Block = require('./modules/block');
@@ -1962,36 +1963,71 @@ function Blockchain(config) {
      */
     function loadPlugin(plugin, blockchainObject, config, storj) {
         let pluginMod;
+        let path = '';
+        let isPathFull;
         try {
             //Direct module loading attempt
             try {
-                pluginMod = require(plugin)(blockchainObject, config, storj);
+                path = plugin;
+                pluginMod = require(path)(blockchainObject, config, storj);
+                path = '/' + path;
+                isPathFull = false;
             } catch (e) {
 
                 //Plugins path
                 try {
-                    pluginMod = require('./plugins/' + plugin)(blockchainObject, config, storj);
+                    path = './plugins/' + plugin;
+                    pluginMod = require(path)(blockchainObject, config, storj);
+                    path = '/.' + path;
+                    isPathFull = false;
                 } catch (e) {
 
                     //Starting dir search
                     try {
-                        pluginMod = require(process.cwd() + '/' + plugin)(blockchainObject, config, storj);
+                        path = process.cwd() + '/' + plugin;
+                        pluginMod = require(path)(blockchainObject, config, storj);
+                        isPathFull = true;
                     } catch (e) {
 
                         //Working dir search
                         try {
-                            pluginMod = require(config.workDir + '/' + plugin)(blockchainObject, config, storj);
+                            path = config.workDir + '/' + plugin;
+                            pluginMod = require(path)(blockchainObject, config, storj);
+                            isPathFull = false;
                         } catch (e) {
 
                             //Node modules in starting dir search
-                            pluginMod = require(process.cwd() + '/node_modules/' + plugin)(blockchainObject, config, storj);
+                            path = process.cwd() + '/node_modules/' + plugin;
+                            pluginMod = require(path)(blockchainObject, config, storj);
+                            isPathFull = true;
                         }
                     }
                 }
-
             }
         } catch (e) {
             return e;
+        }
+
+        let checked = checkPluginEnginesVersion(path, isPathFull);
+        if(true !== checked){
+            return new Error (checked);
+        }
+
+        return true;
+    }
+
+    function checkPluginEnginesVersion(path, isPathFull) {
+        try {
+            let compareVersions = new CompareVersions(isPathFull);
+            let izzzioMinVersionNeed = compareVersions.readIzzzioMinVersionNeeded(path);
+            if (!izzzioMinVersionNeed) {
+            } else {
+                if (!compareVersions.isMinimumVersionMatch(izzzioMinVersionNeed, config.program.version())) {
+                    return 'need min version node: ' + izzzioMinVersionNeed + ' for plugin ' + path;
+                }
+            }
+        } catch (e) {
+            //return e;
         }
         return true;
     }
