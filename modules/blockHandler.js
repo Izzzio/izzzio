@@ -55,7 +55,7 @@ class BlockHandler {
     /**
      * Регистрируем новый обработчик блока
      * @param {string} type
-     * @param {function} handler
+     * @param {function} handler WARNING: Always call callback in handler method
      */
     registerBlockHandler(type, handler) {
 
