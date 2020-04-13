@@ -38,14 +38,17 @@ class EcmaContractCallBlock extends Signable {
         this.state = state;
         this.method = method;
         this.args = args;
-        this.generateData();
+    }
+
+    async updateHashes(){
+        await this.generateData();
     }
 
     /**
      * Data hash for sign
      */
-    generateData() {
-        this.data = cryptography.hash(this.type + this.address + stableStringify(this.state) + stableStringify(this.args) + this.method).toString();
+    async generateData() {
+        this.data = (await cryptography.hash(this.type + this.address + stableStringify(this.state) + stableStringify(this.args) + this.method)).toString();
 
     }
 

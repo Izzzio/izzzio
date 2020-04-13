@@ -287,7 +287,7 @@ let program = require('commander');
      *
      * @type {Blockchain}
      */
-    const blockchain = new (await Blockchain(config));
+    const blockchain =  (await Blockchain(config));
     await blockchain.start();
 
     if(!program.fallOnErrors) {

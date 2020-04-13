@@ -250,7 +250,7 @@ let Wallet = function (walletFile, config) {
         if(unsignedBlock.isSigned()) {
             return unsignedBlock;
         }
-        unsignedBlock.sign = await wallet.signData(unsignedBlock.data).sign;
+        unsignedBlock.sign = (await wallet.signData(unsignedBlock.data)).sign;
         unsignedBlock.pubkey = wallet.keysPair.public;
         return unsignedBlock;
     };

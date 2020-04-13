@@ -211,18 +211,18 @@ class EcmaContract {
 
         const defaultLimits = this.config.ecmaContract.defaultLimits;
 
-        if (!this.config.ecmaContract.masterContract) {
+        if(!this.config.ecmaContract.masterContract) {
             cb(defaultLimits);
             return;
         }
 
-        if (Number(address) <= that.config.ecmaContract.masterContract) {
+        if(Number(address) <= that.config.ecmaContract.masterContract) {
             cb(defaultLimits);
             return;
         }
 
         that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'checkContractLimits', {}, function (err, result) {
-            if (err || !result) {
+            if(err || !result) {
                 cb(defaultLimits);
                 return;
             }
@@ -281,8 +281,6 @@ class EcmaContract {
                 logger.error('Contract ' + address + ' deployed with error. ' + e);
                 throw e;
             }
-
-
 
 
         }
@@ -1418,6 +1416,7 @@ class EcmaContract {
                 from: wallet.id,
                 resourceRent: String(resourceRent)
             });
+            await deployBlock.updateHashes();
             deployBlock = await wallet.signBlock(deployBlock);
         } else {
             deployBlock = code
@@ -1434,6 +1433,7 @@ class EcmaContract {
 
         function generateBlock() {
             that.blockchain.generateNextBlockAuto(deployBlock, async function (generatedBlock) {
+                //console.log(deployBlock, generatedBlock);
 
                 if(!await checkDeployingContractLength(generatedBlock.index, code.length)) {
                     logger.error(new Error('Deploying contract too big'));
@@ -1527,6 +1527,7 @@ class EcmaContract {
                 state.masterContractAddress = that.config.ecmaContract.masterContract ? that.config.ecmaContract.masterContract : false;
 
                 callBlock = new EcmaContractCallBlock(address, method, args, state);
+                await callBlock.updateHashes();
                 callBlock = await wallet.signBlock(callBlock);
             } else {
                 callBlock = args;
@@ -1876,13 +1877,12 @@ class EcmaContract {
         let testWallet = new Wallet(false, that.config);
 
 
-
-
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
 
 
                 verifyBlock = new EcmaContractDeployBlock(blockData.ecmaCode, blockData.state);
+                await verifyBlock.updateHashes();
 
                 if(verifyBlock.data !== blockData.data) {
                     logger.error('Contract invalid data in block ' + block.index);
@@ -1892,7 +1892,7 @@ class EcmaContract {
 
                 //Checking sign and wallet id equals
                 testWallet.createId(blockData.pubkey);
-                if(! await this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey) || blockData.state.from !== testWallet.id) {
+                if(!await this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey) || blockData.state.from !== testWallet.id) {
                     logger.error('Contract invalid sign in block ' + block.index);
                     callback(new Error('Contract invalid sign in block ' + block.index));
                     return
@@ -1904,6 +1904,8 @@ class EcmaContract {
             case EcmaContractCallBlock.blockType:
 
                 verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state);
+                await verifyBlock.updateHashes();
+
                 if(verifyBlock.data !== blockData.data) {
                     logger.error('Contract invalid data in block ' + block.index);
                     callback(new Error('Contract invalid data in block ' + block.index));
@@ -1912,7 +1914,7 @@ class EcmaContract {
 
                 //Checking sign and wallet id equals
                 testWallet.createId(blockData.pubkey);
-                if(! await this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey) || blockData.state.from !== testWallet.id) {
+                if(!await this.blockchain.wallet.verifyData(blockData.data, blockData.sign, blockData.pubkey) || blockData.state.from !== testWallet.id) {
                     logger.error('Contract invalid sign in block ' + block.index);
                     callback(new Error('Contract invalid sign in block ' + block.index));
                     return

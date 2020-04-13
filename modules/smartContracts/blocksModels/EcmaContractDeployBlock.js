@@ -34,15 +34,18 @@ class EcmaContractDeployBlock extends Signable {
         this.type = type;
         this.ecmaCode = ecmaCode;
         this.state = state;
-        this.state.codeHash = cryptography.hash(this.ecmaCode).toString();
-        this.generateData();
+    }
+
+    async updateHashes() {
+        this.state.codeHash = (await cryptography.hash(this.ecmaCode)).toString();
+        await this.generateData();
     }
 
     /**
      * Data hash for sign
      */
-    generateData() {
-        this.data = cryptography.hash(this.type + this.ecmaCode + stableStringify(this.state)).toString();
+    async generateData() {
+        this.data = (await cryptography.hash(this.type + this.ecmaCode + stableStringify(this.state))).toString();
     }
 
 

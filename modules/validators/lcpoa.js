@@ -32,7 +32,7 @@ const moment = require('moment');
  * @param {Block} newBlock
  * @param {Block} previousBlock
  */
-function isValidNewBlock(newBlock, previousBlock) {
+async function isValidNewBlock(newBlock, previousBlock) {
 
     if(typeof newBlock === 'undefined' || typeof previousBlock === 'undefined') {
         return false;
@@ -41,14 +41,14 @@ function isValidNewBlock(newBlock, previousBlock) {
     if(previousBlock.index + 1 !== newBlock.index) {
         console.log('Error: LCPoA: Invalid block index ' + newBlock.index);
         return false;
-    } else if((previousBlock.hash !== newBlock.previousHash) || !isValidHash(newBlock.hash)) {
+    } else if((previousBlock.hash !== newBlock.previousHash) || !await isValidHash(newBlock.hash)) {
         console.log('Error: LCPoA: Invalid block previous hash or new hash in ' + newBlock.index);
         return false;
-    } else if(!isValidHash(previousBlock.hash) && previousBlock.sign.length === 0) {
+    } else if(!await isValidHash(previousBlock.hash) && previousBlock.sign.length === 0) {
         console.log('Error: LCPoA: Invalid previous block hash');
         return false;
-    } else if((blockchain.calculateHashForBlock(newBlock) !== newBlock.hash) || !isValidHash(newBlock.hash)) {
-        console.log('Error: LCPoA: Invalid hash for block: ' + blockchain.calculateHashForBlock(newBlock) + ' ' + newBlock.hash);
+    } else if((await blockchain.calculateHashForBlock(newBlock) !== newBlock.hash) || !await isValidHash(newBlock.hash)) {
+        console.log('Error: LCPoA: Invalid hash for block: ' + await blockchain.calculateHashForBlock(newBlock) + ' ' + newBlock.hash);
         return false;
     } else if(newBlock.startTimestamp > newBlock.timestamp || previousBlock.timestamp > newBlock.timestamp) { //LCPoA time checking
         console.log('Error: LCPoA: Invalid start or block timestamp');
@@ -85,9 +85,9 @@ function generateNextBlock(blockData, cb, cancelCondition) {
      return;
      }*/
 
-   /* if(typeof blockData === 'object') {
-        blockData = JSON.stringify(blockData);
-    }*/
+    /* if(typeof blockData === 'object') {
+         blockData = JSON.stringify(blockData);
+     }*/
 
     /*if(blockchain.config.program.disableMining){
         throw('Error: Mining disabled');
@@ -112,14 +112,14 @@ function generateNextBlock(blockData, cb, cancelCondition) {
                 return;
             }
         }
-        blockchain.getLatestBlock(function (previousBlock) {
+        blockchain.getLatestBlock(async function (previousBlock) {
             if(!previousBlock) {
                 //В этом случае скорее всего сеть занята синхронизацией, и надо перенести майнинг на попозже
                 setTimeout(tryMine, 5000);
             }
             const nextIndex = previousBlock.index + 1;
             nextTimestamp = moment().utc().valueOf();
-            nextHash = blockchain.calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, startTimestamp, '');
+            nextHash = await blockchain.calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, startTimestamp, '');
             if(nextHash !== lastHash) {
                 lastHash = nextHash;
                 mineCounter++;

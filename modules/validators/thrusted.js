@@ -94,6 +94,7 @@ async function isValidNewBlock(newBlock, previousBlock) {
     }
 
     if(typeof newBlock.sign === 'undefined') {
+        console.log(newBlock, new Error());
         console.log('Error: Thrusted Nodes: Block format incompatible with thrusted nodes consensus');
         return false;
     }
@@ -200,9 +201,9 @@ async function generateNextBlock(blockData, cb, cancelCondition, timestamp) {
         }
         const nextIndex = previousBlock.index + 1;
 
-        let hash = blockchain.calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, startTimestamp, '');
+        let hash = await blockchain.calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, startTimestamp, '');
 
-        let sign = await blockchain.wallet.signData(hash).sign;
+        let sign = (await blockchain.wallet.signData(hash)).sign;
 
         let newBlock = new Block(nextIndex, previousBlock.hash, nextTimestamp, blockData, hash, startTimestamp, sign);
 

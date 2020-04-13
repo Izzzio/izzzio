@@ -40,7 +40,7 @@ let genesisHash = false;
  * @param {Block} newBlock
  * @param {Block} previousBlock
  */
-function isValidNewBlock(newBlock, previousBlock) {
+async function isValidNewBlock(newBlock, previousBlock) {
 
     if(typeof newBlock === 'undefined' || typeof previousBlock === 'undefined') {
         return false;
@@ -50,7 +50,7 @@ function isValidNewBlock(newBlock, previousBlock) {
     complexity = complexity < MINIMAL_COMPLEXITY ? MINIMAL_COMPLEXITY : complexity;
     complexity = Math.round(complexity * 10000) / 10000;
 
-    let newHashValid = isValidHash(newBlock.hash, complexity);
+    let newHashValid = await isValidHash(newBlock.hash, complexity);
 
     if(previousBlock.index + 1 !== newBlock.index) {
         logger.error('DLCPoA: Invalid block index ' + newBlock.index);
@@ -58,11 +58,11 @@ function isValidNewBlock(newBlock, previousBlock) {
     } else if((previousBlock.hash !== newBlock.previousHash) || !newHashValid) {
         logger.error('DLCPoA: Invalid block previous hash or new hash in ' + newBlock.index);
         return false;
-    } else if(!isValidHash(previousBlock.hash, complexity) && previousBlock.sign.length === 0) {
+    } else if(!await isValidHash(previousBlock.hash, complexity) && previousBlock.sign.length === 0) {
         logger.error('DLCPoA: Invalid previous block hash');
         return false;
-    } else if((blockchain.calculateHashForBlock(newBlock) !== newBlock.hash) || !newHashValid) {
-        logger.error('DLCPoA: Invalid hash for block: ' + blockchain.calculateHashForBlock(newBlock) + ' ' + newBlock.hash);
+    } else if((await blockchain.calculateHashForBlock(newBlock) !== newBlock.hash) || !newHashValid) {
+        logger.error('DLCPoA: Invalid hash for block: ' + await blockchain.calculateHashForBlock(newBlock) + ' ' + newBlock.hash);
         return false;
     } else if(newBlock.startTimestamp > newBlock.timestamp || previousBlock.timestamp > newBlock.timestamp) { //LCPoA time checking
         logger.error('DLCPoA: Invalid start or block timestamp');
@@ -160,7 +160,7 @@ function generateNextBlock(blockData, cb, cancelCondition) {
                 return;
             }
         }
-        blockchain.getLatestBlock(function (previousBlock) {
+        blockchain.getLatestBlock(async function (previousBlock) {
             if(!previousBlock) {
                 //В этом случае скорее всего сеть занята синхронизацией, и надо перенести майнинг на попозже
                 setTimeout(tryMine, 5000);
@@ -169,7 +169,7 @@ function generateNextBlock(blockData, cb, cancelCondition) {
 
             const nextIndex = previousBlock.index + 1;
             nextTimestamp = moment().utc().valueOf();
-            nextHash = blockchain.calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, startTimestamp, '');
+            nextHash = await blockchain.calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, startTimestamp, '');
 
             let complexity = getComplexity(nextTimestamp, previousBlock.timestamp);
             complexity = complexity < MINIMAL_COMPLEXITY ? MINIMAL_COMPLEXITY : complexity;

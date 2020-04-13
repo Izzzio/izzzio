@@ -234,6 +234,7 @@ class Cryptography {
 
         //External sign function
         if(this._signFunctions[this.config.signFunction]) {
+            //console.log(new Error());
             signedData = await  this._signFunctions[this.config.signFunction].sign(data, key);
         } else {
             logger.fatalFall('No sign functions found');
@@ -273,7 +274,8 @@ class Cryptography {
 
         //External hash function
         if(this._hashFunctions[this.config.hashFunction]) {
-            return await this._hashFunctions[this.config.hashFunction](data);
+
+            return await (this._hashFunctions[this.config.hashFunction](data));
         } else {
             logger.fatalFall('No hash functions found');
             return '';

@@ -250,13 +250,13 @@ async function Blockchain(config) {
         function hardResync() {
             //Hard resync
             logger.warning('Hard synchronization started!');
-            blockchain.close(function () {
+            blockchain.close( function () {
                 fs.removeSync(config.workDir + '/blocks');
                 blockchain = levelup(config.workDir + '/blocks');
 
-                blockHandler.clearDb(function () {
+                blockHandler.clearDb(async function () {
                     maxBlock = -1;
-                    addBlockToChain(getGenesisBlock());
+                    addBlockToChain(await getGenesisBlock());
                     process.exit();
                 });
 
@@ -281,9 +281,10 @@ async function Blockchain(config) {
      * Порождающий блок
      * @returns {Block}
      */
-    function getGenesisBlock() {
+   async function getGenesisBlock() {
         let data = "New epoch begins here! *solemn music on the background* *loud applause*";
-        let hash = calculateHash(0, 0, genesisTiemstamp, data);
+        let hash = await calculateHash(0, 0, genesisTiemstamp, data);
+        console.log('HASH',hash);
         let genesisBlock = new Block(0, "0", genesisTiemstamp, data, hash, genesisTiemstamp, '');
         if(Math.round(new Date().getTime()) <= genesisTiemstamp) {
             logger.error('Whoops! Check the clock');
@@ -383,13 +384,13 @@ async function Blockchain(config) {
      */
     function startNode(cb) {
         //Запуск новой цепочки
-        blockchain.get(0, function (err, value) {
+        blockchain.get(0, async function (err, value) {
             if(err) {
-                let genesisBlock = getGenesisBlock();
-                if(!config.validators[0].isValidHash(genesisBlock.hash)) {
+                let genesisBlock = await getGenesisBlock();
+                if(!await config.validators[0].isValidHash(genesisBlock.hash)) {
                     logger.fatalFall('Invalid genesis hash: ' + genesisBlock.hash);
                 }
-                addBlockToChain(getGenesisBlock());
+                addBlockToChain(await getGenesisBlock());
                 logger.info('New blockchain fork started');
                 setTimeout(startBlockchainServers, 1000);
                 cb();
@@ -402,9 +403,9 @@ async function Blockchain(config) {
                     logger.fatalFall('Error on parsing 0 genesis block: ' + e);
                 }
 
-                let genesisBlock = getGenesisBlock();
-                if(zeroBlock.hash !== genesisBlock.hash || !config.validators[0].isValidHash(zeroBlock.hash)) {
-                    logger.fatalFall('Invalid genesis hash: ' + zeroBlock.hash + ' ' + genesisBlock.hash);
+                let genesisBlock = await getGenesisBlock();
+                if(zeroBlock.hash !== genesisBlock.hash || !await config.validators[0].isValidHash(zeroBlock.hash)) {
+                    logger.fatalFall('Invalid genesis hash2: ' + zeroBlock.hash + ' ' + genesisBlock.hash);
                 }
                 logger.info('Loading saved chain...');
                 blockchain.get('maxBlock', function (err, value) {
@@ -501,7 +502,7 @@ async function Blockchain(config) {
     /**
      * Запуск P2P сервера
      */
-    function initP2PServer() {
+    async function initP2PServer() {
 
         if(!config.program.leechMode) {
             let wss = null;
@@ -531,7 +532,7 @@ async function Blockchain(config) {
                 //Node info broadcast
                 upnpAdvertisment = new dnssd.Advertisement(dnssd.tcp(config.upnp.token), config.p2pPort, {
                     txt: {
-                        GT: String(getGenesisBlock().timestamp),
+                        GT: String(await getGenesisBlock().timestamp),
                         RA: config.recieverAddress,
                         type: 'Generic iZ3 Node'
                     }
@@ -541,9 +542,9 @@ async function Blockchain(config) {
 
             //Detecting other nodes
             upnpBrowser = dnssd.Browser(dnssd.tcp(config.upnp.token))
-                .on('serviceUp', function (service) {
+                .on('serviceUp', async function (service) {
                     if(service.txt) {
-                        if(service.txt.GT !== String(getGenesisBlock().timestamp)) {
+                        if(service.txt.GT !== String(await getGenesisBlock().timestamp)) {
                             if(config.program.verbose) {
                                 logger.info('UPnP: Detected service has invalid genesis timestamp ' + service.txt.GT);
                             }
@@ -938,8 +939,8 @@ async function Blockchain(config) {
      * @param block
      * @returns {*|string|a}
      */
-    function calculateHashForBlock(block) {
-        return calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.startTimestamp, block.sign); //Was empty sign
+    async function calculateHashForBlock(block) {
+        return await calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.startTimestamp, block.sign); //Was empty sign
     }
 
     /**
@@ -952,8 +953,8 @@ async function Blockchain(config) {
      * @param data
      * @returns {*|string|a}
      */
-    function calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
-        return cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + stableStringify(data)).toString();
+    async function  calculateHash(index, previousHash, timestamp, data, startTimestamp, sign) {
+        return (await cryptography.hash(String(index) + previousHash + String(timestamp) + String(startTimestamp) + String(sign) + stableStringify(data))).toString();
     }
 
     /**
@@ -962,10 +963,12 @@ async function Blockchain(config) {
      * @param cb
      */
     function addBlock(newBlock, cb) {
+        //console.log(new Error())
         getLatestBlock(async function (lastestBlock) {
             if(await isValidNewBlock(newBlock, lastestBlock)) {
                 addBlockToChain(newBlock, false, cb);
             } else {
+               // console.log(newBlock, lastestBlock)
                 logger.error("Trying add invalid block");
                 if(cb) {
                     cb();
@@ -983,6 +986,7 @@ async function Blockchain(config) {
      * @returns {boolean}
      */
     async function isValidNewBlock(newBlock, previousBlock) {
+
 
         let validatorReversed = config.validators;
         /**
@@ -2009,8 +2013,8 @@ async function Blockchain(config) {
         }
 
         let checked = checkPluginEnginesVersion(path, isPathFull);
-        if(true !== checked){
-            return new Error (checked);
+        if(true !== checked) {
+            return new Error(checked);
         }
 
         return true;
@@ -2020,9 +2024,9 @@ async function Blockchain(config) {
         try {
             let compareVersions = new CompareVersions(isPathFull);
             let izzzioMinVersionNeed = compareVersions.readIzzzioMinVersionNeeded(path);
-            if (!izzzioMinVersionNeed) {
+            if(!izzzioMinVersionNeed) {
             } else {
-                if (!compareVersions.isMinimumVersionMatch(izzzioMinVersionNeed, config.program.version())) {
+                if(!compareVersions.isMinimumVersionMatch(izzzioMinVersionNeed, config.program.version())) {
                     return 'need min version node: ' + izzzioMinVersionNeed + ' for plugin ' + path;
                 }
             }
@@ -2034,7 +2038,7 @@ async function Blockchain(config) {
 
     //Wallet create
     if(wallet.id.length === 0) {
-       await wallet.generate();
+        await wallet.generate();
     }
 
     //Account manager
