@@ -123,6 +123,17 @@ class App extends DApp {
         } catch (e) {
             logger.info('Ok. I can\'t');
         }
+
+        logger.info('Trying delete key');
+
+        try {
+            await this.keypoaInterface.deleteKey(TEST_KEY);
+            assert.assert(false, 'Key deleted but shouldn\'t ');
+        } catch (e) {
+            logger.info('Ok');
+        }
+
+        assert.true(this.keypoaInterface.isKeyFromKeyStorage(this.blockchain.wallet.keysPair.public), 'Key not in storage? How It possible?');
     }
 
     /**
