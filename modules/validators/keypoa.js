@@ -16,7 +16,6 @@ let blockchain = null;
 const fs = require("fs-extra");
 const logger = new (require("../logger"))("KeyPoA");
 
-const KEYPOA_NODES_TIMEOUT = 86400 * 1000; //24hours
 const CONSENSUS_NAME = "keypoa";
 
 
@@ -44,11 +43,6 @@ const KEY_TYPE = {
  */
 let generateEmptyBlocks = true;
 
-/**
- * Can we use consensus right now
- * @type {boolean}
- */
-let isReadyNow = true;
 
 /**
  * keystorageObject
@@ -89,10 +83,6 @@ function isValidNewBlock(newBlock, previousBlock) {
     //blocks is bad if time is equal. it's a problem of multiple adding
     if(newBlock.timestamp <= previousBlock.timestamp) {
         return false;
-    }
-
-    if(newBlock.timestamp - previousBlock.timestamp < KEYPOA_NODES_TIMEOUT && newBlock.sign.length === 0 && newBlock.index > 5) {
-        throw "Error: KeyPoA Nodes: Adding other consensus block disabled due security configuration.";
     }
 
     if(previousBlock.index + 1 !== newBlock.index) {
