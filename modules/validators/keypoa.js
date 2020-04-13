@@ -429,6 +429,13 @@ module.exports = function (blockchainInstance) {
         setInterval(generateEmptyBlockCheck, blockchain.config.emptyBlockInterval);
     }
 
+    //Initial admin keys
+    if(Array.isArray(blockchain.config.keypoaInitialAdminKeys)) {
+        for (let adminKey of blockchain.config.keypoaInitialAdminKeys) {
+            keyStorage[adminKey] = {key: adminKey, type: KEY_TYPE.admin};
+        }
+    }
+
     blockchain.blockHandler.registerBlockHandler(KEY_OPERATION.add, handleKeyBlock);
     blockchain.blockHandler.registerBlockHandler(KEY_OPERATION.delete, handleKeyBlock);
 
