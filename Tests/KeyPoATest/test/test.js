@@ -16,9 +16,7 @@
  limitations under the License.
  */
 
-const logger = new (require(global.PATH.mainDir + "/modules/logger"))(
-    "key messaging test"
-);
+const logger = new (require(global.PATH.mainDir + "/modules/logger"))("KeyPoA Test");
 
 /**
  * node create different blocks using different keys
@@ -37,21 +35,16 @@ const TokenContractConnector = require(global.PATH.mainDir +
     "/modules/smartContracts/connectors/TokenContractConnector");
 const fs = require("fs");
 const fse = require("fs-extra");
-const keyStorageFile = "keyStorage.json";
+const keyStorageFile = "poaKeyStorage.json";
 
-const keyOperation = {
-    add: "TYPE-KEY-ISSUE",
-    delete: "KEY-DELETE"
-};
 
 function createKeyStoragefile(path, publicKey) {
     fs.writeFileSync(
         path + "/" + keyStorageFile,
-        JSON.stringify({ Admin: publicKey, System: [] })
+        JSON.stringify({Admin: [publicKey], System: []})
     );
 }
 
-const mainTokenContract = fs.readFileSync("./mainContract.js").toString();
 
 let that;
 
@@ -68,6 +61,8 @@ class App extends DApp {
     init() {
         that = this;
 
+        this.keypoaInterface = storj.get('keypoa').interface;
+
         process.on("SIGINT", () => {
             console.log("Terminating tests...");
             process.exit(1);
@@ -77,19 +72,7 @@ class App extends DApp {
             logger.fatalFall(error);
         });
 
-        createKeyStoragefile(
-            that.config.workDir,
-            that.blockchain.wallet.keysPair.public
-        );
 
-        //Preparing environment
-        logger.info("Deploying contract...");
-        if (this.config.recieverAddress === "nodeOne") {
-            logger.info("Node one started");
-        } else {
-            //that.testLeech();
-            logger.info("Node two started");
-        }
         this.run();
     }
 
@@ -98,79 +81,48 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async testKeyOperations() {
-        logger.info("Test key Deploying");
 
-        logger.info("Adding System key 1");
-        let blockData = this.createSignableBlock(
-            "test1",
-            "System",
-            keyOperation.add
-        );
-        this.generateAndAddBlock(blockData, () => {}, false);
-        await wait(1000);
+        const TEST_KEY = 'ABSTRACT_KEY';
 
-        logger.info("Adding System key 2");
-        blockData = this.createSignableBlock(
-            "test2",
-            "System",
-            keyOperation.add
-        );
-        this.generateAndAddBlock(blockData, () => {}, false);
-        await wait(1000);
+        logger.info('Replace keyring');
 
-        logger.info("Adding Admin Key as System key");
-        blockData = this.createSignableBlock(
-            this.blockchain.wallet.keysPair.public,
-            "System",
-            keyOperation.add
-        );
-        this.generateAndAddBlock(blockData, () => {}, false);
-        await wait(1000);
+        let testKeyStorage = {};
+        testKeyStorage[this.blockchain.wallet.keysPair.public] = {
+            key: this.blockchain.wallet.keysPair.public,
+            type: 'Admin'
+        };
 
-        logger.info("Deleting System key 2");
-        blockData = this.createSignableBlock(
-            "test2",
-            "System",
-            keyOperation.delete
-        );
-        this.generateAndAddBlock(blockData, () => {}, false);
-        await wait(1000);
+        this.keypoaInterface._replaceKeyStorage(testKeyStorage);
+        assert.true(this.keypoaInterface.isKeyFromKeyStorage(this.blockchain.wallet.keysPair.public), 'Key not in storage?');
 
-        logger.info("Replacing Admin Key");
-        blockData = this.createSignableBlock(
-            "NewAdminKey",
-            "Admin",
-            keyOperation.add
-        );
-        this.generateAndAddBlock(blockData, () => {}, false);
-        await wait(1000);
+        logger.info('Issue test system key');
+        await this.keypoaInterface.issueKey(TEST_KEY);
 
-        logger.info("Trying To add key");
-        blockData = this.createSignableBlock(
-            "newKey",
-            "System",
-            keyOperation.add
-        );
-        this.generateAndAddBlock(blockData, () => {}, false);
-        await wait(1000);
+        assert.true(this.keypoaInterface.isKeyFromKeyStorage(TEST_KEY), 'Test key not present in storage');
 
-        logger.info("Trying To delete key");
-        blockData = this.createSignableBlock(
-            "test1",
-            "System",
-            keyOperation.delete
-        );
-        this.generateAndAddBlock(blockData, () => {}, false);
-        await wait(1000);
+        await this.keypoaInterface.deleteKey(TEST_KEY);
+
+        assert.false(this.keypoaInterface.isKeyFromKeyStorage(TEST_KEY), 'Test key still stay in storage but shouldn\'t');
+
     }
 
-    createSignableBlock(key, keytype, type) {
-        return {
-            data: { publicKey: key, keyType: keytype },
-            sign: "",
-            pubkey: "",
-            type: type
+    async testAdminKeys() {
+        let testKeyStorage = {};
+        testKeyStorage[this.blockchain.wallet.keysPair.public] = {
+            key: this.blockchain.wallet.keysPair.public,
+            type: 'System'
         };
+        this.keypoaInterface._replaceKeyStorage(testKeyStorage);
+        assert.true(this.keypoaInterface.isKeyFromKeyStorage(this.blockchain.wallet.keysPair.public), 'Key not in storage?');
+
+        logger.info('Trying issue new key');
+
+        try {
+            await this.keypoaInterface.issueKey(TEST_KEY);
+            assert.assert(false, 'Key issued but shouldn\'t ');
+        } catch (e) {
+            logger.info('Ok. I can\'t');
+        }
     }
 
     /**
@@ -178,22 +130,16 @@ class App extends DApp {
      * @return {Promise<void>}
      */
     async run() {
-        if (this.config.recieverAddress === "nodeTwo") {
-            await this.testKeyOperations();
-        }
-        const currentKeyStorage = Buffer.from(
-            fs.readFileSync(this.config.workDir + "/" + keyStorageFile)
-        ).toString();
-        const currentKeyStorageObj = JSON.parse(currentKeyStorage);
+
+
+        await this.testKeyOperations();
+        await this.testAdminKeys();
+
+
         console.log("");
         console.log("");
         console.log("");
-        if (
-            !currentKeyStorageObj.Admin ||
-            currentKeyStorageObj.System.length !== 2
-        ) {
-            throw "Wrong state of key storage";
-        }
+
         logger.info("Tests passed");
         process.exit();
     }

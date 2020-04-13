@@ -7,4 +7,4 @@ xcopy /E  /Y fixture\* temp\ > nul 2>&1
 
 echo Running tests
 
-node --stack_trace_limit=200 ../../../main.js --no-splash --fall-on-errors --config config2.json --leech-mode
+node --stack_trace_limit=200 ../../../main.js --no-splash --fall-on-errors --config config.json --leech-mode

@@ -25,8 +25,8 @@ const CONSENSUS_NAME = "keypoa";
  * @type {{add: string, delete: string}}
  */
 const KEY_OPERATION = {
-    add: "TYPE-KEY-ISSUE",
-    delete: "KEY-DELETE"
+    add: "KO-KEY-ISSUE",
+    delete: "KO-KEY-DELETE"
 };
 
 /**
@@ -51,15 +51,9 @@ let generateEmptyBlocks = true;
 let isReadyNow = true;
 
 /**
- * all requests for adding blocks(for callbacks)
- * @type {Array}
- */
-let keyPoAAwait = [];
-
-/**
  * keystorageObject
  */
-const KEYRING_FILE = "keyStorage.json";
+const KEYRING_FILE = "poaKeyStorage.json";
 let keyStorage = {};
 
 const Wallet = require("../wallet");
@@ -69,8 +63,12 @@ const Wallet = require("../wallet");
  */
 let testWallet = new Wallet();
 
+
+const storj = require('../instanceStorage');
 const Block = require("../block");
 const Signable = require("../blocksModels/signable");
+const KeyIssue = require("../blocksModels/keypoa/keyIssue");
+const KeyDelete = require("../blocksModels/keypoa/keyDelete");
 const moment = require("moment");
 
 /**
@@ -127,21 +125,6 @@ function isValidNewBlock(newBlock, previousBlock) {
     return false;
 }
 
-/**
- * Get callback by timestamp
- * @param timestamp
- * @return {*}
- */
-function getKeyPoAAwait(timestamp) {
-    for (let a in keyPoAAwait) {
-        if(keyPoAAwait.hasOwnProperty(a)) {
-            if(Number(keyPoAAwait[a].timestamp) === Number(timestamp)) {
-                return keyPoAAwait[a];
-            }
-        }
-    }
-    return false;
-}
 
 /**
  * create new block
@@ -245,11 +228,7 @@ function setGenerateEmptyBlocks(generate) {
  * @returns {boolean}
  */
 function isKeyFromKeyStorage(publicKey) {
-    for (let [value] of Object.entries(keyStorage)) {
-        if(value.key === publicKey) {
-            return true;
-        }
-    }
+    return typeof keyStorage[publicKey] !== 'undefined';
 }
 
 /**
@@ -314,8 +293,9 @@ function isValidBlockSign(block) {
  * @returns {boolean}
  */
 function isValidBlockAdminSign(block) {
-    for (let [value] of Object.entries(keyStorage)) {
-        if(testWallet.verifyData(block.hash, block.sign, value.key) && value.type === KEY_TYPE.admin) {
+    for (let keys of Object.keys(keyStorage)) {
+        let key = keyStorage[keys];
+        if(key.type === KEY_TYPE.admin && testWallet.verifyData(block.hash, block.sign, key.key)) {
             return true;
         }
     }
@@ -350,10 +330,10 @@ function handleKeyBlock(blockData, block, cb) {
 
     //data for keys operations should be: blockData.data={keyType, publicKey}
     if(blockData.type === KEY_OPERATION.add) {
-        saveKeyToKeyStorage(blockData.data.publicKey, blockData.data.keyType);
+        saveKeyToKeyStorage(blockData.publicKey, blockData.keyType);
         return cb();
     } else if(blockData.type === KEY_OPERATION.delete) {
-        deleteKeyFromKeyStorage(blockData.data.publicKey);
+        deleteKeyFromKeyStorage(blockData.publicKey);
         return cb();
     }
 
@@ -361,13 +341,86 @@ function handleKeyBlock(blockData, block, cb) {
     return cb();
 }
 
-module.exports = function (blockchainVar) {
-    blockchain = blockchainVar;
+/**
+ * Issue new key
+ * @param {string} publicKey
+ * @param {string} keyType
+ * @return {Promise<unknown>}
+ */
+function issueKey(publicKey, keyType = KEY_TYPE.system) {
+    return new Promise((resolve, reject) => {
+        let keyIssueBlock = new KeyIssue(publicKey, keyType);
+        keyIssueBlock = blockchain.wallet.signBlock(keyIssueBlock);
+        if(isReady()) {
+            generateNextBlock(keyIssueBlock, function (generatedBlock) {
+                if(!isValidBlockAdminSign(generatedBlock)) {
+                    return reject('Invalid admin signature');
+                }
+
+                blockchain.addBlock(generatedBlock, () => {
+                    //console.log(generatedBlock);
+                    resolve(generatedBlock);
+                });
+                blockchain.broadcastLastBlock();
+                //resolve(generatedBlock);
+            });
+        } else {
+            reject('Consensus not ready')
+        }
+    })
+}
+
+/**
+ * Delete key block
+ * @param {string} publicKey
+ * @return {Promise<unknown>}
+ */
+function deleteKey(publicKey) {
+    return new Promise((resolve, reject) => {
+        let keyDeleteBlock = new KeyDelete(publicKey);
+        keyDeleteBlock = blockchain.wallet.signBlock(keyDeleteBlock);
+        if(isReady()) {
+            generateNextBlock(keyDeleteBlock, function (generatedBlock) {
+                if(!isValidBlockAdminSign(generatedBlock)) {
+                    return reject('Invalid admin signature');
+                }
+                blockchain.addBlock(generatedBlock, () => {
+                    resolve(generatedBlock);
+                });
+                blockchain.broadcastLastBlock();
+
+            });
+        } else {
+            reject('Consensus not ready')
+        }
+    })
+}
+
+/**
+ * Replace current key storage with new
+ * @param keyStorageReplacement
+ * @private
+ */
+function _replaceKeyStorage(keyStorageReplacement) {
+    keyStorage = keyStorageReplacement;
+}
+
+/**
+ * Returns current state of key storage
+ * @return {{}}
+ */
+function getCurrentKeyStorage() {
+    return keyStorage;
+}
+
+module.exports = function (blockchainInstance) {
+    blockchain = blockchainInstance;
 
     try {
         keyStorage = loadKeyStorage(blockchain.config.workDir, KEYRING_FILE);
     } catch (e) {
         logger.warning("Keyring file not found. Using empty storage.");
+        rewriteKeyFile();
     }
 
     logger.info("KeyPoA Nodes validator loaded");
@@ -380,13 +433,31 @@ module.exports = function (blockchainVar) {
     blockchain.blockHandler.registerBlockHandler(KEY_OPERATION.delete, handleKeyBlock);
 
 
-    return {
+    const keyPOAObject = {
         consensusName: CONSENSUS_NAME,
         isValidNewBlock: isValidNewBlock,
         generateNextBlock: generateNextBlock,
         isValidHash: isValidHash,
         isReady: isReady,
         generateEmptyBlock: generateEmptyBlock,
-        setGenerateEmptyBlocks: setGenerateEmptyBlocks
+        setGenerateEmptyBlocks: setGenerateEmptyBlocks,
+        interface: {
+            issueKey,
+            deleteKey,
+            loadKeyStorage,
+            _replaceKeyStorage,
+            isValidBlockAdminSign,
+            isValidBlockSign,
+            isKeyFromKeyStorage,
+            KEYRING_FILE,
+            KEY_TYPE,
+            KEY_OPERATION,
+            keyStorage,
+            getCurrentKeyStorage
+        }
     };
+
+    storj.put('keypoa', keyPOAObject);
+
+    return keyPOAObject;
 };
