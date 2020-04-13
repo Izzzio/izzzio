@@ -5,10 +5,10 @@
 
 const Keyring = require("./blocksModels/keyring");
 const Wallet = require("./wallet");
-const fs = require('fs-extra');
+const fs = require("fs-extra");
 
-const logger = new (require('./logger'))();
-const storj = require('./instanceStorage');
+const logger = new (require("./logger"))();
+const storj = require("./instanceStorage");
 
 /**
  * Предел до которого сеть может принять блок ключей
@@ -21,7 +21,6 @@ const keyEmissionMaxBlock = 5;
  * В данной реализации обрабатывает всю загруженную блокчейн сеть, верефицирует транзанкции, создания кошельков, корректности цифровых подписей, связку ключей и пустые блоки
  */
 class BlockHandler {
-
     constructor(wallet, blockchain, blockchainObject, config, options) {
         this.wallet = wallet;
         this.blockchain = blockchain;
@@ -30,7 +29,6 @@ class BlockHandler {
         this.maxBlock = -1;
         this.enableLogging = true;
 
-
         /**
          * External block handlers
          * @type {{}}
@@ -38,9 +36,8 @@ class BlockHandler {
          */
         this._blocksHandlers = {};
 
-
         this.syncInProgress = false;
-        storj.put('syncInProgress', false);
+        storj.put("syncInProgress", false);
         this.keyring = [];
 
         try {
@@ -56,9 +53,9 @@ class BlockHandler {
     }
 
     /**
-     * Регестрируем новый обработчик блока
+     * Регистрируем новый обработчик блока
      * @param {string} type
-     * @param {function} handler
+     * @param {function} handler WARNING: Always call callback in handler method
      */
     registerBlockHandler(type, handler) {
 
@@ -120,9 +117,7 @@ class BlockHandler {
                 }
             });
         });
-
     }
-
 
     /**
      * Async block handler
@@ -138,8 +133,8 @@ class BlockHandler {
                 } else {
                     resolve(result);
                 }
-            })
-        })
+            });
+        });
     }
 
     /**
@@ -148,7 +143,7 @@ class BlockHandler {
      * @returns {boolean}
      */
     isKeyFromKeyring(publicKey) {
-        return this.keyring.indexOf(publicKey) !== -1
+        return this.keyring.indexOf(publicKey) !== -1;
     }
 
     /**
@@ -183,16 +178,14 @@ class BlockHandler {
                                 logger.info('Info: Autofix: Set new blockchain height ' + i);
                                 await that.blockchain.putAsync('maxBlock', i - 1);
                                 that.syncInProgress = false;
-                                storj.put('syncInProgress', false);
+                                storj.put("syncInProgress", false);
                                 that.enableLogging = true;
                                 logger.disable = false;
                                 that.wallet.enableLogging = true;
 
-
-                                if(typeof cb !== 'undefined') {
+                                if(typeof cb !== "undefined") {
                                     cb();
                                 }
-
 
                                 return;
                                 break;
@@ -227,7 +220,6 @@ class BlockHandler {
             if(typeof cb !== 'undefined') {
                 cb();
             }
-
         })();
     }
 
@@ -247,49 +239,46 @@ class BlockHandler {
 
         try {
             let blockData;
-           // if(typeof block.data !== 'object') {
-                try {
-                    blockData = JSON.parse(block.data);
-                } catch (e) {
-                    logger.info('Not JSON block ' + block.index);
-                    return callback();
-                }
-           /* } else {
-                blockData = block.data;
-            }*/
-
+            // if(typeof block.data !== 'object') {
+            try {
+                blockData = JSON.parse(block.data);
+            } catch (e) {
+                logger.info('Not JSON block ' + block.index);
+                return callback();
+            }
+            /* } else {
+                 blockData = block.data;
+             }*/
 
             if(block.index === keyEmissionMaxBlock) {
                 if(that.keyring.length === 0) {
-                    logger.warning('Network without keyring');
+                    logger.warning("Network without keyring");
                 }
 
                 if(that.isKeyFromKeyring(that.wallet.keysPair.public)) {
-                    logger.warning('TRUSTED NODE. BE CAREFUL.');
+                    logger.warning("TRUSTED NODE. BE CAREFUL.");
                 }
             }
-
 
             switch (blockData.type) {
                 case Keyring.prototype.constructor.name:
                     if(block.index >= keyEmissionMaxBlock || that.keyring.length !== 0) {
-                        logger.warning('Fake keyring in block ' + block.index);
+                        logger.warning("Fake keyring in block " + block.index);
                         return callback();
                     }
-                    logger.info('Keyring recived in block ' + block.index);
+                    logger.info("Keyring recived in block " + block.index);
                     that.keyring = blockData.keys;
-                    fs.writeFileSync(that.config.workDir + '/keyring.json', JSON.stringify(that.keyring));
+                    fs.writeFileSync(that.config.workDir + "/keyring.json", JSON.stringify(that.keyring));
                     return callback();
                     break;
-                case 'Empty':
+                case "Empty":
                     return callback();
                     break;
                 default:
-
                     /**
                      * Запускаем на каждый тип блока свой обработчик
                      */
-                    if(typeof that._blocksHandlers[blockData.type] !== 'undefined') {
+                    if(typeof that._blocksHandlers[blockData.type] !== "undefined") {
                         for (let i in that._blocksHandlers[blockData.type]) {
                             if(that._blocksHandlers[blockData.type].hasOwnProperty(i)) {
                                 try {
@@ -302,22 +291,16 @@ class BlockHandler {
                         }
                     } else {
                         if(that.config.program.verbose) {
-                            logger.info('Unexpected block type ' + block.index);
+                            logger.info("Unexpected block type " + block.index);
                         }
                         return callback();
                     }
-
             }
-
         } catch (e) {
             console.log(e);
             return callback();
         }
-
-
     }
-
-
 }
 
 module.exports = BlockHandler;
