@@ -316,6 +316,12 @@ function Blockchain(config) {
                 }
             }
         });
+        
+        let subs = storj.get('newBlockSubscribers');
+        if (subs !== null && subs.length > 0) {
+            subs.forEach( (cb) => {
+                cb();
+        });
 
     }
 
@@ -1859,19 +1865,7 @@ function Blockchain(config) {
         getid: getid,
         write: write,
         getGenesisBlock: getGenesisBlock,
-        /**
-         * Using decorator for addBlockToChainIndex to call subscribers callbacks
-         */
-        addBlockToChainIndex: (...args) => {
-            let callResult = addBlockToChainIndex.apply(args);
-            let subs = storj.get('newBlockSubscribers');
-            if (subs !== null && subs.length > 0) {
-                subs.forEach( (cb) => {
-                    cb();
-                });
-            }
-            return callResult;
-        },
+        addBlockToChainIndex: addBlockToChainIndex,
         addBlockToChain: addBlockToChain,
         startNode: startNode,
         initHttpServer: initHttpServer,
