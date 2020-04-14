@@ -321,8 +321,8 @@ function Blockchain(config) {
         if (subs !== null && subs.length > 0) {
             subs.forEach( (cb) => {
                 cb();
-        });
-
+            });
+        }
     }
 
     /**
@@ -2064,6 +2064,3 @@ function Blockchain(config) {
 module.exports = Blockchain;
 
 //Work
-
-
-
