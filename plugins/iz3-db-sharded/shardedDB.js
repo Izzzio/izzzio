@@ -31,7 +31,11 @@ class ShardedDB {
     constructor(name, workdir) {
         this.workDir = workdir;
         this.name = name;
-        this.storages = this._initializeStorages(name);
+        this._initializeStorages(name)
+        .then((res) => {
+          this.storages = res;
+          return this;
+        });
     }
 
     // Private methods
@@ -59,11 +63,20 @@ class ShardedDB {
         return { storage, size };
     }
 
+    _promisifyLevel(storage) {
+      return new Promise((resolve, reject) => {
+        level(storage, {}, (err, db) => {
+          if (err) reject(err);
+          else resolve(db);
+        });
+      })
+    }
+
     /**Creates storages objects from parameters
      * @param {string} name - Parameters string
      * @returns {Array<Object>}
      */
-    _initializeStorages(name) {
+    async _initializeStorages(name) {
         let storages = new Array();
         let shards = name.split('&');
         shards = shards.map((el) => {
@@ -73,7 +86,7 @@ class ShardedDB {
         for (let shard of shards) {
             const storage = {
                 path: shard.storage,
-                level: level(shard.storage),
+                level: await this._promisifyLevel(shard.storage),
                 size: shard.size
             };
             storages.push(storage);
