@@ -21,7 +21,7 @@ IZZZIO (iZ³) - fully customizable blockchain platform. This platform provides s
 + DApp operating system
 + Special P2P hi-speed messaging protocol - StarWave and StarWaveCrypto for encrypted messaging
 
-## Docs
+## Docs 
 
 Programming guide and references you can found in our [WIKI pages https://github.com/Izzzio/izzzio/wiki](https://github.com/Izzzio/izzzio/wiki)
 
