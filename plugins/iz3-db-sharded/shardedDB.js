@@ -201,6 +201,7 @@ class ShardedDB {
      */
     put(key, value, options, callback) {
         this.putAsync(key, value, options)
+        .then(() => callback())
         .catch((err) => {
             if (typeof(callback) === 'function') {
                 callback(err);
@@ -236,10 +237,22 @@ class ShardedDB {
         }
 
         let currentStorage = 0;
-        while(await this._sizeOfStorageAsync(currentStorage) >= this.storages[currentStorage].size) {
+        let size = 0;
+        try {
+          size = await this._sizeOfStorageAsync(currentStorage);
+        } catch (e) {
+          size = 0;
+        }
+        
+        while(size >= this.storages[currentStorage].size) {
             // we need to select storage with a free space
             if (currentStorage < this.storages.length - 1) {
                 ++currentStorage;
+                try {
+                  size = await this._sizeOfStorageAsync(currentStorage);
+                } catch (e) {
+                  size = 0;
+                }
             } else {
                 return Promise.reject('ShardedDBError: Max size limit was reached by all of the storages');
             }
