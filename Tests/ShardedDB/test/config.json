@@ -28,8 +28,8 @@
   "walletFile": "./temp/wallet.json",
   "walletsDB": "mem://wallets.json",
   "blocksDB": "levelsharded://path1=./db1;size=5000&path2=./db2;size=30000&path3=./db3;size=10000000000",
-  "accountsDB": "level://accountByPlugin",
-  "appEntry": "./Tests/CustomDB/test/test.js",
+  "accountsDB": "account",
+  "appEntry": "./Tests/ShardedDB/test/test.js",
   "ecmaContract": {
     "enabled": true,
     "allowDebugMessages": true,
