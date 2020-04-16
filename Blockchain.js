@@ -1129,6 +1129,16 @@ function Blockchain(config) {
                         if(isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
                             addBlockToChain(latestBlockReceived, true);
                             responseLatestMsg(function (msg) {
+
+                                clearTimeout(replaceChainTimer);
+                                replaceChainTimer = setTimeout(function () {
+                                    //If receiving chain, no syncing
+                                    if(storj.get('chainResponseMutex')) {
+                                        return;
+                                    }
+                                    blockHandler.resync();
+                                }, config.peerExchangeInterval + 2000); //2000 в качестве доп времени
+
                                 storj.put('chainResponseMutex', false);
                                 broadcast(msg);
                             });
