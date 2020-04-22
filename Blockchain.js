@@ -329,9 +329,9 @@ function Blockchain(config) {
 
         let subs = storj.get('newBlockSubscribers');
         if (subs !== null && subs.length > 0) {
-            subs.forEach( (cb) => {
-                cb();
-            });
+            for (let subscriber of subs) {
+                subscriber();
+            }
         }
         return callResult;
     }
