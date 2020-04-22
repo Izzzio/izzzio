@@ -298,7 +298,7 @@ function Blockchain(config) {
      * @param {Boolean} noHandle
      * @param cb
      */
-    function addBlockToChainIndex(index, block, noHandle, cb) {
+    function _addBlockToChainIndex(index, block, noHandle, cb) {
         if(block.index > maxBlock) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
@@ -316,13 +316,24 @@ function Blockchain(config) {
                 }
             }
         });
-        
+    }
+    /**
+     * Добавляет блок в определенное место цепочки
+     * @param index
+     * @param block
+     * @param {Boolean} noHandle
+     * @param cb
+     */
+    function addBlockToChainIndex(index, block, noHandle, cb) {
+        let callResult = _addBlockToChainIndex(index, block, noHandle, cb);
+
         let subs = storj.get('newBlockSubscribers');
         if (subs !== null && subs.length > 0) {
             subs.forEach( (cb) => {
                 cb();
             });
         }
+        return callResult;
     }
 
     /**
