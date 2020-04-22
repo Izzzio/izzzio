@@ -76,6 +76,10 @@ class ShardedDB {
         return { storage, size };
     }
 
+    /**Promise wrapper for level initializer
+     * @param {string} storage path to the level files
+     * @returns {Promise}
+     */
     _promisifyLevel(storage) {
       return new Promise((resolve, reject) => {
         level(storage, {}, (err, db) => {
