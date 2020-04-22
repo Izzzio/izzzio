@@ -29,12 +29,25 @@ class ShardedDB {
      * @param {string} workdir - the working directory
      */
     constructor(name, workdir) {
+        this.tempstorage = {};
         this.workDir = workdir;
         this.name = name;
+        this.isOpened = false;
         this._initializeStorages(name)
         .then((res) => {
-          this.storages = res;
-          return this;
+            this.storages = res;
+            let queries = new Array();
+            for (let key in this.tempstorage) {
+                queries.push(this.putAsync(key, this.tempstorage[key], {}));
+            }
+            return Promise.all(queries);
+        })
+        .then((res) => {
+            this.tempstorage = null;
+            this.isOpened = true;
+        })
+        .catch((err) => {
+            throw err;
         });
     }
 
@@ -88,7 +101,7 @@ class ShardedDB {
                 path: shard.storage,
                 level: await this._promisifyLevel(shard.storage),
                 size: shard.size
-            };
+            }
             storages.push(storage);
         }
 
@@ -160,17 +173,29 @@ class ShardedDB {
 
     /** Callback wrapper for get method */
     get(key, options, callback) {
-        this.getAsync(key, options)
-        .then((res) => {
-            if (typeof(callback) === 'function') {
-                callback(null, res);
+        if (this.isOpened) {
+            this.getAsync(key, options)
+            .then((res) => {
+                if (typeof(callback) === 'function') {
+                    callback(null, res);
+                }
+            })
+            .catch((err) => {
+                if (typeof(callback) === 'function') {
+                    callback(err);
+                }
+            });
+        } else {
+            if (this.tempstorage[key] !== null && this.tempstorage[key] !== undefined) {
+                if (typeof(callback) === 'function') {
+                    callback(null, this.tempstorage[key]);
+                }
+            } else {
+                if (typeof(callback) === 'function') {
+                    callback(new Error(`ShardedDBError: key '${key}' not found in tempstorage when level storages was in opening status`));
+                }
             }
-        })
-        .catch((err) => {
-            if (typeof(callback) === 'function') {
-                callback(err);
-            }
-        });
+        }
     }
 
     /** Get value from db
@@ -200,13 +225,20 @@ class ShardedDB {
      * @param {function} callback
      */
     put(key, value, options, callback) {
-        this.putAsync(key, value, options)
-        .then(() => callback())
-        .catch((err) => {
+        if (this.isOpened) {
+            this.putAsync(key, value, options)
+            .then(() => callback())
+            .catch((err) => {
+                if (typeof(callback) === 'function') {
+                    callback(err);
+                }
+            });
+        } else {
+            this.tempstorage[key] = value;
             if (typeof(callback) === 'function') {
-                callback(err);
+                callback();
             }
-        });
+        }
     }
 
     /** Put key-value to database
@@ -267,17 +299,25 @@ class ShardedDB {
      * @param {function} callback
     */
     del(key, options, callback) {
-        this.delAsync(key, options)
-        .then(() => {
+        if (this.isOpened) {
+            this.delAsync(key, options)
+            .then(() => {
+                if (typeof(callback) === 'function') {
+                    callback();
+                }
+            })
+            .catch((err) => {
+                if (typeof(callback) === 'function') {
+                    callback(err);
+                }
+            })
+        } else {
+            delete this.tempstorage[key];
             if (typeof(callback) === 'function') {
                 callback();
             }
-        })
-        .catch((err) => {
-            if (typeof(callback) === 'function') {
-                callback(err);
-            }
-        })
+        }
+        
     }
 
     /** Deletes key from database
@@ -293,17 +333,19 @@ class ShardedDB {
      * @param {function} callback
      */
     close(callback) {
-        this.closeAsync()
-        .then(() => {
-            if (typeof(callback) === 'function') {
-                callback();
-            }
-        })
-        .catch((err) => {
-            if (typeof(callback) === 'function') {
-                callback(err);
-            }
-        })
+        if (this.isOpened) {
+            this.closeAsync()
+            .then(() => {
+                if (typeof(callback) === 'function') {
+                    callback();
+                }
+            })
+            .catch((err) => {
+                if (typeof(callback) === 'function') {
+                    callback(err);
+                }
+            })
+        }
     }
 
     /** Closes all of the storages
@@ -346,6 +388,7 @@ class ShardedDB {
         let dbstring = this.name;
         return this.closeAsync()
         .then(() => {
+            this.isOpened = false;
             this._clearDirectories();
             this._initializeStorages(dbstring);
         })
