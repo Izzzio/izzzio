@@ -298,7 +298,7 @@ function Blockchain(config) {
      * @param {Boolean} noHandle
      * @param cb
      */
-    function _addBlockToChainIndex(index, block, noHandle, cb) {
+    function addBlockToChainIndex(index, block, noHandle, cb) {
         if(block.index > maxBlock) {
             maxBlock = block.index;
             blockchain.put('maxBlock', maxBlock);
@@ -316,16 +316,6 @@ function Blockchain(config) {
                 }
             }
         });
-    }
-    /**
-     * Добавляет блок в определенное место цепочки
-     * @param index
-     * @param block
-     * @param {Boolean} noHandle
-     * @param cb
-     */
-    function addBlockToChainIndex(index, block, noHandle, cb) {
-        let callResult = _addBlockToChainIndex(index, block, noHandle, cb);
 
         let subs = storj.get('newBlockSubscribers');
         if (subs !== null && subs.length > 0) {
@@ -333,7 +323,6 @@ function Blockchain(config) {
                 subscriber();
             }
         }
-        return callResult;
     }
 
     /**
@@ -1070,7 +1059,7 @@ function Blockchain(config) {
      * Получили новую цепочку блоков
      * @param message
      */
-    function handleBlockchainResponse(message) {
+    function handleBlockchainResponse(message, preProcessedBlocks) {
 
         //We can't handle new blockchain while sync in progress
         if(blockHandler.syncInProgress) {
@@ -1086,8 +1075,12 @@ function Blockchain(config) {
         storj.put('chainResponseMutex', true);
 
 
-        let receivedBlocks = JSON.parse(message.data);
-
+        let receivedBlocks = undefined;
+        if (preProcessedBlocks !== undefined) {
+            receivedBlocks = preProcessedBlocks;
+        } else {
+            receivedBlocks = JSON.parse(message.data);
+        }
 
         if(receivedBlocks.length === 0 || receivedBlocks[0] === false) {
             storj.put('chainResponseMutex', false);

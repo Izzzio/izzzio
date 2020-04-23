@@ -128,11 +128,12 @@ class Plugins {
 
     /**
      * Add blocks to blockchain from external source
-     * @param {object} bc 
-     * @param {object} blocks 
+     * @param {object} rawBlocks 
+     * @param {object} preProcessedBlocks 
      */
-    _addBlocksToBlockchain(blockchainObject, blocks) {
-        return blockchainObject.handleBlockchainResponse(blocks);
+    _addBlocksToBlockchain(rawBlocks, preProcessedBlocks) {
+        let blockchainObject = storj.get('blockchainObject');
+        blockchainObject.handleBlockchainResponse(rawBlocks, preProcessedBlocks);
     }
 }
 
