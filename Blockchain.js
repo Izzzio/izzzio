@@ -72,7 +72,6 @@ function Blockchain(config) {
     const Frontend = require('./modules/frontend');
     const app = express();
 
-
     storj.put('app', app);
     storj.put('config', config);
 
@@ -318,6 +317,12 @@ function Blockchain(config) {
             }
         });
 
+        let subs = storj.get('newBlockSubscribers');
+        if (subs !== null && subs.length > 0) {
+            for (let subscriber of subs) {
+                subscriber();
+            }
+        }
     }
 
     /**
@@ -359,6 +364,7 @@ function Blockchain(config) {
 
         addBlockToChainIndex(maxBlock, block, noHandle, cb);
     }
+
 
     /**
      * Async verstion of blockchain.get
@@ -1057,7 +1063,7 @@ function Blockchain(config) {
      * Получили новую цепочку блоков
      * @param message
      */
-    function handleBlockchainResponse(message) {
+    function handleBlockchainResponse(message, preProcessedBlocks) {
 
         //We can't handle new blockchain while sync in progress
         if(blockHandler.syncInProgress) {
@@ -1073,8 +1079,12 @@ function Blockchain(config) {
         storj.put('chainResponseMutex', true);
 
 
-        let receivedBlocks = JSON.parse(message.data);
-
+        let receivedBlocks = undefined;
+        if (preProcessedBlocks !== undefined) {
+            receivedBlocks = preProcessedBlocks;
+        } else {
+            receivedBlocks = JSON.parse(message.data);
+        }
 
         if(receivedBlocks.length === 0 || receivedBlocks[0] === false) {
             storj.put('chainResponseMutex', false);
@@ -1879,6 +1889,7 @@ function Blockchain(config) {
         })
     }
 
+
     blockchainObject = {
         config: config,
         validators: nodeMetaInfo,
@@ -1954,7 +1965,7 @@ function Blockchain(config) {
          * @param {Number} id
          * @param {Function} cb
          */
-        getBlockById: getBlockById
+        getBlockById: getBlockById,
     };
 
     //Init2
@@ -2085,6 +2096,3 @@ function Blockchain(config) {
 module.exports = Blockchain;
 
 //Work
-
-
-

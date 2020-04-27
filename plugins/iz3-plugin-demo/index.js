@@ -33,8 +33,6 @@ function testFunction(cb, ...args) {
         console.log(args[0]);
         return cb('', args[1]);  // doesn't matter what first argument is
     }, 0);
-    /*console.log(args[0]);
-     cb('', args[1]); */
 }
 
 module.exports = function register(blockchain, config, storj) {

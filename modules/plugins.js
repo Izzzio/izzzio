@@ -35,6 +35,12 @@ class Plugins {
             registerGeneratorHook: cryptography.registerGeneratorHook,
         };
 
+        this.blockchain = {
+            subscribeForNewBlocks: that._subscribeForNewBlocks,
+            unsubscribeFromNewBlocks: that._unsubscribeFromNewBlocks,
+            addBlocksToBlockchain: that._addBlocksToBlockchain,
+        }
+
     }
 
     /**
@@ -83,6 +89,50 @@ class Plugins {
 
     _injectScript(script) {
         that._injectedScripts.push("" + script);
+    }
+
+
+    /**
+     * Subscribe for new block addition
+     * @param {Function} cb
+     * @returns {boolean}
+     */
+    _subscribeForNewBlocks(cb) {
+        let newSubs = storj.get('newBlockSubscribers');
+        if (! newSubs ) {
+            newSubs = [];
+        }
+        if (typeof cb === 'function' && newSubs.indexOf(cb) === -1) {
+            newSubs.push(cb);
+            storj.put('newBlockSubscribers', newSubs);
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
+     * Unsubscribe from new block addition
+     * @param {Function} cb
+     * @returns {boolean}
+     */
+    _unsubscribeFromNewBlocks(cb) {
+        let subs = storj.get('newBlockSubscribers');
+        if (subs  !== null && typeof cb === 'function' && subs.indexOf(cb) !== -1) {
+            subs.splice(this._newBlockSubscribers.indexOf(cb), 1);
+            storj.put(subs);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Add blocks to blockchain from external source
+     * @param {object} preProcessedBlocks 
+     */
+    _addBlocksToBlockchain(preProcessedBlocks) {
+        let blockchainObject = storj.get('blockchainObject');
+        blockchainObject.handleBlockchainResponse(undefined, preProcessedBlocks);
     }
 }
 
