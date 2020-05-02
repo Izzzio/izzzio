@@ -1,0 +1,42 @@
+{
+  "p2pPort": 6017,
+  "httpServer": "localhost",
+  "httpPort": 3016,
+  "initialPeers": [
+  ],
+  "recieverAddress": "nodeTwo",
+  "blockHashFilter": {
+    "blockEndls": [
+      "f3c3",
+      "a001",
+      "f6de",
+      "86d0",
+      "5027"
+    ]
+  },
+  "genesisTiemstamp": 1534080014000,
+  "generateEmptyBlockDelay": 86400000,
+  "enableMessaging": false,
+  "rpcPassword": "",
+  "validators": [                       
+    "keypoa"
+  ],
+  "blockAcceptCount": 0,
+  "maxPeers": 25,
+  "workDir": "./temp/node2",
+  "walletFile": "./temp/node2/wallet.json",
+  "walletsDB": "mem://wallets.json",
+  "blocksDB": "blocksByPlugin",
+  "accountsDB": "accountByPlugin",
+  "appEntry": "./test.js",
+  "ecmaContract": {
+    "enabled": true,
+    "allowDebugMessages": true,
+    "contractInstanceCacheLifetime": 10000,
+    "masterContract": 1
+  },
+  "signFunction": "NEWRSA",
+  "plugins": [
+    "iz3-basic-crypto"
+  ]
+}

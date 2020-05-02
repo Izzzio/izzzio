@@ -224,19 +224,21 @@ class EcmaContract {
     getContractLimits(address, cb) {
         let that = this;
 
-        if(!this.config.ecmaContract.masterContract) {
-            cb(DEFAULT_LIMITS);
+        const defaultLimits = this.config.ecmaContract.defaultLimits;
+
+        if (!this.config.ecmaContract.masterContract) {
+            cb(defaultLimits);
             return;
         }
 
-        if(Number(address) <= that.config.ecmaContract.masterContract) {
-            cb(DEFAULT_LIMITS);
+        if (Number(address) <= that.config.ecmaContract.masterContract) {
+            cb(defaultLimits);
             return;
         }
 
         that.callContractMethodDeployWait(that.config.ecmaContract.masterContract, 'checkContractLimits', {}, function (err, result) {
-            if(err || !result) {
-                cb(DEFAULT_LIMITS);
+            if (err || !result) {
+                cb(defaultLimits);
                 return;
             }
             cb(JSON.parse(result));

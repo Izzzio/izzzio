@@ -31,7 +31,7 @@ module.exports = {
      */
     get: function (name) {
 
-        logger.warning('instanceStorage deprecated and will be removed in new versions. User NamedInstanceStorage instead');
+        logger.warning('instanceStorage deprecated and will be removed in new versions. Use NamedInstanceStorage instead');
 
         if(typeof name === 'undefined') {
             return storage;

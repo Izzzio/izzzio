@@ -16,14 +16,15 @@
  limitations under the License.
  */
 
-const storj = require('./instanceStorage');
+const StarwaveCrypto = undefined;
 
-const StarwaveCrypto = storj.get('StarWaveCrypto');
-
-if(StarwaveCrypto) {
-    module.exports = StarwaveCrypto;
-} else {
-    module.exports = function () {
-        console.log('StarwaveCrypto plugin not found');
-    };
+module.exports = function(namedStorage) {
+    StarwaveCrypto = namedStorage.get('StarwaveCrypto');
+    if (StarwaveCrypto) {
+        return StarwaveCrypto;
+    } else {
+        return function () {
+            console.log('StarwaveCrypto plugin not found');
+        };
+    }
 }

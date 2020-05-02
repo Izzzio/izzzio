@@ -65,6 +65,7 @@ class App extends DApp {
         logger.info('Deploying contract...');
         if(this.config.recieverAddress === "nodeOne") {
             that.contracts.ecmaContract.deployContract(mainTokenContract, 0, function (deployedContract) {
+                console.log('Contract deployed');
                 that.run(deployedContract);
             });
         } else {
@@ -80,7 +81,7 @@ class App extends DApp {
      */
     async testLeech() {
         logger.info('Test leech');
-        await wait(60000); //Wait for test end
+        await wait(80000); //Wait for test end
         let tokenContract = new TokenContractConnector(this.ecmaContract, '1');
         assert.true(await tokenContract.balanceOf('TEST_ADDR') === '300', 'Invalid balance after sync');
         logger.info('Tests passed');
@@ -131,7 +132,7 @@ class App extends DApp {
         console.log('');
         console.log('');
         logger.info('Tests passed');
-        await wait(25000);
+        await wait(65000);
         process.exit();
     }
 

@@ -244,8 +244,11 @@ class Cryptography {
         if(this.config.signFunction === 'NEWRSA') {
             //get old rsa key in PEM format and convert to utf-16
             keyPair.public = this.PEMToHex(keyPair.public);
+            return {private: keyPair.private, public: keyPair.public};
         }
-        return {private: keyPair.private, public: keyPair.public};
+        
+        logger.fatalFall('No generation functions found');
+        return {private: '', public: ''};
     }
 
     /**

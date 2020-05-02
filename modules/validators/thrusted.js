@@ -228,7 +228,7 @@ function generateEmptyBlock() {
  * @return {boolean}
  */
 function generateEmptyBlockCheck() {
-    if(blockchain !== 'null' && generateEmptyBlocks) {
+    if(blockchain !== null && generateEmptyBlocks) {
         //Мы не выпускали ключи
         if(!blockchain.blockHandler.isKeyFromKeyring(blockchain.wallet.keysPair.public)) {
             console.log('Info: We can\'t generate empty Thrusted blocks');

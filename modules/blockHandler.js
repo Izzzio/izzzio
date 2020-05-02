@@ -7,6 +7,7 @@ const Keyring = require("./blocksModels/keyring");
 const Wallet = require("./wallet");
 const fs = require('fs-extra');
 
+
 const logger = new (require('./logger'))();
 
 /**
@@ -199,18 +200,18 @@ class BlockHandler {
                                 that.syncInProgress = false;
                                 storj.put('syncInProgress', false);
                                 that.namedStorage.put('syncInProgress', false);
+
                                 that.enableLogging = true;
                                 logger.disable = false;
                                 that.wallet.enableLogging = true;
-
 
                                 if(typeof cb !== 'undefined') {
                                     cb();
                                 }
 
-
                                 return;
                                 break;
+                                
                             } else {
                                 logger.disable = false;
                                 console.log('PREV', JSON.parse(prevBlock));

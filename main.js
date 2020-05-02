@@ -41,6 +41,8 @@ function constructBlockchainObject(appConfig = {}) {
             .version(version)
             .description(' iZ3 - IZZZIO blockchain core.')
             .option('-a, --autofix', 'Fix saved chain if possible. WARNING: You can lose important data')
+            .option('--clear', 'Clear all saved chain and deletes wallet. WARNING: You can lose important data')
+            .option('--clear-db', 'Clear all saved chain and calculated wallets.')
             .option('-c, --config [path]', 'Core config path', 'config.json')
             .option('--write-config [path]', 'Save config in [path] file', false)
             .option('--work-dir [path]', 'Working directory', false)
@@ -115,6 +117,7 @@ function constructBlockchainObject(appConfig = {}) {
         maxTransactionAtempts: 5,           //Сколько попыток добавить блок мы предпренимаем
         keyringKeysCount: 5,                //Сколько генерировать ключей в связку при старте сети. Используется в Trusted консенсусе и  других
         checkExternalConnectionData: false, //Проверять внешние данные на соответствие
+        blockCacheLifeTime: 50,             //Время (в мс) нахождения блока в кэше 
 
         //Messaging Bus
         enableMessaging: false,              //Разрешить использование шины сообщений (необходима для некоторых консенсусов)
@@ -124,9 +127,9 @@ function constructBlockchainObject(appConfig = {}) {
         maximumInputSize: 2 * 1024 * 1024,
         allowMultipleSocketsOnBus: false, // разрешение на подключение сокетов с разными адресами на один адрес шины
 
-
         //Wallet
         walletFile: './wallet.json',         //Адрес файла кошелька
+        workDir: '.',
         disableWalletDeploy: true,
 
         //Database
@@ -145,7 +148,12 @@ function constructBlockchainObject(appConfig = {}) {
             contractInstanceCacheLifetime: 10000,   //Время жизни экземпляра виртуальной машины контракта
             //ramLimit: 32,                           //Макс. ограничение ОЗУ для контрактов. Может быть заменено @deprecated
             masterContract: 5,                       //Главный контракт в системе. Реализует функционал токена
-            maxContractLength: 10 * 1024 * 1024      // Макс. размер добавляемого контракта
+            maxContractLength: 10 * 1024 * 1024,      // Макс. размер добавляемого контракта
+            defaultLimits: { 
+                ram: 256, 
+                timeLimit: 30000, 
+                callLimit: 10000 
+            }
         },
 
         //Cryptography
@@ -189,14 +197,7 @@ function constructBlockchainObject(appConfig = {}) {
     //If start like app
     if(!module.parent) {
         try {
-            //Load config from file
-            let loadedConfig = JSON.parse(fs.readFileSync(program.config));
-            for (let i in config) {
-                if(typeof loadedConfig[i] !== 'undefined') {
-                    config[i] = loadedConfig[i];
-                }
-            }
-
+            config = _.defaultsDeep(JSON.parse(fs.readFileSync(program.config)), config);
         } catch (e) {
             logger.warning('No configure found. Using standard configuration.');
         }
@@ -224,6 +225,14 @@ function constructBlockchainObject(appConfig = {}) {
             require('./modules/splash')();
         }
 
+        if(program.clear) {
+            logger.info('Clear up.');
+            fs.removeSync('wallets');
+            fs.removeSync('blocks');
+            fs.removeSync(config.walletFile);
+            logger.info('End');
+        }
+
         if(program.newChain) {
             config.newNetwork = true;
         }
@@ -243,6 +252,12 @@ function constructBlockchainObject(appConfig = {}) {
         if(program.workDir) {
             config.workDir = program.workDir;
             config.walletFile = config.workDir + '/wallet.json';
+        }
+
+        if(program.clearDb) {
+            fs.removeSync(config.workDir + '/wallets');
+            fs.removeSync(config.workDir + '/blocks');
+            logger.info('DB cleared');
         }
 
         if(program.generateWallets) {

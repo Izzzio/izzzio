@@ -33,14 +33,12 @@ function testFunction(cb, ...args) {
         console.log(args[0]);
         return cb('', args[1]);  // doesn't matter what first argument is
     }, 0);
-    /*console.log(args[0]);
-     cb('', args[1]); */
 }
 
-module.exports = function register(blockchain, config, storj) {
+module.exports = function register(blockchain, config, namedStorage) {
     logger.info('Initialize...');
 
-    let plugins = storj.get('plugins');
+    let plugins = namedStorage.get('plugins');
 
     plugins.ecma.registerFunction('testNamespace',"testFunction", testFunction);
     plugins.ecma.injectScript(TestClass);
