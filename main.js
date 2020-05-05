@@ -23,6 +23,7 @@
 
 const logger = new (require('./modules/logger'))();
 const version = require('./package.json').version;
+const _ = require('lodash');
 let program;
 
 
