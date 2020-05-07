@@ -1179,7 +1179,7 @@ function Blockchain(config) {
         namedStorage.put('chainResponseMutex', true);
 
 
-                let receivedBlocks = undefined;
+        let receivedBlocks = undefined;
         if (preProcessedBlocks !== undefined) {
             receivedBlocks = preProcessedBlocks;
         } else {
