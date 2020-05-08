@@ -6,12 +6,15 @@
 
 let DApp = require('../app/DApp');
 let BenchmarkBlock = require('./BenchmarkBlock');
+const namedStorage = new (require('../modules/NamedInstanceStorage'))();
 
 class App extends DApp {
     init() {
         let that = this;
 
         const CONFIG = that.config;
+
+        namedStorage.assign(CONFIG.instanceId);
 
         const TRANSACTIONS_PER_BLOCK = !CONFIG.benchmark || !CONFIG.benchmark.transactionsPerBlock ? 2500 : CONFIG.benchmark.transactionsPerBlock;
 
@@ -38,7 +41,7 @@ class App extends DApp {
 
         const TRANSACTION_LIST = makeTransactionsList();
 
-        let newBLock = new BenchmarkBlock(TRANSACTION_LIST);
+        let newBLock = new BenchmarkBlock(TRANSACTION_LIST, namedStorage);
 
         /**
          * Creates new block

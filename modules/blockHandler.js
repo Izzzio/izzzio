@@ -69,9 +69,9 @@ class BlockHandler {
     }
 
     /**
-     * Регестрируем новый обработчик блока
+     * Регистрируем новый обработчик блока
      * @param {string} type
-     * @param {function} handler
+     * @param {function} handler WARNING: Always call callback in handler method
      */
     registerBlockHandler(type, handler) {
 
@@ -134,9 +134,7 @@ class BlockHandler {
                 }
             });
         });
-
     }
-
 
     /**
      * Async block handler
@@ -162,7 +160,7 @@ class BlockHandler {
      * @returns {boolean}
      */
     isKeyFromKeyring(publicKey) {
-        return this.keyring.indexOf(publicKey) !== -1
+        return this.keyring.indexOf(publicKey) !== -1;
     }
 
     /**
@@ -275,7 +273,6 @@ class BlockHandler {
                  blockData = block.data;
              }*/
 
-
             if(block.index === keyEmissionMaxBlock) {
                 if(that.keyring.length === 0) {
                     logger.warning('Network without keyring');
@@ -285,7 +282,6 @@ class BlockHandler {
                     logger.warning('TRUSTED NODE. BE CAREFUL.');
                 }
             }
-
 
             switch (blockData.type) {
                 case Keyring.prototype.constructor.name:
@@ -331,9 +327,7 @@ class BlockHandler {
             return callback();
         }
 
-
     }
-
 
 }
 

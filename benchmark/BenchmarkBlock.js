@@ -19,8 +19,7 @@
 
 const Signable = require('../modules/blocksModels/signable');
 //const CryptoJS = require("crypto-js");
-const storj = require('../modules/instanceStorage');
-const cryptography = storj.get('cryptography');
+let cryptography = undefined;
 let type = 'BenchmarkBlock';
 
 /**
@@ -30,12 +29,16 @@ let type = 'BenchmarkBlock';
 class BenchmarkBlock extends Signable {
     /**
      * @param {String} blockData
+     * @param {NamedInstanceStorage} namedStorage
      */
-    constructor(blockData) {
+    constructor(blockData, namedStorage) {
         super();
         this.type = type;
         this.blockData = blockData;
         this.generateData();
+        if (!cryptography) {
+            cryptography = namedStorage.get('cryptography');
+        }
     }
 
     /**
@@ -43,7 +46,7 @@ class BenchmarkBlock extends Signable {
      */
     generateData() {
         //this.data =  CryptoJS.SHA256(this.type+JSON.stringify(this.blockData)).toString();
-        this.data =  cryptography.hash(this.type+JSON.stringify(this.blockData)).toString();
+        this.data = cryptography.hash(this.type+JSON.stringify(this.blockData)).toString();
     }
 
 

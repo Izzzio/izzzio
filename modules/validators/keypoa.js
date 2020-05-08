@@ -57,8 +57,8 @@ const Wallet = require("../wallet");
  */
 let testWallet = undefined;
 
-const namedInstanceStorage = require('../NamedInstanceStorage');
-const namedStorage = new namedInstanceStorage();
+
+const namedStorage = new (require('../NamedInstanceStorage'))();
 const Block = require("../block");
 const Signable = require("../blocksModels/signable");
 const KeyIssue = require("../blocksModels/keypoa/keyIssue");
@@ -407,7 +407,7 @@ module.exports = function (blockchainInstance) {
     blockchain = blockchainInstance;
     if (blockchain) {
         namedStorage.assign(blockchain.config.instanceId);
-        testWallet = new Wallet(undefined, blockchain.config);
+        testWallet = new Wallet(blockchain.config.walletFile, blockchain.config);
     }
 
     try {
@@ -458,8 +458,6 @@ module.exports = function (blockchainInstance) {
         }
     };
 
-    console.log('keypoa loaded');
-    //storj.put('keypoa', keyPOAObject);
     if (blockchain) {
         namedStorage.put('keypoa', keyPOAObject);
     }

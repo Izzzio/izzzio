@@ -30,9 +30,6 @@ const uglifyJs = require("uglify-es");
 const ContractConnector = require('./connectors/ContractConnector');
 
 const CALLS_LIMITER_THRESHOLD = 60000;
-const MAXIMUM_TIME_LIMIT = 30000;
-const MAXIMUM_VM_RAM = 256;
-const DEFAULT_LIMITS = {ram: MAXIMUM_VM_RAM, timeLimit: MAXIMUM_TIME_LIMIT, callLimit: 10000};
 
 
 /**

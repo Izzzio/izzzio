@@ -34,11 +34,11 @@ class Blockchain {
     getLevelup() {
         return this.db.getLevelup();
     }
-    
+
     getDb() {
         return this.db;
     }
-    
+
     get(key, callback) {
         let result = this.getAsync(key);
         if (typeof callback === 'function') {
@@ -49,7 +49,7 @@ class Blockchain {
             });
         }
     }
-    
+
     put(key, data, callback) {
         let result = this.putAsync(key, data);
         if (typeof callback === 'function') {
@@ -60,7 +60,7 @@ class Blockchain {
             })
         }
     }
-    
+
     async getAsync(key) {
       let value = await this.cache.get(key);
       if (value === undefined) {
@@ -69,12 +69,12 @@ class Blockchain {
       }
       return value;
     }
-    
+
     async putAsync(key, data) {
         this.cache.add(key, data);
         return this.db.putAsync(key, data);
     }
-    
+
     del(key, callback) {
         let result = this.delAsync(key, data);
         if (typeof callback === 'function') {
@@ -85,7 +85,7 @@ class Blockchain {
             });
         }
     }
-    
+
     delAsync(key) {
         this.cache.del(key);
         return this.db.delAsync(key);

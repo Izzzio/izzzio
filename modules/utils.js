@@ -13,6 +13,7 @@ module.exports = {
      */
     waitForSync: function (callback, config) {
         const namedStorage = new (require('./NamedInstanceStorage'))(config.instanceId);
+        
         function waitForSync() {
             if(!namedStorage.get('blockchainObject').isReadyForTransaction()) {
                 setTimeout(function () {

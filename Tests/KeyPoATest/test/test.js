@@ -27,8 +27,6 @@ const logger = new (require(global.PATH.mainDir + "/modules/logger"))("KeyPoA Te
  */
 const assert = require(global.PATH.mainDir + "/modules/testing/assert");
 
-const storj = require(global.PATH.mainDir + "/modules/instanceStorage");
-
 const namedStorage = new (require(global.PATH.mainDir + "/modules/NamedInstanceStorage"))();
 
 const Wallet = require(global.PATH.mainDir + "/modules/wallet");
@@ -66,7 +64,6 @@ class App extends DApp {
 
         namedStorage.assign(this.config.instanceId);
         this.keypoaInterface = namedStorage.get('keypoa').interface;
-        //this.keypoaInterface = storj.get('keypoa').interface;
 
         process.on("SIGINT", () => {
             console.log("Terminating tests...");

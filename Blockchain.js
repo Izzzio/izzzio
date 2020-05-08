@@ -334,7 +334,7 @@ function Blockchain(config) {
             }
         });
 
-        let subs = storj.get('newBlockSubscribers');
+        let subs = namedStorage.get('newBlockSubscribers');
         if (subs !== null && subs.length > 0) {
             for (let subscriber of subs) {
                 subscriber();
@@ -1247,7 +1247,7 @@ function Blockchain(config) {
                                 clearTimeout(replaceChainTimer);
                                 replaceChainTimer = setTimeout(function () {
                                     //If receiving chain, no syncing
-                                    if(storj.get('chainResponseMutex')) {
+                                    if(namedStorage.get('chainResponseMutex')) {
                                         return;
                                     }
                                     blockHandler.resync();
@@ -1276,19 +1276,6 @@ function Blockchain(config) {
                     } else {
 
                         if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
-                            //До 5го блока и при пустой ключнице и если у нас нет блока больше 5го синхронизация только по одному
-                            if(receivedBlocks[0].index <= 5 && receivedBlocks[0].index !== 0 && blockHandler.keyring.length === 0 && maxBlock <= 5) {
-                                receivedBlocks = [receivedBlocks[0], receivedBlocks[1]];
-                            }
-                            if(maxBlock <= 5) {
-                                if(receivedBlocks[0].index === 0) {
-                                    if(typeof receivedBlocks[2] !== 'undefined') {
-                                        receivedBlocks = [receivedBlocks[1], receivedBlocks[2]];
-                                    } else {
-                                        receivedBlocks = [receivedBlocks[1]];
-                                    }
-                                }
-                            }
                             replaceChain(receivedBlocks, function () {
                                 storj.put('chainResponseMutex', false);
                                 namedStorage.put('chainResponseMutex', false);
@@ -2122,9 +2109,9 @@ function Blockchain(config) {
      * @param {string} plugin name of the plugin module
      * @param {object} blockchainObject blockchain object
      * @param {object} config config object
-     * @param {object} storj global storage object
+     * @param {object} namedStorage unique storage object
      */
-    function loadPlugin(plugin, blockchainObject, config, storj) {
+    function loadPlugin(plugin, blockchainObject, config, namedStorage) {
         let pluginMod;
         let path = '';
         let isPathFull;
@@ -2132,7 +2119,7 @@ function Blockchain(config) {
             //Direct module loading attempt
             try {
                 path = plugin;
-                pluginMod = require(path)(blockchainObject, config, storj);
+                pluginMod = require(path)(blockchainObject, config, namedStorage);
                 path = '/' + path;
                 isPathFull = false;
             } catch (e) {
@@ -2140,7 +2127,7 @@ function Blockchain(config) {
                 //Plugins path
                 try {
                     path = './plugins/' + plugin;
-                    pluginMod = require(path)(blockchainObject, config, storj);
+                    pluginMod = require(path)(blockchainObject, config, namedStorage);
                     path = '/.' + path;
                     isPathFull = false;
                 } catch (e) {
@@ -2148,20 +2135,20 @@ function Blockchain(config) {
                     //Starting dir search
                     try {
                         path = process.cwd() + '/' + plugin;
-                        pluginMod = require(path)(blockchainObject, config, storj);
+                        pluginMod = require(path)(blockchainObject, config, namedStorage);
                         isPathFull = true;
                     } catch (e) {
 
                         //Working dir search
                         try {
                             path = config.workDir + '/' + plugin;
-                            pluginMod = require(path)(blockchainObject, config, storj);
+                            pluginMod = require(path)(blockchainObject, config, namedStorage);
                             isPathFull = false;
                         } catch (e) {
 
                             //Node modules in starting dir search
                             path = process.cwd() + '/node_modules/' + plugin;
-                            pluginMod = require(path)(blockchainObject, config, storj);
+                            pluginMod = require(path)(blockchainObject, config, namedStorage);
                             isPathFull = true;
                         }
                     }

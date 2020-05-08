@@ -150,10 +150,10 @@ function constructBlockchainObject(appConfig = {}) {
             //ramLimit: 32,                           //Макс. ограничение ОЗУ для контрактов. Может быть заменено @deprecated
             masterContract: 5,                       //Главный контракт в системе. Реализует функционал токена
             maxContractLength: 10 * 1024 * 1024,      // Макс. размер добавляемого контракта
-            defaultLimits: { 
-                ram: 256, 
-                timeLimit: 30000, 
-                callLimit: 10000 
+            defaultLimits: {
+                ram: 256,
+                timeLimit: 30000,
+                callLimit: 10000
             }
         },
 
