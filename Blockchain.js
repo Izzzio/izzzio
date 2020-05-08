@@ -80,7 +80,6 @@ function Blockchain(config) {
     const Frontend = require('./modules/frontend');
     const app = express();
 
-
     storj.put('app', app);
     storj.put('config', config);
     namedStorage.put('app', app);
@@ -382,6 +381,7 @@ function Blockchain(config) {
 
         addBlockToChainIndex(maxBlock, block, noHandle, cb);
     }
+
 
     /**
      * Async verstion of blockchain.get
@@ -1186,7 +1186,6 @@ function Blockchain(config) {
             receivedBlocks = JSON.parse(message.data);
         }
 
-
         if(receivedBlocks.length === 0 || receivedBlocks[0] === false) {
             storj.put('chainResponseMutex', false);
             namedStorage.put('chainResponseMutex', false);
@@ -1342,8 +1341,8 @@ function Blockchain(config) {
                 let maxIndex = maxBlock - config.limitedConfidenceBlockZone;
                 if(maxIndex < 0) {
                     maxIndex = 0;
-                }
 
+                }
                 let validChain = false;
                 //Валидна ли переданная цепочка блоков
                 if(rBlock) {
@@ -1374,6 +1373,7 @@ function Blockchain(config) {
                     validChain // &&  newBlocks[0].index >= maxIndex
                     /*&& newBlocks.length >= maxBlock*/
                 ) {
+
                     //console.log(newBlocks);
                     //logger.info('Received blockchain is valid.');
                     logger.info('Synchronize: ' + newBlocks[0].index + ' of ' + newBlocks[newBlocks.length - 1].index);
@@ -1388,7 +1388,7 @@ function Blockchain(config) {
                         clearTimeout(replaceChainTimer);
                         replaceChainTimer = setTimeout(function () {
                             //If receiving chain, no syncing
-                            if(namedStorage.get('chainResponseMutex')) {
+                            if(storj.get('chainResponseMutex')) {
                                 return;
                             }
                             blockHandler.resync();
@@ -1398,7 +1398,6 @@ function Blockchain(config) {
                         if(typeof cb !== 'undefined') {
                             cb();
                         }
-
                     })();
 
                 } else {
@@ -1409,7 +1408,6 @@ function Blockchain(config) {
                     logger.error(error);
 
                 }
-
             })
         })
     }
@@ -1999,6 +1997,7 @@ function Blockchain(config) {
         })
     }
 
+
     blockchainObject = {
         config: config,
         validators: nodeMetaInfo,
@@ -2076,7 +2075,7 @@ function Blockchain(config) {
          * @param {Number} id
          * @param {Function} cb
          */
-        getBlockById: getBlockById
+        getBlockById: getBlockById,
     };
 
     //Init2
@@ -2210,6 +2209,3 @@ function Blockchain(config) {
 module.exports = Blockchain;
 
 //Work
-
-
-

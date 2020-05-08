@@ -28,7 +28,6 @@ const logger = new (require(global.PATH.mainDir + "/modules/logger"))("KeyPoA Te
 const assert = require(global.PATH.mainDir + "/modules/testing/assert");
 
 const namedStorage = new (require(global.PATH.mainDir + "/modules/NamedInstanceStorage"))();
-
 const Wallet = require(global.PATH.mainDir + "/modules/wallet");
 
 const DApp = require(global.PATH.mainDir + "/app/DApp");

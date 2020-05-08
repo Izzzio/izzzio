@@ -35,7 +35,6 @@ class KeyIssue extends Signable {
         this.data = this.type + this._cryptography.hash(this.publicKey + this.keyType);
     }
 
-
 }
 
 module.exports = KeyIssue;

@@ -457,7 +457,6 @@ module.exports = function (blockchainInstance) {
             getCurrentKeyStorage
         }
     };
-
     if (blockchain) {
         namedStorage.put('keypoa', keyPOAObject);
     }

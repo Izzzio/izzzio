@@ -5,7 +5,7 @@
 
 const Keyring = require("./blocksModels/keyring");
 const Wallet = require("./wallet");
-const fs = require('fs-extra');
+const fs = require("fs-extra");
 
 
 const logger = new (require('./logger'))();
@@ -29,7 +29,6 @@ const keyEmissionMaxBlock = 5;
  * В данной реализации обрабатывает всю загруженную блокчейн сеть, верефицирует транзанкции, создания кошельков, корректности цифровых подписей, связку ключей и пустые блоки
  */
 class BlockHandler {
-
     constructor(wallet, blockchain, blockchainObject, config, options) {
 
         //Assign named storage
@@ -42,14 +41,12 @@ class BlockHandler {
         this.maxBlock = -1;
         this.enableLogging = true;
 
-
         /**
          * External block handlers
          * @type {{}}
          * @private
          */
         this._blocksHandlers = {};
-
 
         this.syncInProgress = false;
         storj.put('syncInProgress', false);
@@ -150,8 +147,8 @@ class BlockHandler {
                 } else {
                     resolve(result);
                 }
-            })
-        })
+            });
+        });
     }
 
     /**
@@ -242,7 +239,6 @@ class BlockHandler {
             if(typeof cb !== 'undefined') {
                 cb();
             }
-
         })();
     }
 
@@ -275,34 +271,33 @@ class BlockHandler {
 
             if(block.index === keyEmissionMaxBlock) {
                 if(that.keyring.length === 0) {
-                    logger.warning('Network without keyring');
+                    logger.warning("Network without keyring");
                 }
 
                 if(that.isKeyFromKeyring(that.wallet.keysPair.public)) {
-                    logger.warning('TRUSTED NODE. BE CAREFUL.');
+                    logger.warning("TRUSTED NODE. BE CAREFUL.");
                 }
             }
 
             switch (blockData.type) {
                 case Keyring.prototype.constructor.name:
                     if(block.index >= keyEmissionMaxBlock || that.keyring.length !== 0) {
-                        logger.warning('Fake keyring in block ' + block.index);
+                        logger.warning("Fake keyring in block " + block.index);
                         return callback();
                     }
-                    logger.info('Keyring recived in block ' + block.index);
+                    logger.info("Keyring recived in block " + block.index);
                     that.keyring = blockData.keys;
-                    fs.writeFileSync(that.config.workDir + '/keyring.json', JSON.stringify(that.keyring));
+                    fs.writeFileSync(that.config.workDir + "/keyring.json", JSON.stringify(that.keyring));
                     return callback();
                     break;
-                case 'Empty':
+                case "Empty":
                     return callback();
                     break;
                 default:
-
                     /**
                      * Запускаем на каждый тип блока свой обработчик
                      */
-                    if(typeof that._blocksHandlers[blockData.type] !== 'undefined') {
+                    if(typeof that._blocksHandlers[blockData.type] !== "undefined") {
                         for (let i in that._blocksHandlers[blockData.type]) {
                             if(that._blocksHandlers[blockData.type].hasOwnProperty(i)) {
                                 try {
@@ -315,20 +310,16 @@ class BlockHandler {
                         }
                     } else {
                         if(that.config.program.verbose) {
-                            logger.info('Unexpected block type ' + block.index);
+                            logger.info("Unexpected block type " + block.index);
                         }
                         return callback();
                     }
-
             }
-
         } catch (e) {
             console.log(e);
             return callback();
         }
-
     }
-
 }
 
 module.exports = BlockHandler;

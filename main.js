@@ -180,7 +180,6 @@ function constructBlockchainObject(appConfig = {}) {
     const Blockchain = require('./Blockchain');
     const path = require('path');
 
-
     Array.prototype.remove = function (from, to) {
         let rest = this.slice((to || from) + 1 || this.length);
         this.length = from < 0 ? this.length + from : from;

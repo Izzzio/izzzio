@@ -24,7 +24,6 @@ class KeyIssue extends Signable {
         this.type = type;
         this.publicKey = publicKey;
         this.generateData();
-
     }
 
     /**
