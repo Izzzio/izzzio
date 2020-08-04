@@ -1,5 +1,9 @@
 {
   "p2pPort": 6000,
+  "validators": [
+    "lcpoa",
+    "thrusted"
+  ],
   "httpServer": "localhost",
   "httpPort": 3001,
   "enableMessaging": false,
@@ -11,5 +15,6 @@
   "transactionIndexEnable": false,
   "initialPeers": [],
   "blocksDB": "mem://blocks.json",
-  "walletsDB": false
+  "walletsDB": false,
+  "signFunction": "NEWRSA"
 }
