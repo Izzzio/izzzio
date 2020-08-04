@@ -1,5 +1,9 @@
 {
   "p2pPort": 6000,
+  "validators": [
+    "dlcpoa",
+    "thrusted"
+  ],
   "httpServer": "localhost",
   "httpPort": 3001,
   "enableMessaging": false,
