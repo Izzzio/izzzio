@@ -24,6 +24,8 @@ const logger = new (require('./logger'))();
 
 const CodingFunctions = require('./codingFunctions');
 
+const deasync = require("deasync");
+
 
 /**
  * Repair bad generated key
@@ -31,7 +33,7 @@ const CodingFunctions = require('./codingFunctions');
  * @return {*}
  */
 function repairKey(key) {
-    if(key[key.length - 1] !== "\n") {
+    if (key[key.length - 1] !== "\n") {
         key += "\n";
     }
     return key.replace(new RegExp("\n\n", 'g'), "\n");
@@ -57,23 +59,23 @@ class Cryptography {
         this.coding = new CodingFunctions();
 
         let hashOptions, signOptions;
-        if(config) {
+        if (config) {
             //Hash config
             switch (this.config.hashFunction) {
                 case 'STRIBOG':
-                    hashOptions = {length: 256};
+                    hashOptions = { length: 256 };
                     break;
                 case 'STRIBOG512':
-                    hashOptions = {length: 512};
+                    hashOptions = { length: 512 };
                     break;
             }
             //Signature config
             switch (this.config.signFunction) {
                 case 'GOST':
-                    signOptions = {hash: "GOST R 34.11", length: 256};
+                    signOptions = { hash: "GOST R 34.11", length: 256 };
                     break;
                 case 'GOST512':
-                    signOptions = {hash: "GOST R 34.11", length: 512, namedCurve: "T-512-A"};
+                    signOptions = { hash: "GOST R 34.11", length: 512, namedCurve: "T-512-A" };
                     break;
             }
         }
@@ -95,7 +97,7 @@ class Cryptography {
      * @param {function} sign
      */
     registerSign(name, validate, sign) {
-        this._signFunctions[name.toUpperCase()] = {validate: validate, sign: sign};
+        this._signFunctions[name.toUpperCase()] = { validate: validate, sign: sign };
     }
 
     /**
@@ -201,6 +203,16 @@ class Cryptography {
         return k;
     }
 
+    _makeSync(asyncFunc, ...args) {
+        let res;
+        (async () => {
+            res = await asyncFunc.call(this, ...args);
+        })();
+        deasync.loopWhile(function () {
+            return typeof res === 'undefined';
+        });
+        return res;
+    }
 
     /**
      * Generates pair of keys
@@ -208,19 +220,19 @@ class Cryptography {
      */
     generateKeyPair() {
         //External generator function
-        if(this._generatorFunctions[this.config.generatorFunction.toUpperCase()]) {
-            return this._generatorFunctions[this.config.generatorFunction.toUpperCase()]();
+        if (this._generatorFunctions[this.config.generatorFunction.toUpperCase()]) {
+            return this._makeSync(this._generatorFunctions[this.config.generatorFunction.toUpperCase()]);
         }
 
         let keyPair;
-        if(this.config.signFunction === 'NEWRSA') {
+        if (this.config.signFunction === 'NEWRSA') {
             //get old rsa key in PEM format and convert to utf-16
             keyPair.public = this.PEMToHex(keyPair.public);
-            return {private: keyPair.private, public: keyPair.public};
+            return { private: keyPair.private, public: keyPair.public };
         }
-        
+
         logger.fatalFall('No generation functions found');
-        return {private: '', public: ''};
+        return { private: '', public: '' };
     }
 
     /**
@@ -233,13 +245,13 @@ class Cryptography {
         let signedData;
 
         //External sign function
-        if(this._signFunctions[this.config.signFunction]) {
-            signedData = this._signFunctions[this.config.signFunction].sign(data, key);
+        if (this._signFunctions[this.config.signFunction]) {
+            signedData = this._makeSync(this._signFunctions[this.config.signFunction].sign, data, key);
         } else {
             logger.fatalFall('No sign functions found');
-            return {data: data, sign: ''};
+            return { data: data, sign: '' };
         }
-        return {data: data, sign: signedData};
+        return { data: data, sign: signedData };
     }
 
     /**
@@ -250,14 +262,14 @@ class Cryptography {
      * @returns {boolean} true or false
      */
     verify(data, sign, key) {
-        if(typeof data === 'object') {
+        if (typeof data === 'object') {
             sign = data.sign;
             data = data.data;
         }
 
         //External sign function
-        if(this._signFunctions[this.config.signFunction]) {
-            return this._signFunctions[this.config.signFunction].validate(data, sign, key);
+        if (this._signFunctions[this.config.signFunction]) {
+            return this._makeSync(this._signFunctions[this.config.signFunction].validate, data, sign, key);
         } else {
             logger.fatalFall('No verify functions found');
             return false;
@@ -272,8 +284,8 @@ class Cryptography {
     hash(data = '') {
 
         //External hash function
-        if(this._hashFunctions[this.config.hashFunction]) {
-            return this._hashFunctions[this.config.hashFunction](data);
+        if (this._hashFunctions[this.config.hashFunction]) {
+            return this._makeSync(this._hashFunctions[this.config.hashFunction], data);
         } else {
             logger.fatalFall('No hash functions found');
             return '';

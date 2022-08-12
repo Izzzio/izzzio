@@ -1,0 +1,26 @@
+{
+  "name": "iz3-basic-crypto-async-test",
+  "version": "1.0.0",
+  "description": "IZZZIO blockchain internal cryptography",
+  "main": "index.js",
+  "dependencies": {
+    "crypto-js": "^3.1.6",
+    "node-rsa": "^0.4.2",
+    "keypair": "^1.0.1"
+  },
+  "homepage": "https://izzz.io",
+  "author": "Andrey Nedobylskiy",
+  "license": "GPL",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Izzzio/izzzio.git"
+  },
+  "keywords": [
+    "blockchain",
+    "crypto",
+    "izzzio",
+    "izzz",
+    "iz3",
+    "bignet"
+  ]
+}
