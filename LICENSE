@@ -186,7 +186,10 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright (с) 2018 IZZZIO, LLC
+
+   // Copyright © 2017-2022 IZZZIO LLC
+   Contacts: <info@izzz.io>
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
