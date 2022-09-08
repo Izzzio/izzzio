@@ -38,6 +38,7 @@ class starwaveProtocol {
          */
         this._messageMutex = {};
         storj.put('starwaveProtocol', this);
+        console.log('------------------', 'starwave address', this.config.recieverAddress);
     }
 
     /**
@@ -125,6 +126,7 @@ class starwaveProtocol {
                 this.handleMessage(message, this.blockchain.messagesHandlers, null);
                 return true;
             } else {
+                console.log('getSocketByBusAddress', messageBusAddress);
                 let socket = this.blockchain.getSocketByBusAddress(messageBusAddress);
 
                 if(!socket) {  //нет такого подключенного сокета

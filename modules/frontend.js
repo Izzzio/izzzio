@@ -27,8 +27,14 @@ class Frontend {
         this.hardResync = hardResync;
         this.options = options;
         this.blockchainObject = blockchainObject;
+        this.config = storj.get('config');
 
         app.use(express.static('frontend'));
+
+        app.get('/node/getInfo', function(req, res) {
+            that.getNodeInfo(req, res);
+        });
+
         //app.get('/', this.index);
         app.get('/getInfo', function (req, res) {
             that.getInfo(req, res)
@@ -36,6 +42,10 @@ class Frontend {
 
         app.get('/getBlock/:id', function (req, res) {
             that.getBlock(req, res)
+        });
+
+        app.get('/recieverAddress', function(req, res) {
+            that.getRecieverAddress(req, res);
         });
 
         app.get('/isReadyForTransaction', function (req, res) {
@@ -103,6 +113,24 @@ class Frontend {
             });
         });
 
+    }
+
+    async getNodeInfo(req, res) {
+        const ecmaContract = storj.get('ecmaContract');
+        const wallet = this.wallet.keysPair;
+        const nodeInValidators = await ecmaContract.callContractMethodRollbackPromise(1, 'checkIsNodeInValidators', {}, wallet.public);
+
+        res.send({
+            nodeInValidators,
+            publicAddress: wallet.public,
+            recieverAddress: this.config.recieverAddress,
+        })
+    }
+
+    async getRecieverAddress(req, res) {
+        res.send({
+            recieverAddress: this.config.recieverAddress,
+        })
     }
 
     getBlock(req, res) {

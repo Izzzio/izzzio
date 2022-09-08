@@ -200,7 +200,7 @@
          */
         this.transfer = function (from, to, amount) {
             this.validateNumber(amount);
-
+            
             this.withdraw(from, amount);
             this.deposit(to, amount);
             return this.balanceOf(to);

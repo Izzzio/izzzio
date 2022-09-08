@@ -1,0 +1,2 @@
+#!/bin/bash
+rm -rf /app/sollar/runtime/accounts/ /app/sollar/runtime/blocks/ /app/sollar/runtime/contractsRuntime/ /app/sollar/runtime/EcmaContracts/

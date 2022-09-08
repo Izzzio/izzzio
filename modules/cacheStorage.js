@@ -19,8 +19,8 @@
  class CacheStorage {
 
   /**
-   * 
-   * @param {number} cacheLifeTime 
+   *
+   * @param {number} cacheLifeTime
    */
    constructor(cacheLifeTime) {
      this.cacheLifeTime = cacheLifeTime;
@@ -30,8 +30,8 @@
 
    /**
     * Add block value to cache with timeout expiration
-    * @param {string} key 
-    * @param {any} value 
+    * @param {string} key
+    * @param {any} value
     */
    add(key, value) {
      if (! this._isInCache) {
@@ -42,7 +42,7 @@
 
   /**
    * Get block value from cache if it exists in cache, else - undefined
-   * @param {String} key 
+   * @param {String} key
    * @returns {any}
    */
    get(key) {
@@ -57,7 +57,7 @@
 
    /**
     * Delete block value from cache if it exists, else - nothing
-    * @param {string} key 
+    * @param {string} key
     */
    del(key) {
      if (this._isInCache(key)) {
@@ -65,11 +65,11 @@
        delete this._cache[key];
      }
    }
-   
+
    /**
     * Check if key exists in cache
     * @param {string} key
-    * @returns {boolean} 
+    * @returns {boolean}
     */
    _isInCache(key) {
      return (key in this._cache);
@@ -78,13 +78,13 @@
    /**
     * Generate timeout for data cache
     * @param {string} key
-    * @returns {object} 
+    * @returns {object}
     */
    _generateTimeout(key) {
      return setTimeout(() => {
        delete this._cache[key];
      }, this.cacheLifeTime);
-   } 
+   }
  }
 
- module.exports = CacheStorage; 
+ module.exports = CacheStorage;

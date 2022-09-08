@@ -22,6 +22,7 @@
     "commander": "^2.19.0",
     "crypto-js": "^3.1.6",
     "dnssd": "^0.4.1",
+    "cors": "^2.8.5",
     "express": "^4.16.4",
     "fs-extra": "^4.0.3",
     "http-auth": "^3.2.3",
@@ -50,8 +51,6 @@
   "license": "Apache-2.0",
   "keywords": [
     "blockchain",
-    "izzz",
-    "izzzio",
     "p2p",
     "peer2peer",
     "dlt",

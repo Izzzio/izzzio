@@ -10,7 +10,7 @@ const stableStringify = require('json-stable-stringify');
  * Just block It!
  */
 class Block {
-    constructor(index, previousHash, timestamp, data, hash, startTimestamp, sign) {
+    constructor(index, previousHash, timestamp, data, hash, startTimestamp, sign, wallet) {
         this.index = index;
         this.previousHash = String(previousHash).toString();
         this.timestamp = timestamp;
@@ -21,6 +21,7 @@ class Block {
         this.data = data;
         this.hash = String(hash).toString();
         this.sign = sign;
+        this.wallet = wallet;
     }
 }
 

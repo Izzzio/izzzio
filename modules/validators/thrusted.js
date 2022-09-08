@@ -329,7 +329,11 @@ function handleMessage(message) {
         if(moment().utc().valueOf() - message.timestamp < MessageTimeout && lastTimestampRequest < message.timestamp && message.recepient !== lastRecepient) {
 
             lastTimestampRequest = message.timestamp;
-            lastRecepient = message.recepient;
+
+            /**
+             * each new block should be added with a new node
+             **/
+             // lastRecepient = message.recepient;
 
             /**
              * Блок-кандидат на добавление в сеть

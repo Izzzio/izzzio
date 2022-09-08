@@ -71,6 +71,9 @@ function Blockchain(config) {
     const MessagesDispatcher = require('./modules/messagesDispatcher');
     const Frontend = require('./modules/frontend');
     const app = express();
+    const cors = require('cors');
+
+    app.use(cors());
 
     storj.put('app', app);
     storj.put('config', config);
@@ -93,13 +96,11 @@ function Blockchain(config) {
     const blockController = new (require('./modules/blockchain'))();
     const NodeMetaInfo = require('./modules/NodeMetaInfo');
     const StarwaveProtocol = require('./modules/starwaveProtocol');
-    let starwave = new StarwaveProtocol(config, blockchainObject);
     const BlockchainInfo = require('./modules/blockchainInfo');
     const blockchainInfo = new BlockchainInfo(blockchainObject);
     let lastBlockInfo = {}; //информация о последнем запрошенном блоке
 
     const EcmaContract = require('./modules/smartContracts/EcmaContract');
-
 
     const basic = auth.basic({
             realm: "RPC Auth"
@@ -123,11 +124,9 @@ function Blockchain(config) {
         extended: false
     }));
 
-    app.use(bodyParser.json());
+    app.use(bodyParser.json({limit: '550mb'}));
 
     console.log('Initialize...');
-    console.log('');
-    console.log('Message bus address: ' + config.recieverAddress);
     console.log('');
     if(config.networkPassword) {
         console.log('Network with password access control');
@@ -142,13 +141,14 @@ function Blockchain(config) {
             logger.info('Tiny address ' + wallet.getAddress(true));
             wallet.block = -1;
         }
+        config.recieverAddress = wallet.getAddress(false);
+        console.log('');
+        console.log('Message bus address: ' + config.recieverAddress);
     }
     console.log('');
 
-    let nodeMetaInfo = new NodeMetaInfo(config);
-
     /**
-     * База данных блоков
+     * Block Database
      */
         // let blockchain = levelup(config.workDir + '/blocks');
     let blockchain = blockController;
@@ -156,7 +156,7 @@ function Blockchain(config) {
 
 
     /**
-     * Типы сообщений в p2p сети
+     * Types of messages in the p2p network
      * @type {{QUERY_LATEST: number, QUERY_ALL: number, RESPONSE_BLOCKCHAIN: number, MY_PEERS: number, BROADCAST: number, META: number}}
      */
     const MessageType = {
@@ -168,6 +168,7 @@ function Blockchain(config) {
         META: 5,
         SW_BROADCAST: 6,
         PASS: 7,
+        RESPONSE_BLOCKS_BLOCKCHAIN: 8,
     };
 
     let maxBlock = -1;
@@ -178,14 +179,14 @@ function Blockchain(config) {
     let messagesHandlers = [];
 
     /**
-     * Модуль, работающий с блоками разных типов
+     * Module that works with blocks of different types
      * @type {BlockHandler}
      */
     const blockHandler = new BlockHandler(wallet, blockchain, blockchainObject, config, {acceptCount: config.blockAcceptCount});
     storj.put('blockHandler', blockHandler);
 
     /**
-     * Модуль, следящий за прохождением транзакций
+     * Transaction tracking module
      * @type {Transactor}
      */
     const transactor = new Transactor(wallet, blockchain, {
@@ -195,7 +196,7 @@ function Blockchain(config) {
     storj.put('transactor', transactor);
 
     /**
-     * Фронтенд с интерфейсом и RPC
+     * Frontend with interface and RPC
      * @type {Frontend}
      */
     const frontend = new Frontend(
@@ -212,7 +213,7 @@ function Blockchain(config) {
         },
 
         /**
-         * Позволяет фронтенду получить инфу о последнем блоке
+         * Allows the interface to get information about the last block
          * @param {Function} cb
          */
         function getLastBlock(cb) {
@@ -222,7 +223,7 @@ function Blockchain(config) {
         },
 
         /**
-         * Просто передаёт всякую информацию во фронтенд
+         * Just passes all the information to the frontend
          * @param {Function} cb
          */
         function getSomeInfo(cb) {
@@ -243,7 +244,7 @@ function Blockchain(config) {
         },
 
         /**
-         * Запускает принудительную пересинхронизацию сети
+         * Triggers a forced network resync
          * @deprecated
          */
         function hardResync() {
@@ -277,7 +278,7 @@ function Blockchain(config) {
     let miningForce = '';
 
     /**
-     * Порождающий блок
+     * Generating block
      * @returns {Block}
      */
     function getGenesisBlock() {
@@ -292,7 +293,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Добавляет блок в определенное место цепочки
+     * Adds a block to a specific location in the chain
      * @param index
      * @param block
      * @param {Boolean} noHandle
@@ -345,7 +346,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Добавляет блок в конец цепочки
+     * Adds a block to the end of the chain
      * @param block
      * @param {Boolean} noHandle
      * @param {Function} cb
@@ -385,7 +386,7 @@ function Blockchain(config) {
 
 
     /**
-     * Запуск ноды
+     * Node launch
      */
     function startNode(cb) {
         //Запуск новой цепочки
@@ -454,7 +455,7 @@ function Blockchain(config) {
 
 
     /**
-     * Запуск сервера интерфейса
+     * Starting the Interface Server
      */
     function initHttpServer() {
         app.get('/blocks', async (req, res) => {
@@ -505,7 +506,7 @@ function Blockchain(config) {
 
 
     /**
-     * Запуск P2P сервера
+     * Starting a P2P server
      */
     function initP2PServer() {
 
@@ -585,11 +586,10 @@ function Blockchain(config) {
     let connections = 0;
 
     /**
-     * Инициализация p2p соединения
+     * P2p connection initialization
      * @param ws
      */
     function initConnection(ws) {
-
 
         if(peersBlackList.indexOf(ws._socket.remoteAddress) !== -1) {
             if(config.program.verbose) {
@@ -634,10 +634,10 @@ function Blockchain(config) {
         initMessageHandler(ws);
 
         if(config.networkPassword) {
-            write(ws, passwordMsg());     //посылаем запрос на ключевое слово
+            write(ws, passwordMsg());     //sending a request for a keyword
         }
 
-        write(ws, metaMsg());         //посылаем метаинформацию
+        write(ws, metaMsg());         //sending meta information
 
         write(ws, queryChainLengthMsg());
         write(ws, queryChainLengthMsg());
@@ -646,7 +646,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Обработчик сообщений P2P
+     * P2P message handler
      * @param ws
      */
     function initMessageHandler(ws) {
@@ -680,17 +680,17 @@ function Blockchain(config) {
                 return;
             }
 
-            //не даем обрабатывать сообщения(кроме метаинформации), пока не проверили пароль входа в сеть
+            //do not allow messages to be processed (except meta-information) until the network login password has been checked
             if(config.networkPassword && !ws.passwordChecked && message.type !== MessageType.PASS && message.type !== MessageType.META) {
                 return;
             }
 
-            //не даем обрабатывать сообщения, пока не получили всю инфу о блокчейне от другого сокета(пропускаем только парольные)
+            //do not allow messages to be processed until we have received all the information about the blockchain from another socket (we skip only password ones)
             if(!ws.nodeMetaInfo && message.type !== MessageType.META && config.checkExternalConnectionData && message.type !== MessageType.PASS) {
                 return;
             }
 
-            //проверяем сообщения, содержащие информацию о блокчейне
+            //check messages containing information about the blockchain
             if(blockchainInfo.handleIncomingMessage(message, ws, lastBlockInfo, write)) {
                 return;
             }
@@ -702,13 +702,13 @@ function Blockchain(config) {
                     });
                     break;
                 case MessageType.QUERY_ALL:
-                    sendAllBlockchain(ws, message.data, message.limit);
+                    sendAllBlockchain(ws, message.data, message.limit, message.offset, message.hideEmptyBlocks, message.contractAddress);
                     break;
                 case MessageType.RESPONSE_BLOCKCHAIN:
                     handleBlockchainResponse(message);
                     break;
                 case MessageType.MY_PEERS:
-                    if(!storj.get('peerExchangeMutex')) { //Блокируем получение списка пиров на таймаут обмена
+                    if(!storj.get('peerExchangeMutex')) { //Blocking the receipt of the list of peers for the exchange timeout
 
                         storj.put('peerExchangeMutex', true);
                         setTimeout(function () {
@@ -718,7 +718,7 @@ function Blockchain(config) {
                         connectToPeers(message.data);
                     }
                     break;
-                case MessageType.META:    //Сохранение метаинформации о нодах
+                case MessageType.META:    //Saving meta information about nodes
                     try {
                         let ind = sockets.indexOf(ws);
                         if(ind > -1) {
@@ -733,7 +733,7 @@ function Blockchain(config) {
                 case  MessageType.BROADCAST:
 
                     /**
-                     * Проходимся по обработчикам входящих сообщений
+                     * Going through the incoming message handlers
                      */
                     for (let a in messagesHandlers) {
                         if(messagesHandlers.hasOwnProperty(a)) {
@@ -777,7 +777,8 @@ function Blockchain(config) {
                     lastMsgIndex = message.index;
                     break;
                 case MessageType.SW_BROADCAST:
-                    lastMsgIndex = starwave.handleMessage(message, messagesHandlers, ws);
+                    starwave.handleMessage(message, messagesHandlers, ws);
+                    lastMsgIndex = 0;
                     break;
                 case MessageType.PASS:
                     passwordCheckingProtocol(ws, message);
@@ -788,7 +789,7 @@ function Blockchain(config) {
     }
 
     /**
-     * есть ли пришедшее кодовое слово в списке отосланных нами
+     * is there a code word that came in the list sent by us
      * @param keyWord
      * @returns {boolean}
      */
@@ -802,7 +803,7 @@ function Blockchain(config) {
     }
 
     /**
-     * процедура обмена паролями сокетов друг с другом
+     * procedure for exchanging socket passwords with each other
      * @param ws
      * @param message
      */
@@ -813,10 +814,10 @@ function Blockchain(config) {
             return;
         }
 
-        //проверяем пароль только если он у нас самих есть в конфиге
+        //check the password only if we ourselves have it in the config
         if(config.networkPassword) {
             if(message.data === '') {
-                //данные пустые, значит, пришел запрос кодовой фразы
+                //the data is empty, so the request for a passphrase has arrived
                 let ourKeyWord = getid() + getid();
                 write(ws, passwordMsg(ourKeyWord, true, config.recieverAddress));
                 ws.keyWord = ourKeyWord;
@@ -824,39 +825,39 @@ function Blockchain(config) {
                     logger.info("Connection digest hash generated " + _getPassPhraseForChecking(ourKeyWord));
                 }
             } else {
-                //если нет, значит, либо пришел хэш для проверки, либо пришло сообщение с keyWord в ответ на запрос
+                //if not, it means that either a hash has arrived for verification, or a message with a keyWord has arrived in response to the request
                 if(message.keyWordResponse) {
-                    //проверяем, нет ли присланного слова в нашем списке сохраненных. если есть, то запрашиваем новое кодовое слово.
+                    //check if the word you sent is in our saved list. if yes, then request a new code word.
                     if(checkKeyWordExistence(message.data)) {
                         write(ws, passwordMsg(undefined, undefined, config.recieverAddress));
                         return;
                     }
 
-                    //ответ на запрос кодового слова(посылаем хэш keyword + pass) с запрошенным кодовым словом в поле data
+                    //response to a codeword request (we send a hash of keyword + pass) with the requested codeword in the data field
                     let externalKeyWord = message.data;
-                    //складываем внешнее кодовое слово с нашим паролем и отправляем
+                    //add an external code word with our password and send
                     let passMes = passwordMsg(_getPassPhraseForChecking(externalKeyWord), undefined, config.recieverAddress);
 
                     write(ws, passMes);
                 } else {
-                    //пришел хэш для проверки
+                    //came hash to verify
                     if(ws.keyWord) {
-                        //если есть кодовое слово, связанное с сокетом, то проверяем
+                        //if there is a code word associated with the socket, then check
                         if(message.data === _getPassPhraseForChecking(ws.keyWord)) {
-                            ws.passwordChecked = true; //флаг того, что пароль правильный и этот пир может продолжать общаться с нодой
+                            ws.passwordChecked = true; //flag that the password is correct and this peer can continue to communicate with the node
                         } else {
                             if(config.program.verbose) {
                                 logger.error('Connection digest hash invalid ' + message.data + ' vs ' + _getPassPhraseForChecking(ws.keyWord) + ' from ' + ws._socket.remoteAddress);
                             }
-                            //не прошел проверку.
-                            //снимаем кодовое слово с этого сокета
+                            //failed verification.
+                            //remove the code word from this socket
                             ws.keyWord = undefined;
-                            //разрываем соединение
+                            //break the connection
                             ws.passwordChecked = undefined;
                             ws.close();
                         }
                     } else {
-                        //непонятное сообщение. игнорируем его
+                        //incomprehensible message. ignore it
                         return;
                     }
                 }
@@ -865,7 +866,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Добавляет обработчик сообщения
+     * Adds a message handler
      * @param {string} id
      * @param {Function} handler
      */
@@ -875,12 +876,13 @@ function Blockchain(config) {
     }
 
     /**
-     * Собирает из базы всю цепь блоков и отправляет её тому, кто запросил
+     * Collects the entire chain of blocks from the database and sends it to the one who requested
      * @param ws
      * @param fromBlock
      * @param limit
+     * @param hideEmptyBlocks
      */
-    function sendAllBlockchain(ws, fromBlock, limit) {
+    function sendAllBlockchain(ws, fromBlock, limit, offset, hideEmptyBlocks, contractAddress) {
         /**
          * Если запрос идет с блока меньше 5, то разрешаем синхронизацию по 1 блоку
          * для корректной обработки блока с выпуском ключей
@@ -895,42 +897,77 @@ function Blockchain(config) {
             limit = 5;
         }
 
-        getAllChain(fromBlock, limit, function (blockchain) {
-            write(ws, responseChainMsg(blockchain));
+        getAllChain(fromBlock, limit, offset, hideEmptyBlocks, contractAddress, function (blockchain) {
+            if (typeof hideEmptyBlocks !== 'undefined') {
+                write(ws, responseBlocksChainMsg(blockchain));
+            } else {
+                write(ws, responseChainMsg(blockchain));
+            }
         });
     }
 
     /**
-     * Собираем всю цепочку воедино
+     * Putting the whole chain together
      * @param fromBlock
      * @param limit
+     * @param offset
+     * @param hideEmptyBlocks
      * @param cb
      */
-    function getAllChain(fromBlock, limit, cb) {
-        limit = typeof limit === 'undefined' ? maxBlock : fromBlock + limit;
-        let blockchain = [];
-        (async function () {
+    function getAllChain(fromBlock, limit, offset=0, hideEmptyBlocks, contractAddress, cb) {
+        limit = typeof limit === 'undefined' ? config.maxBlockSend : limit;
+
+        async function getAllBlocks() {
             let limiter = 0;
-            for (let i = fromBlock; i < limit + 1; i++) {
-                let result;
+            const blocks = [];
+
+            for (let blockIndex = fromBlock - offset; blockIndex > 0; blockIndex--) {
+                let binaryBlock;
                 try {
-                    result = await asyncBlockchainGet(i);
+                    binaryBlock = await asyncBlockchainGet(blockIndex);
                 } catch (e) {
                     continue;
                 }
-                blockchain.push(JSON.parse(result));
+
+                const blockData = JSON.parse(binaryBlock);
+                if (contractAddress) {
+                    const data = JSON.parse(blockData.data);
+
+                    if (data.state.contractAddress != contractAddress) {
+                        continue;
+                    }
+                }
+
+                if (hideEmptyBlocks) {
+                    const data = JSON.parse(blockData.data);
+                    if (data.type === 'Empty') {
+                        continue;
+                    }
+                }
+
+                blocks.push(blockData);
+
                 limiter++;
                 if(limiter > config.maxBlockSend) {
                     break;
                 }
+
+                if (blocks.length > limit) {
+                    break;
+                }
             }
 
+            return blocks;
+        }
+
+        (async function() {
+            const blockchain = await getAllBlocks();
             cb(blockchain);
         })();
     }
 
     /**
-     * Отлов ошибок сети
+     * Catching network errors
      * @param ws
      */
     function p2pErrorHandler(ws) {
@@ -944,7 +981,7 @@ function Blockchain(config) {
 
 
     /**
-     * Считает хеш для объекта блока
+     * Calculates the hash for the block object
      * @param block
      * @returns {*|string|a}
      */
@@ -953,7 +990,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Хеш блоков
+     * Hash of blocks
      * @param index
      * @param previousHash
      * @param timestamp
@@ -967,13 +1004,13 @@ function Blockchain(config) {
     }
 
     /**
-     * Добавляет блок в цепочку с проверкой
+     * Adds a block to the chain with verification
      * @param newBlock
      * @param cb
      */
     function addBlock(newBlock, cb) {
-        getLatestBlock(function (lastestBlock) {
-            if(isValidNewBlock(newBlock, lastestBlock)) {
+        getLatestBlock(async function (lastestBlock) {
+            if(await isValidNewBlock(newBlock, lastestBlock)) {
                 addBlockToChain(newBlock, false, cb);
             } else {
                 logger.error("Trying add invalid block");
@@ -987,24 +1024,24 @@ function Blockchain(config) {
 
 
     /**
-     * Проверка нового блока на соответствие требованиям
+     * Checking the new block for compliance with the requirements
      * @param {Block} newBlock
      * @param {Block} previousBlock
      * @returns {boolean}
      */
-    function isValidNewBlock(newBlock, previousBlock) {
+    async function isValidNewBlock(newBlock, previousBlock) {
 
         let validatorReversed = config.validators;
         /**
-         * Модули консенсусов изначально расположены в порядке повышения приоритета.
-         * Выбор консенсуса должен идти в порядке убывания приоритета
+         * Consensus modules are initially arranged in order of increasing priority.
+         * The choice of consensus should go in descending order of priority
          */
         validatorReversed.reverse();
 
         try {
             for (let a in validatorReversed) {
                 if(validatorReversed.hasOwnProperty(a)) {
-                    if(validatorReversed[a].isValidNewBlock(newBlock, previousBlock)) {
+                    if(await validatorReversed[a].isValidNewBlock(newBlock, previousBlock)) {
                         validatorReversed.reverse();
                         return true;
                     }
@@ -1020,7 +1057,7 @@ function Blockchain(config) {
 
 
     /**
-     * Подключаемся к пирам
+     * Connecting to the peers
      * @param newPeers
      */
     function connectToPeers(newPeers) {
@@ -1060,7 +1097,7 @@ function Blockchain(config) {
 
 
     /**
-     * Получили новую цепочку блоков
+     * Got a new block chain
      * @param message
      */
     function handleBlockchainResponse(message, preProcessedBlocks) {
@@ -1097,7 +1134,7 @@ function Blockchain(config) {
          */
         const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
 
-        getLatestBlock(function (latestBlockHeld) {
+        getLatestBlock(async function (latestBlockHeld) {
             if(!latestBlockHeld) {
                 if(config.program.autofix) {
                     maxBlock--;
@@ -1119,8 +1156,7 @@ function Blockchain(config) {
                     return;
                 }
 
-
-                if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0)) {
+                if(latestBlockReceived.index > latestBlockHeld.index || (blockHandler.keyring.length === 0 && latestBlockReceived.index < 5 && latestBlockReceived.index !== 0 && !config.isPosActive)) {
                     lastKnownBlock = latestBlockReceived.index;
                     if(receivedBlocks.length === 1) {
                         if(lastKnownBlock !== latestBlockReceived.index) {
@@ -1133,10 +1169,10 @@ function Blockchain(config) {
                             logger.info('Synchronize: Received ' + latestBlockHeld.index + ' of ' + latestBlockReceived.index);
                         }
                     }
-                    //console.log(latestBlockHeld.index, latestBlockReceived.index, latestBlockHeld.hash, latestBlockReceived.previousHash)
-                    if(latestBlockHeld.hash === latestBlockReceived.previousHash /*&& latestBlockHeld.index > 5*/) { //когда получен один блок от того который у нас есть
+                    // console.log(latestBlockHeld.index, latestBlockReceived.index, latestBlockHeld.hash, latestBlockReceived.previousHash)
+                    if(latestBlockHeld.hash === latestBlockReceived.previousHash /*&& latestBlockHeld.index > 5*/) { //when one block is received from the one we have
 
-                        if(isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
+                        if(await isValidChain(receivedBlocks) && (receivedBlocks[0].index <= maxBlock || receivedBlocks.length === 1)) {
                             addBlockToChain(latestBlockReceived, true);
                             responseLatestMsg(function (msg) {
 
@@ -1147,7 +1183,7 @@ function Blockchain(config) {
                                         return;
                                     }
                                     blockHandler.resync();
-                                }, config.peerExchangeInterval + 2000); //2000 в качестве доп времени
+                                }, config.peerExchangeInterval + 2000); //2000 as additional time
 
                                 storj.put('chainResponseMutex', false);
                                 broadcast(msg);
@@ -1157,21 +1193,24 @@ function Blockchain(config) {
                     } else if(receivedBlocks.length === 1 /*&& latestBlockHeld.index > 5*/) {
                         //console.log('HERE');
 
-                        let getBlockFrom = latestBlockHeld.index - config.blockQualityCheck;
+                        let getBlockFrom = latestBlockReceived.index;
 
-                        if(getBlockFrom < 0) {
+                        if(getBlockFrom < 0 || maxBlock == 0) {
+                            console.log('maxBlock', maxBlock);
                             getBlockFrom = 1;//maxBlock;
                             lastKnownBlock = maxBlock;
                         }
+
                         if(!blockHandler.syncInProgress) {
+                            console.log('sync', getBlockFrom, config.maxBlockSend);
                             broadcast(queryAllMsg(getBlockFrom, config.maxBlockSend));
                         }
 
                         storj.put('chainResponseMutex', false);
 
                     } else {
-
-                        if(receivedBlocks[0].index <= maxBlock && receivedBlocks.length > 1) {
+                        console.log('receivedBlocks[0].index', receivedBlocks[0].index, maxBlock + 1, receivedBlocks.length);
+                        if(receivedBlocks[0].index <= maxBlock + 1 && receivedBlocks.length > 1) {
                             replaceChain(receivedBlocks, function () {
                                 storj.put('chainResponseMutex', false);
                             });
@@ -1197,19 +1236,19 @@ function Blockchain(config) {
     let replaceChainTimer = null;
 
     /**
-     * Производим замену цепочки на обновлённую
+     * Replace the chain with an updated one
      * @param {Block[]} newBlocks
      * @param {function} cb
      */
     function replaceChain(newBlocks, cb) {
 
-        //Если мы пытаемся проверить цепочку больше, чем всего есть блоков, проверяем с genesis
+        //If we are trying to check the chain more than there are blocks in total, we check with genesis
         let fromBlock = newBlocks[0].index - 1;
         if(fromBlock < 0) {
             fromBlock = 0;
         }
 
-        //Последний блок проверяемой цепочки
+        //The last block of the chain being checked
         let toBlock = newBlocks[newBlocks.length - 1].index + 1;
 
 
@@ -1219,8 +1258,8 @@ function Blockchain(config) {
             }
 
 
-            //Получаем блок, с которого выполняется проверка
-            getBlockById(fromBlock, function (err, lBlock) {
+            //Get the block from which the check is performed
+            getBlockById(fromBlock, async function (err, lBlock) {
                 if(err) {
                     let error = new Error('Can\'t get block no ' + newBlocks[0].index + ' ' + err);
 
@@ -1238,17 +1277,17 @@ function Blockchain(config) {
                 }
 
                 let validChain = false;
-                //Валидна ли переданная цепочка блоков
+                //Is the transmitted block chain valid
                 if(rBlock) {
-                    //Если новая цепочка должна встроится в существующую
-                    validChain = isValidChain(([lBlock].concat(newBlocks)).concat([rBlock]));
+                    //If a new chain needs to be integrated into an existing one
+                    validChain = await isValidChain(([lBlock].concat(newBlocks)).concat([rBlock]));
                 } else {
-                    //Если новая цепочка добавляется в конец
-                    validChain = isValidChain([lBlock].concat(newBlocks));
+                    //If a new chain is added to the end
+                    validChain = await isValidChain([lBlock].concat(newBlocks));
                 }
 
 
-                //Проверяем, что индекс первого блока в процеряемой цепочке не выходит за пределы Limited Confidence
+                //We check that the index of the first block in the chain being checked does not exceed the limits of Limited Confidence
                 if(!(newBlocks[0].index >= maxIndex)) {
 
                     let error = new Error('LimitedConfidence: Invalid chain');
@@ -1312,18 +1351,18 @@ function Blockchain(config) {
     }
 
     /**
-     * Проверяет корректность цепочки
+     * Checks the correctness of the chain
      * @param {Array} blockchainToValidate
      * @returns {boolean}
      */
-    function isValidChain(blockchainToValidate) {
+    async function isValidChain(blockchainToValidate) {
         /*if(JSON.stringify(blockchainToValidate[0]) !== JSON.stringify(getGenesisBlock())) {
          return false;
          }*/
         try {
             const tempBlocks = [blockchainToValidate[0]];
             for (let i = 1; i < blockchainToValidate.length; i++) {
-                if(isValidNewBlock(blockchainToValidate[i], tempBlocks[i - 1])) {
+                if(await isValidNewBlock(blockchainToValidate[i], tempBlocks[i - 1])) {
                     try {
                         tempBlocks.push(blockchainToValidate[i]);
                     } catch (e) {
@@ -1342,7 +1381,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Получаем последний загруженный блок цепочки
+     * Get the last loaded block of the chain
      * @param callback
      */
     function getLatestBlock(callback) {
@@ -1356,7 +1395,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Запрос последнего блока цепочки
+     * Request for the last block of the chain
      * @returns {{type: number}}
      */
     function queryChainLengthMsg() {
@@ -1364,7 +1403,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Запрос блоков цепочки
+     * Request for Chain Blocks
      * @returns {{type: number}}
      */
     function queryAllMsg(fromIndex, limit) {
@@ -1372,7 +1411,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Ответ всего блока цепочки
+     * The response of the entire block of the chain
      * @param blockchain
      * @returns {{type: number, data}}
      */
@@ -1383,7 +1422,18 @@ function Blockchain(config) {
     }
 
     /**
-     * Ответ последнего блока цепочки
+     * Response of the whole chain block
+     * @param blockchain
+     * @returns {{type: number, data}}
+     */
+    function responseBlocksChainMsg(blockchain) {
+        return {
+            'type': MessageType.RESPONSE_BLOCKS_BLOCKCHAIN, 'data': JSON.stringify(blockchain)
+        }
+    }
+
+    /**
+     * Response of the last block in the chain
      * @param callback
      */
     function responseLatestMsg(callback) {
@@ -1396,7 +1446,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Сообщение со списком пиров
+     * Peer list message
      * @param peers
      * @returns {{type: number, data: *}}
      */
@@ -1407,8 +1457,8 @@ function Blockchain(config) {
     }
 
     /**
-     * сообщение со списком консенсусов и messageBusAddress
-     * @param   {object} v = validators объект с валидаторами
+     * message with list of consensuses and messageBusAddress
+     * @param   {object} v = validators object with validators
      * @returns {object} {{type: number, data: *}}
      */
     function metaMsg(v = nodeMetaInfo) {
@@ -1420,8 +1470,8 @@ function Blockchain(config) {
     /**
      * message for initiating password procedure
      * @param data
-     * @param keyWordResponse //ставится true ТОЛЬКО если в data посылается keyWord при ответе на запрос этого ключевого слова
-     * @param myName идентефикатор ноды для обнаружения себя
+     * @param keyWordResponse //set to true ONLY if a keyWord is sent to data when responding to a request for this keyword
+     * @param myName node ID to discover itself
      * @returns {{type: number, data: *, response }}
      */
     function passwordMsg(data = '', keyWordResponse, myName) {
@@ -1438,7 +1488,7 @@ function Blockchain(config) {
     const write = function (ws, message) {
         try {
             ws.send(JSON.stringify(message))
-        } catch (e) { //ошибка записи, возможно сокет уже не активен
+        } catch (e) { //write error, perhaps the socket is no longer active
             if(config.program.verbose) {
                 logger.info('Send error ' + e + ' ' + ws._socket.remoteAddress)
             }
@@ -1463,14 +1513,14 @@ function Blockchain(config) {
     };
 
     /**
-     * Сообщаем всем адреса наших пиров
+     * Tell everyone the addresses of our peers
      */
     function broadcastConnectedPeers() {
         broadcast(peersBroadcast(getCurrentPeers()));
     }
 
     /**
-     * Прошёл-ли сокет проверку пароля
+     * Has the socket passed password verification
      * @param socket
      * @return {boolean}
      */
@@ -1483,7 +1533,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Возвращает адрес сокет по адресу шины сообщений
+     * Returns the socket address to the message bus address
      * @param address
      * @return {*}
      */
@@ -1503,7 +1553,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Запуск сети
+     * Network launch
      */
     function startBlockchainServers() {
         connectToPeers(peers);
@@ -1534,7 +1584,7 @@ function Blockchain(config) {
     }
 
     /**
-     * Формирует список подключенных пиров
+     * Generates a list of connected peers
      * @returns {Array}
      */
     function getCurrentPeers(fullSockets) {
@@ -1543,7 +1593,6 @@ function Blockchain(config) {
                 if(fullSockets) {
                     return s;
                 } else {
-
                     if(!s._socket._isServer) {
                         return s.url;
                     }
@@ -1556,7 +1605,7 @@ function Blockchain(config) {
 
 
     /**
-     * Переодическая рассылка информации о доступных блоках
+     * Periodic distribution of information about available blocks
      */
     function broadcastLastBlock() {
         responseLatestMsg(function (msg) {
@@ -1566,7 +1615,7 @@ function Blockchain(config) {
 
 
     /**
-     * Переодический обмен пирами и переподключение к централньым нодам
+     * Periodic exchange of peers and reconnection to central nodes
      */
     function peerExchange() {
         broadcastConnectedPeers();
@@ -1579,7 +1628,7 @@ function Blockchain(config) {
 
 
     /**
-     * Создает сообщение
+     * Creates a message
      * @param data
      * @param reciver
      * @param recepient
@@ -1596,18 +1645,18 @@ function Blockchain(config) {
             recepient: recepient,
             id: id,
             timestamp: moment().utc().valueOf(),
-            TTL: typeof TTL !== 'undefined' ? TTL : 0, //количество скачков сообщения
+            TTL: typeof TTL !== 'undefined' ? TTL : 0, //number of message jumps
             index: index,
             mutex: getid() + getid() + getid(),
         };
     }
 
     /**
-     * Рассылает широковещательное сообщение по системе
-     * @param {object} msgData содержание сообщения
-     * @param {string} id идентефикатор сообщения
-     * @param {string} reciver получатель сообщения
-     * @param {string} recepient отправитель сообщения
+     * Sends a broadcast message through the system
+     * @param {object} msgData message content
+     * @param {string} id message id
+     * @param {string} reciver message recipient
+     * @param {string} recepient message sender
      * @param {int} TTL
      * @return {{type: number, data: *, reciver: *, recepient: *, id: *, timestamp: number, TTL: number, index: number}}
      */
@@ -1619,7 +1668,7 @@ function Blockchain(config) {
 
 
     /**
-     * Создаёт кошелёк в блокчейне, если он не создан.
+     * Creates a wallet on the blockchain if it hasn't been created yet.
      */
     function createWalletIfNotExsists() {
         if(wallet.accepted || config.disableWalletDeploy) {
@@ -1637,7 +1686,7 @@ function Blockchain(config) {
     }
 
     /**
-     * возвращает строку пароля для сравнения
+     * returns the password string for comparison
      * @returns {string}
      * @private
      */
@@ -1647,7 +1696,7 @@ function Blockchain(config) {
 
 
     /**
-     * Создаёт новый блок с помощью подходящего консенсуса
+     * Creates a new block using a suitable consensus
      * @param blockData
      * @param cb
      * @param cancelCondition
@@ -1664,8 +1713,8 @@ function Blockchain(config) {
 
         let validators = config.validators;
         /**
-         * Модули консенсусов изначально расположены в порядке повышения приоритета.
-         * Выбор консенсуса для генерации блока, должен идти в порядке убывания приоритета
+         * Consensus modules are initially arranged in order of increasing priority.
+         * The choice of consensus for block generation should go in descending order of priority
          */
         /* validatorReversed.reverse();
          for (let a in validatorReversed) {
@@ -1725,7 +1774,7 @@ function Blockchain(config) {
 
 
     /**
-     * Запускается всего один раз при старте цепочки, при условии, что кошелек утверждён
+     * Runs only once at the start of the chain, provided that the wallet is approved
      */
 
     function keyringEmission() {
@@ -1776,18 +1825,19 @@ function Blockchain(config) {
                             config.validators[a] = (require('./plugins/' + config.validators[a]));
                         } catch (e) {
                             try {
-                                config.validators[a] = (require(process.cwd() + '/' + config.validators[a]));
+                                config.validators[a] = (require(process.cwd() + '/plugins/' + config.validators[a]));
                             } catch (e) {
                                 try {
-                                    config.validators[a] = (require(process.cwd() + '/node_modules/' + +config.validators[a]));
+                                    config.validators[a] = (require(process.cwd() + '/' + config.validators[a]));
                                 } catch (e) {
-                                    logger.fatalFall('Validator ' + config.validators[a] + ' not found');
+                                    try {
+                                        config.validators[a] = (require(process.cwd() + '/node_modules/' + +config.validators[a]));
+                                    } catch (e) {
+                                        logger.fatalFall('Validator ' + config.validators[a] + ' not found');
+                                    }
                                 }
-
                             }
-
                         }
-
                     }
                 }
 
@@ -1892,7 +1942,6 @@ function Blockchain(config) {
 
     blockchainObject = {
         config: config,
-        validators: nodeMetaInfo,
         start: start,
         getid: getid,
         write: write,
@@ -1976,9 +2025,6 @@ function Blockchain(config) {
     //Message dispatcher
     blockchainObject.messagesDispatcher = new MessagesDispatcher(config, blockchainObject);
 
-    //StarWave messaging protocol
-    starwave.blockchain = blockchainObject;
-
     //Plugins
     if(config.plugins.length > 0) {
         logger.info("Loading plugins...\n");
@@ -2020,25 +2066,33 @@ function Blockchain(config) {
                     path = '/.' + path;
                     isPathFull = false;
                 } catch (e) {
-
-                    //Starting dir search
+                    //Plugins full path
+                    console.log('__dirname', __dirname);
                     try {
-                        path = process.cwd() + '/' + plugin;
+                        path = __dirname + '/plugins/' + plugin;
                         pluginMod = require(path)(blockchainObject, config, storj);
                         isPathFull = true;
                     } catch (e) {
 
-                        //Working dir search
+                        //Starting dir search
                         try {
-                            path = config.workDir + '/' + plugin;
-                            pluginMod = require(path)(blockchainObject, config, storj);
-                            isPathFull = false;
-                        } catch (e) {
-
-                            //Node modules in starting dir search
-                            path = process.cwd() + '/node_modules/' + plugin;
+                            path = process.cwd() + '/' + plugin;
                             pluginMod = require(path)(blockchainObject, config, storj);
                             isPathFull = true;
+                        } catch (e) {
+
+                            //Working dir search
+                            try {
+                                path = config.workDir + '/' + plugin;
+                                pluginMod = require(path)(blockchainObject, config, storj);
+                                isPathFull = false;
+                            } catch (e) {
+
+                                //Node modules in starting dir search
+                                path = process.cwd() + '/node_modules/' + plugin;
+                                pluginMod = require(path)(blockchainObject, config, storj);
+                                isPathFull = true;
+                            }
                         }
                     }
                 }
@@ -2071,12 +2125,21 @@ function Blockchain(config) {
         return true;
     }
 
-    //Wallet create
+    // Wallet create
     if(wallet.id.length === 0) {
         wallet.generate();
+        config.recieverAddress = wallet.getAddress(false);
+        console.log('');
+        console.log('Message bus address: ' + config.recieverAddress);
     }
 
-    //Account manager
+    let nodeMetaInfo = new NodeMetaInfo(config);
+    blockchainObject.validators = nodeMetaInfo;
+
+    // StarWave messaging protocol
+    let starwave = new StarwaveProtocol(config, blockchainObject);
+
+    // Account manager
     let accountManager = new AccountManager(config);
     accountManager.addAccountWallet('default', wallet);
     storj.put('accountManager', accountManager);

@@ -142,6 +142,28 @@ let Wallet = function (walletFile, config) {
         wallet.create();
     };
 
+    wallet.generateWallet = function() {
+        let generated = false;
+        let keysPair = {};
+
+        for (const generator of wallet._generatorHooks) {
+            let generatorResult = generator(wallet);
+            if(generatorResult) {
+                keysPair = generatorResult.keysPair;
+                generated = true;
+                break;
+            }
+        }
+
+        if(!generated) {
+            keysPair = cryptography.generateKeyPair();
+        }
+
+        return keysPair;
+    }
+
+    storj.put('generateWallet', wallet.generateWallet.bind(wallet));
+
     /**
      * Generate wallet ID
      */

@@ -71,13 +71,13 @@ class DApp {
             },
             starwave: {
                 registerMessageHandler: function () {
-                    return that.starwave.registerMessageHandler.apply(that._messagesDispatcher, arguments)
+                    return that.starwave.registerMessageHandler.apply(that.starwave, arguments)
                 },
                 sendMessage: function () {
-                    return that.starwave.sendMessage.apply(that._messagesDispatcher, arguments)
+                    return that.starwave.sendMessage.apply(that.starwave, arguments)
                 },
                 createMessage: function () {
-                    return that.starwave.createMessage.apply(that._messagesDispatcher, arguments)
+                    return that.starwave.createMessage.apply(that.starwave, arguments)
                 },
             }
         };
@@ -154,7 +154,7 @@ class DApp {
                  * @param accountName
                  * @return {Promise<any>}
                  */
-                deployContract: function (source, resourceRent = 0, accountName = false) {
+                deployContract: function (source, resourceRent = 0, accountName = false, sender) {
                     return new Promise((resolve, reject) => {
                         that.ecmaContract.deployContract(source, resourceRent, function (block) {
                             if(block === null) {
@@ -166,7 +166,7 @@ class DApp {
                             }
 
                             resolve(block);
-                        }, accountName);
+                        }, accountName, sender);
                     })
                 },
                 /**

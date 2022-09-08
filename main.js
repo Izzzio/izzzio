@@ -131,10 +131,10 @@ let config = {
         //ramLimit: 32,                           //Макс. ограничение ОЗУ для контрактов. Может быть заменено @deprecated
         masterContract: 5,                       //Главный контракт в системе. Реализует функционал токена
         maxContractLength: 10 * 1024 * 1024,      // Макс. размер добавляемого контракта
-        defaultLimits: { 
-            ram: 256, 
-            timeLimit: 30000, 
-            callLimit: 10000 
+        defaultLimits: {
+            ram: 256,
+            timeLimit: 30000,
+            callLimit: 10000
         }
     },
 
@@ -278,6 +278,10 @@ if(!fs.existsSync(config.appEntry) && config.appEntry) {
 
 if(config.startMessage) {
     console.log(config.startMessage);
+}
+
+if (!fs.existsSync(config.workDir)) {
+    fs.mkdirSync(config.workDir);
 }
 
 const blockchain = new Blockchain(config);

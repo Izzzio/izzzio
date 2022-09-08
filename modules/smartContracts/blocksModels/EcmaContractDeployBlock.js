@@ -36,6 +36,7 @@ class EcmaContractDeployBlock extends Signable {
         this.state = state;
         this.state.codeHash = cryptography.hash(this.ecmaCode).toString();
         this.generateData();
+        this.generateWallet();
     }
 
     /**
@@ -45,6 +46,10 @@ class EcmaContractDeployBlock extends Signable {
         this.data = cryptography.hash(this.type + this.ecmaCode + stableStringify(this.state)).toString();
     }
 
+    generateWallet() {
+        const wallet = storj.get('generateWallet')();
+        this.wallet = wallet.public;
+    }
 
 }
 

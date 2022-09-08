@@ -1,0 +1,15 @@
+#!/bin/bash
+if [ -d "/app/sollar/runtime/blocks" ]
+then
+	echo "Node data exists. Starting node.."
+    cd /app/sollar
+    node --max-old-space-size=4096 ../main.js --config=../config.json
+else
+	echo "Node data doesn't exist. Copying node.."
+  cd /app/sollar/runtime
+	wget --recursive --no-parent https://testnet.sollar.tech/download/blocks/
+	mv /app/sollar/runtime/testnet.sollar.tech/download/blocks/ /app/sollar/runtime/blocks
+	rm -rf /app/sollar/runtime/testnet.sollar.tech
+	cd /app/sollar
+  node --max-old-space-size=4096 ../main.js --config=../config.json
+fi
