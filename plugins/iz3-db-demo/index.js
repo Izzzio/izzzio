@@ -21,10 +21,10 @@ const path = require('path');
 
 const PROTOCOL_PREFIX = 'level';
 
-module.exports = function register(blockchain, config, storj) {
+module.exports = function register(blockchain, config, namedStorage) {
     logger.info('Initialize custom DB');
 
-    let plugins = storj.get('plugins');
+    let plugins = namedStorage.get('plugins');
     //console.log(JSON.stringify(plugins));
     //console.log(plugins);
     plugins.db.registerModule(PROTOCOL_PREFIX, __dirname + path.sep + 'customDB.js');

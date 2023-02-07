@@ -5,9 +5,17 @@
 
 const express = require("express");
 const Wallet = require("./wallet");
-const storj = require('./instanceStorage');
 const utils = require('./utils');
 const logger = new (require('./logger'))();
+
+/**
+ * @deprecated
+ * @type {{get: function(string): *, put: function(string, *): void}}
+ */
+const storj = require('./instanceStorage');
+
+const namedStorage = new (require('./NamedInstanceStorage'))();
+
 
 /**
  * Wallet and RPC interface
@@ -16,6 +24,11 @@ const logger = new (require('./logger'))();
 class Frontend {
     constructor(wallet, blockchain, transactor, blockHandler, app, blockchainObject, options, getLastBlock, getSomeInfo, transact, hardResync) {
         let that = this;
+
+        //Assign named storage
+        namedStorage.assign(blockchain.config.instanceId);
+
+
         this.app = app;
         this.wallet = wallet;
         this.blockchain = blockchain;
@@ -70,6 +83,7 @@ class Frontend {
 
 
         storj.put('httpServer', app);
+        namedStorage.put('httpServer', app);
 
     }
 
@@ -93,7 +107,7 @@ class Frontend {
                 data.minerForce = minerForce;
                 data.peers = peers;
                 data.syncInProgress = that.blockHandler.syncInProgress;
-                data.recivingBlocks = storj.get('chainResponseMutex');
+                data.recivingBlocks = namedStorage.get('chainResponseMutex');
                 data.isReadyForTransaction = that.blockchainObject.isReadyForTransaction();
                 data.options = that.options;
                 let wallet = JSON.parse(JSON.stringify(that.wallet));
@@ -182,7 +196,7 @@ class Frontend {
             } else {
                 res.send({status: 'error', message: 'Incorrect wallet or keypair'});
             }
-        });
+        }, this.blockchain.config);
 
 
     }

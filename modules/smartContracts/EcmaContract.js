@@ -6,7 +6,15 @@
 const VM = require('./VM');
 const TransactionalKeyValue = require('./TransactionalKeyValue');
 const KeyValueInstancer = require('./KeyValueInstancer');
+
+/**
+ * @deprecated
+ * @type {{get: function(string): *, put: function(string, *): void}}
+ */
 const storj = require('../instanceStorage');
+
+const namedStorage = new (require('../NamedInstanceStorage'))();
+
 const logger = new (require('../logger'))('ECMAContract');
 const random = require('../random');
 const EventsDB = require('./EventsDB');
@@ -48,28 +56,31 @@ const METHODS_BLACKLIST = [
  * EcmaScript Smart contracts handler
  */
 class EcmaContract {
-    constructor() {
+    constructor(config) {
         let that = this;
 
-        this.db = new TransactionalKeyValue('EcmaContracts');
+        //Assign named storage
+        namedStorage.assign(config.instanceId);
+
+        this.db = new TransactionalKeyValue('EcmaContracts', config);
         this.contracts = this.db.db;
-        this.config = storj.get('config');
+        this.config = config;
         this.ready = false;
 
         /**
          * @var {Cryptography}
          */
-        this.cryptography = storj.get('cryptography');
+        this.cryptography = namedStorage.get('cryptography');
 
         /**
          * @var {Plugins}
          */
-        this.plugins = storj.get('plugins');
+        this.plugins = namedStorage.get('plugins');
 
         /**
          * @var{AccountManager}
          */
-        this.accountManager = storj.get('accountManager');
+        this.accountManager = namedStorage.get('accountManager');
 
         this._contractInstanceCache = {};
         this._contractInstanceCacheLifetime = typeof this.config.ecmaContract === 'undefined' || typeof this.config.ecmaContract.contractInstanceCacheLifetime === 'undefined' ? 60000 : this.config.ecmaContract.contractInstanceCacheLifetime;
@@ -83,7 +94,7 @@ class EcmaContract {
         /**
          * Events indenxing
          */
-        this.events = new EventsDB(/*that.config.workDir +*/ '/contractsRuntime/EventsDB.db');
+        this.events = new EventsDB(/*that.config.workDir +*/ '/contractsRuntime/EventsDB.db', config);
         this.events.initialize(function () {
             logger.info('Initialized');
             that.ready = true;
@@ -127,7 +138,7 @@ class EcmaContract {
         /**
          * @var {BlockHandler} this.blockHandler
          */
-        this.blockHandler = storj.get('blockHandler');
+        this.blockHandler = namedStorage.get('blockHandler');
 
         this.blockHandler.registerBlockHandler(EcmaContractDeployBlock.blockType, function (blockData, block, callback) {
             that.events._handleBlockReplay(block.index, function () {
@@ -149,6 +160,7 @@ class EcmaContract {
 
 
         storj.put('ecmaContract', this);
+        namedStorage.put('ecmaContract', this);
         logger.info('Loading environment...');
 
         this._registerRPCMethods();
@@ -159,7 +171,7 @@ class EcmaContract {
      * @return {blockchain}
      */
     get blockchain() {
-        return storj.get('blockchainObject')
+        return namedStorage.get('blockchainObject')
     }
 
 
@@ -249,7 +261,7 @@ class EcmaContract {
                 logging: that.config.ecmaContract.allowDebugMessages,
                 logPrefix: 'Contract ' + address + ': ',
             });
-            let db = new TransactionalKeyValue(/*that.config.workDir +*/ 'contractsRuntime/' + address);
+            let db = new TransactionalKeyValue(/*that.config.workDir +*/ 'contractsRuntime/' + address, that.config);
             try {
                 vm.setTimingLimits(limits.timeLimit + 10000);
                 vm.setCpuLimit(limits.timeLimit + 500);
@@ -281,8 +293,6 @@ class EcmaContract {
                 logger.error('Contract ' + address + ' deployed with error. ' + e);
                 throw e;
             }
-
-
 
 
         }
@@ -1416,7 +1426,7 @@ class EcmaContract {
                 randomSeed: random.int(0, 10000),
                 from: wallet.id,
                 resourceRent: String(resourceRent)
-            });
+            }, namedStorage);
             deployBlock = wallet.signBlock(deployBlock);
         } else {
             deployBlock = code
@@ -1525,7 +1535,7 @@ class EcmaContract {
                 state.contractAddress = address;
                 state.masterContractAddress = that.config.ecmaContract.masterContract ? that.config.ecmaContract.masterContract : false;
 
-                callBlock = new EcmaContractCallBlock(address, method, args, state);
+                callBlock = new EcmaContractCallBlock(address, method, args, state, namedStorage);
                 callBlock = wallet.signBlock(callBlock);
             } else {
                 callBlock = args;
@@ -1684,7 +1694,7 @@ class EcmaContract {
             delete this._contractInstanceCache[addr];
             return;
         } else {
-            db = new TransactionalKeyValue(/*this.config.workDir +*/ 'contractsRuntime/' + addr);
+            db = new TransactionalKeyValue(/*this.config.workDir +*/ 'contractsRuntime/' + addr, this.config);
         }
         db.clear(function () {
             db.close(function () {
@@ -1875,13 +1885,11 @@ class EcmaContract {
         let testWallet = new Wallet(false, that.config);
 
 
-
-
         switch (blockData.type) {
             case EcmaContractDeployBlock.blockType:
 
 
-                verifyBlock = new EcmaContractDeployBlock(blockData.ecmaCode, blockData.state);
+                verifyBlock = new EcmaContractDeployBlock(blockData.ecmaCode, blockData.state, namedStorage);
 
                 if(verifyBlock.data !== blockData.data) {
                     logger.error('Contract invalid data in block ' + block.index);
@@ -1902,7 +1910,7 @@ class EcmaContract {
 
             case EcmaContractCallBlock.blockType:
 
-                verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state);
+                verifyBlock = new EcmaContractCallBlock(blockData.address, blockData.method, blockData.args, blockData.state, namedStorage);
                 if(verifyBlock.data !== blockData.data) {
                     logger.error('Contract invalid data in block ' + block.index);
                     callback(new Error('Contract invalid data in block ' + block.index));
@@ -1932,7 +1940,7 @@ class EcmaContract {
      * @private
      */
     _registerRPCMethods() {
-        let app = storj.get('httpServer');
+        let app = namedStorage.get('httpServer');
         let that = this;
         if(!app) {
             logger.error("Can't register RPC methods for EcmaContract");

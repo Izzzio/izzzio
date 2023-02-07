@@ -3,7 +3,6 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-const storj = require('./instanceStorage');
 
 const waitForSyncDelay = 100;
 
@@ -12,9 +11,11 @@ module.exports = {
      * Wait for blockchsin synchronization ends
      * @param callback
      */
-    waitForSync: function (callback) {
+    waitForSync: function (callback, config) {
+        const namedStorage = new (require('./NamedInstanceStorage'))(config.instanceId);
+        
         function waitForSync() {
-            if(!storj.get('blockchainObject').isReadyForTransaction()) {
+            if(!namedStorage.get('blockchainObject').isReadyForTransaction()) {
                 setTimeout(function () {
                     waitForSync();
                 }, waitForSyncDelay);

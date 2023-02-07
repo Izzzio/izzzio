@@ -35,10 +35,10 @@ function testFunction(cb, ...args) {
     }, 0);
 }
 
-module.exports = function register(blockchain, config, storj) {
+module.exports = function register(blockchain, config, namedStorage) {
     logger.info('Initialize...');
 
-    let plugins = storj.get('plugins');
+    let plugins = namedStorage.get('plugins');
 
     plugins.ecma.registerFunction('testNamespace',"testFunction", testFunction);
     plugins.ecma.injectScript(TestClass);

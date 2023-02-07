@@ -120,10 +120,10 @@ function generateKeyPair(config) {
     return {private: keyPair.private, public: keyPair.public};
 }
 
-module.exports = function register(blockchain, config, storj) {
+module.exports = function register(blockchain, config, namedStorage) {
     logger.info('Initialize...');
 
-    cryptography = storj.get('cryptography');
+    cryptography = namedStorage.get('cryptography');
 
     cryptography.registerHash('SHA256', sha256);
     //Default generator

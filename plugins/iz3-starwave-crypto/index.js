@@ -18,10 +18,10 @@
 
 const logger = new (require(global.PATH.mainDir + '/modules/logger'))("StarWaveCrypto");
 
-module.exports = function register(blockchain, config, storj) {
+module.exports = function register(blockchain, config, namedStorage) {
     logger.info('Initialize...');
 
-    storj.put('StarWaveCrypto', require('./starwaveCrypto'));
+    namedStorage.put('StarWaveCrypto', require('./starwaveCrypto'));
 
     logger.info('OK');
 };

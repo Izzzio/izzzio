@@ -2,13 +2,18 @@
  * Class realises universal functions for external plugins in project
  */
 const logger = new (require('./logger'))();
-const storj = require('./instanceStorage');
-let cryptography = storj.get('cryptography');
+
 let that;
 
 class Plugins {
 
-    constructor() {
+    constructor(config) {
+
+        //Assign named storage
+        this.namedStorage = new (require('./NamedInstanceStorage'))(config.instanceId);
+
+        this.cryptography = this.namedStorage.get('cryptography');
+
         that = this;
         /**
          * object to store registered functions
@@ -29,10 +34,10 @@ class Plugins {
         };
 
         this.crypto = {
-            registerHash: cryptography.registerHash,
-            registerGenerator: cryptography.registerGenerator,
-            registerSign: cryptography.registerSign,
-            registerGeneratorHook: cryptography.registerGeneratorHook,
+            registerHash: this.cryptography.registerHash,
+            registerGenerator: this.cryptography.registerGenerator,
+            registerSign: this.cryptography.registerSign,
+            registerGeneratorHook: this.cryptography.registerGeneratorHook,
         };
 
         this.blockchain = {
@@ -98,18 +103,17 @@ class Plugins {
      * @returns {boolean}
      */
     _subscribeForNewBlocks(cb) {
-        let newSubs = storj.get('newBlockSubscribers');
+        let newSubs = this.namedStorage.get('newBlockSubscribers');
         if (! newSubs ) {
             newSubs = [];
         }
         if (typeof cb === 'function' && newSubs.indexOf(cb) === -1) {
             newSubs.push(cb);
-            storj.put('newBlockSubscribers', newSubs);
+            this.namedStorage.put('newBlockSubscribers', newSubs);
             return true;
         }
         return false;
     }
-
 
     /**
      * Unsubscribe from new block addition
@@ -117,10 +121,10 @@ class Plugins {
      * @returns {boolean}
      */
     _unsubscribeFromNewBlocks(cb) {
-        let subs = storj.get('newBlockSubscribers');
+        let subs = this.namedStorage.get('newBlockSubscribers');
         if (subs  !== null && typeof cb === 'function' && subs.indexOf(cb) !== -1) {
             subs.splice(this._newBlockSubscribers.indexOf(cb), 1);
-            storj.put(subs);
+            this.namedStorage.put(subs);
             return true;
         }
         return false;
@@ -131,7 +135,7 @@ class Plugins {
      * @param {object} preProcessedBlocks 
      */
     _addBlocksToBlockchain(preProcessedBlocks) {
-        let blockchainObject = storj.get('blockchainObject');
+        let blockchainObject = this.namedStorage.get('blockchainObject');
         blockchainObject.handleBlockchainResponse(undefined, preProcessedBlocks);
     }
 }

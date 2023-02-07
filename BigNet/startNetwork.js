@@ -27,9 +27,9 @@ const logger = new (require(global.PATH.mainDir + '/modules/logger'))("NetworkSt
  * @type {{assert: module.exports.assert, lt: module.exports.lt, true: module.exports.true, false: module.exports.false, gt: module.exports.gt, defined: module.exports.defined}}
  */
 const assert = require(global.PATH.mainDir + '/modules/testing/assert');
-/*
-const storj = require(global.PATH.mainDir + '/modules/instanceStorage');
-const Wallet = require(global.PATH.mainDir + '/modules/wallet');*/
+
+//const storj = require(global.PATH.mainDir + '/modules/instanceStorage');
+const Wallet = require(global.PATH.mainDir + '/modules/wallet');
 
 const DApp = require(global.PATH.mainDir + '/app/DApp');
 const fs = require('fs');

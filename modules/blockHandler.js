@@ -7,8 +7,16 @@ const Keyring = require("./blocksModels/keyring");
 const Wallet = require("./wallet");
 const fs = require("fs-extra");
 
-const logger = new (require("./logger"))();
-const storj = require("./instanceStorage");
+
+const logger = new (require('./logger'))();
+
+/**
+ * @deprecated
+ * @type {{get: function(string): *, put: function(string, *): void}}
+ */
+const storj = require('./instanceStorage');
+
+
 
 /**
  * Предел до которого сеть может принять блок ключей
@@ -22,6 +30,10 @@ const keyEmissionMaxBlock = 5;
  */
 class BlockHandler {
     constructor(wallet, blockchain, blockchainObject, config, options) {
+
+        //Assign named storage
+        this.namedStorage = new (require('./NamedInstanceStorage'))(config.instanceId);
+
         this.wallet = wallet;
         this.blockchain = blockchain;
 
@@ -37,7 +49,8 @@ class BlockHandler {
         this._blocksHandlers = {};
 
         this.syncInProgress = false;
-        storj.put("syncInProgress", false);
+        storj.put('syncInProgress', false);
+        this.namedStorage.put('syncInProgress', false);
         this.keyring = [];
 
         try {
@@ -107,6 +120,7 @@ class BlockHandler {
         }
         that.syncInProgress = true;
         storj.put('syncInProgress', true);
+        this.namedStorage.put('syncInProgress', true);
 
         logger.info('Blockchain resynchronization started');
         that.clearDb(function () {
@@ -155,6 +169,7 @@ class BlockHandler {
         let that = this;
         that.syncInProgress = true;
         storj.put('syncInProgress', true);
+        this.namedStorage.put('syncInProgress', true);
         if(!that.config.program.verbose) {
             that.enableLogging = false;
             logger.disable = true;
@@ -178,17 +193,20 @@ class BlockHandler {
                                 logger.info('Info: Autofix: Set new blockchain height ' + i);
                                 await that.blockchain.putAsync('maxBlock', i - 1);
                                 that.syncInProgress = false;
-                                storj.put("syncInProgress", false);
+                                storj.put('syncInProgress', false);
+                                that.namedStorage.put('syncInProgress', false);
+
                                 that.enableLogging = true;
                                 logger.disable = false;
                                 that.wallet.enableLogging = true;
 
-                                if(typeof cb !== "undefined") {
+                                if(typeof cb !== 'undefined') {
                                     cb();
                                 }
 
                                 return;
                                 break;
+                                
                             } else {
                                 logger.disable = false;
                                 console.log('PREV', JSON.parse(prevBlock));
@@ -213,6 +231,7 @@ class BlockHandler {
 
             that.syncInProgress = false;
             storj.put('syncInProgress', false);
+            that.namedStorage.put('syncInProgress', false);
             that.enableLogging = true;
             logger.disable = false;
             that.wallet.enableLogging = true;

@@ -55,10 +55,10 @@ const Wallet = require("../wallet");
  * Test wallet
  * @type {Wallet}
  */
-let testWallet = new Wallet();
+let testWallet = undefined;
 
 
-const storj = require('../instanceStorage');
+const namedStorage = new (require('../NamedInstanceStorage'))();
 const Block = require("../block");
 const Signable = require("../blocksModels/signable");
 const KeyIssue = require("../blocksModels/keypoa/keyIssue");
@@ -339,7 +339,7 @@ function handleKeyBlock(blockData, block, cb) {
  */
 function issueKey(publicKey, keyType = KEY_TYPE.system) {
     return new Promise((resolve, reject) => {
-        let keyIssueBlock = new KeyIssue(publicKey, keyType);
+        let keyIssueBlock = new KeyIssue(publicKey, keyType, namedStorage);
         keyIssueBlock = blockchain.wallet.signBlock(keyIssueBlock);
         if(isReady()) {
             generateNextBlock(keyIssueBlock, function (generatedBlock) {
@@ -367,7 +367,7 @@ function issueKey(publicKey, keyType = KEY_TYPE.system) {
  */
 function deleteKey(publicKey) {
     return new Promise((resolve, reject) => {
-        let keyDeleteBlock = new KeyDelete(publicKey);
+        let keyDeleteBlock = new KeyDelete(publicKey, namedStorage);
         keyDeleteBlock = blockchain.wallet.signBlock(keyDeleteBlock);
         if(isReady()) {
             generateNextBlock(keyDeleteBlock, function (generatedBlock) {
@@ -405,6 +405,10 @@ function getCurrentKeyStorage() {
 
 module.exports = function (blockchainInstance) {
     blockchain = blockchainInstance;
+    if (blockchain) {
+        namedStorage.assign(blockchain.config.instanceId);
+        testWallet = new Wallet(blockchain.config.walletFile, blockchain.config);
+    }
 
     try {
         keyStorage = loadKeyStorage(blockchain.config.workDir, KEYRING_FILE);
@@ -453,8 +457,9 @@ module.exports = function (blockchainInstance) {
             getCurrentKeyStorage
         }
     };
-
-    storj.put('keypoa', keyPOAObject);
+    if (blockchain) {
+        namedStorage.put('keypoa', keyPOAObject);
+    }
 
     return keyPOAObject;
 };

@@ -4,15 +4,14 @@
  */
 
 const logger = new (require('./logger'))();
-const storj = require('./instanceStorage');
+
 const levelup = require('levelup');
-const memdown = require('memdown');
 const leveldown = require('leveldown');
 
-//const level = require('level');
+const namedStorage = new (require('./NamedInstanceStorage'))();
 
 const fs = require('fs-extra');
-const plugins = storj.get('plugins');//.ecma.getAllRegisteredFunctionsAsObject();
+let plugins;
 
 const STORAGE_TYPE = {
     MEMORY: 0,
@@ -25,10 +24,15 @@ const STORAGE_TYPE = {
  */
 
 class KeyValue {
-    constructor(name) {
+    constructor(name, config) {
+
+        //Assign named storage
+        namedStorage.assign(config.instanceId);
+        plugins = namedStorage.get('plugins');
+
         this.type = STORAGE_TYPE.MEMORY;
         this.memKeyValue = {};
-        this.config = storj.get('config');
+        this.config = config;
         this.levelup = null;
         this.name = name;
         this.pluginDB = null;

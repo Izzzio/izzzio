@@ -6,8 +6,6 @@
 
 
 const Signable = require('./signable');
-const storj = require('../instanceStorage');
-const cryptography = storj.get('cryptography');
 let type = 'CandyData';
 
 /**
@@ -19,19 +17,21 @@ class CandyData extends Signable {
     /**
      *
      * @param {String} data
+     * @param {NamedInstanceStorage} namedStorage
      */
-    constructor(data) {
+    constructor(data, namedStorage) {
         super();
         this.type = type;
         this.candyData = data;
         this.generateData();
+        this._cryptography = namedStorage.get('cryptography');
     }
 
     /**
      * Создаёт строку данных для подписи
      */
     generateData() {
-        this.data = this.type + cryptography.hash(this.candyData);
+        this.data = this.type + this._cryptography.hash(this.candyData);
     }
 
 

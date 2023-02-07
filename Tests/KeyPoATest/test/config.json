@@ -18,7 +18,7 @@
   "generateEmptyBlockDelay": 86400000,
   "enableMessaging": false,
   "rpcPassword": "",
-  "validators": [                       
+  "validators": [
     "keypoa"
   ],
   "blockAcceptCount": 0,

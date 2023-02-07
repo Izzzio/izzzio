@@ -3,19 +3,27 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-
 const sqlite3 = require('sqlite3').verbose();
 const logger = new (require('../logger'))('ContractEvents');
-const storj = require('../instanceStorage');
 const utils = require('../utils');
 const BigNumber = require('bignumber.js');
+
+/**
+ * @deprecated
+ * @type {{get: function(string): *, put: function(string, *): void}}
+ */
+const storj = require('../instanceStorage');
+
 
 /**
  * Events index database
  */
 class EventsDB {
-    constructor(path) {
-        this.config = storj.get('config');
+    constructor(path, config) {
+        this.config = config;
+
+        //Assign named storage
+        this.namedStorage = new (require('../NamedInstanceStorage'))(config.instanceId);
 
         if (path === '' || path === ':memory:') {
             this.path = path;
@@ -28,6 +36,7 @@ class EventsDB {
         this._transactions = {};
 
         storj.put('ContractEvents', this);
+        this.namedStorage.put('ContractEvents', this);
     }
 
     /**

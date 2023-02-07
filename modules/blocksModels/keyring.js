@@ -5,8 +5,7 @@
 
 const Signable = require('./signable');
 const fs = require('fs-extra');
-const storj = require('../instanceStorage');
-const cryptography = storj.get('cryptography');
+const keypair = require('keypair');
 
 let type = 'Keyring';
 
@@ -19,9 +18,11 @@ class Keyring extends Signable {
      *
      * @param {Array} keys
      * @param {String} initiator
+     * @param {NamedInstanceStorage} namedStorage
      */
-    constructor(keys, initiator) {
+    constructor(keys, initiator, namedStorage) {
         super();
+        this._cryptography = namedStorage.get('cryptography');
         this.type = type;
         this.keys = keys;
         this.initiator = initiator;
@@ -47,7 +48,7 @@ class Keyring extends Signable {
         generatedKeys.push(wallet.keysPair);
         this.keys.push(wallet.keysPair.public);
         for (let i = 1; i < keyCount; i++) {
-            let key = cryptography.generateKeyPair();
+            let key = this._cryptography.generateKeyPair();
             this.keys.push(key.public);
             generatedKeys.push(key);
         }

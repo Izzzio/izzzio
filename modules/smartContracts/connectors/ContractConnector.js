@@ -3,8 +3,6 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-const storj = require('../../instanceStorage');
-
 /**
  * Simplify interactions with contracts
  */
@@ -17,15 +15,19 @@ class ContractConnector {
      */
     constructor(ecmaContract, address, accountName = false) {
         this.ecmaContract = ecmaContract;
+
+        //Assign named storage
+        this.namedStorage = new (require('../../NamedInstanceStorage'))(this.ecmaContract.config.instanceId);
+
         this.address = address;
-        this.blockchain = storj.get('blockchainObject');
+        this.blockchain = this.namedStorage.get('blockchainObject');
         this.state = {};
         this.accountName = accountName;
 
         /**
          * @var{AccountManager}
          */
-        this.accountManager = storj.get('accountManager');
+        this.accountManager = this.namedStorage.get('accountManager');
     }
 
     /**

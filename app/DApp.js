@@ -3,7 +3,8 @@
  @author: Andrey Nedobylsky (admin@twister-vl.ru)
  */
 
-const storj = require('../modules/instanceStorage');
+const namedStorage = new (require('../modules/NamedInstanceStorage'))();
+
 const MessagesDispatcher = require('../modules/messagesDispatcher');
 const EcmaContract = require('../modules/smartContracts/EcmaContract');
 
@@ -12,21 +13,25 @@ let that;
 class DApp {
 
     constructor(config, blockchain) {
+
+        //Assign named storage
+        namedStorage.assign(config.instanceId);
+
         this.config = config;
         this.blockchain = blockchain;
-        this.rpc = storj.get('httpServer');
+        this.rpc = namedStorage.get('httpServer');
 
         /***
          * @var {starwaveProtocol} this.starwave
          */
-        this.starwave = storj.get('starwaveProtocol');
+        this.starwave = namedStorage.get('starwaveProtocol');
 
-        this.ecmaContract = storj.get('ecmaContract');
+        this.ecmaContract = namedStorage.get('ecmaContract');
 
         /**
          * @var {AccountManager}
          */
-        this.accounts = storj.get('accountManager');
+        this.accounts = namedStorage.get('accountManager');
 
 
         that = this;
@@ -280,7 +285,7 @@ class DApp {
      * @return {*}
      */
     getConfig() {
-        return storj.get('config');
+        return namedStorage.get('config');
     }
 
     /**

@@ -8,11 +8,13 @@
  *
  */
 
+const logger = new (require('./logger'))('InstanceStorage');
 
 let storage = {};
 
 module.exports = {
     /**
+     * @deprecated
      * Put data to storage
      * @param {string} name
      * @param value
@@ -22,11 +24,14 @@ module.exports = {
     },
 
     /**
+     * @deprecated
      * Get data from storage
      * @param {string} name
      * @return {*}
      */
     get: function (name) {
+
+        logger.warning('instanceStorage deprecated and will be removed in new versions. Use NamedInstanceStorage instead');
 
         if(typeof name === 'undefined') {
             return storage;

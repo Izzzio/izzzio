@@ -5,8 +5,6 @@
 
 
 const Signable = require('../signable');
-const storj = require('../../instanceStorage');
-const cryptography = storj.get('cryptography');
 let type = 'KO-KEY-DELETE';
 
 /**
@@ -18,9 +16,11 @@ class KeyIssue extends Signable {
     /**
      *
      * @param {string} publicKey
+     * @param {NamedInstanceStorage} namedStorage
      */
-    constructor(publicKey) {
+    constructor(publicKey, namedStorage) {
         super();
+        this._cryptography = namedStorage.get('cryptography');
         this.type = type;
         this.publicKey = publicKey;
         this.generateData();
@@ -30,7 +30,7 @@ class KeyIssue extends Signable {
      * Создаёт строку данных для подписи
      */
     generateData() {
-        this.data = this.type + cryptography.hash(this.publicKey);
+        this.data = this.type + this._cryptography.hash(this.publicKey);
     }
 
 
