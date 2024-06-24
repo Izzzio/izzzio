@@ -1,0 +1,27 @@
+{
+  "name": "iz3-db-sharded",
+  "version": "1.0.0",
+  "description": "iz3node db plugin",
+  "main": "index.js",
+  "dependencies": {
+    "fs-extra": "^4.0.3",
+    "level": "^6.0.0"
+  },
+  "homepage": "https://izzz.io",
+  "author": "Andrey Nedobylskiy & Kirill Revenkov",
+  "license": "GPL",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Izzzio/izzzio.git"
+  },
+  "keywords": [
+    "blockchain",
+    "crypto",
+    "izzzio",
+    "izzz",
+    "iz3",
+    "bignet",
+    "plugin", 
+    "db"
+  ]
+}
